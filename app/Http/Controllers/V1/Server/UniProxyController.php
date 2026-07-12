@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\V1\Server;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\V2UserConnectLog;
 use App\Services\ServerService;
 use App\Services\UserService;
 use App\Utils\CacheKey;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use MessagePack\Packer;
 
 class UniProxyController extends Controller
@@ -152,6 +155,7 @@ class UniProxyController extends Controller
 
         $cachedData = Cache::many($cacheKeys);
         $updates = [];
+        $recordsToProcess = [];
 
         foreach ($data as $uid => $ips) {
             if (!is_numeric($uid) || !is_array($ips)) {
@@ -192,11 +196,69 @@ class UniProxyController extends Controller
             $ips_array['alive_ip'] = $count;
 
             $updates[$key] = $ips_array;
+
+            $userIps = [];
+            foreach ($ips_array as $newdata) {
+                if (!is_array($newdata) || !isset($newdata['aliveips']) || !is_array($newdata['aliveips'])) {
+                    continue;
+                }
+                foreach ($newdata['aliveips'] as $ipNodeId) {
+                    $ip = explode('_', $ipNodeId, 2)[0];
+                    if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                        $userIps[$ip] = true;
+                    }
+                }
+            }
+            if ($userIps) {
+                $recordsToProcess[(int) $uid] = array_keys($userIps);
+            }
         }
 
         // 批量更新缓存
         foreach ($updates as $key => $value) {
             Cache::put($key, $value, 120);
+        }
+
+        $users = User::query()
+            ->whereIn('id', array_keys($recordsToProcess))
+            ->get(['id', 'email'])
+            ->keyBy('id');
+        foreach ($recordsToProcess as $uid => $ips) {
+            $user = $users->get($uid);
+            if (!$user) {
+                continue;
+            }
+
+            foreach ($ips as $ip) {
+                try {
+                    $cacheKey = "IP_GEO_DATA:{$ip}";
+                    $ipData = Cache::get($cacheKey);
+                    if (!is_array($ipData)) {
+                        $response = Http::timeout(3)->get("https://ip.bt3.one/{$ip}");
+                        $ipData = $response->successful() && is_array($response->json())
+                            ? $response->json()
+                            : [];
+                        Cache::put($cacheKey, $ipData, $ipData ? 86400 : 300);
+                    }
+
+                    V2UserConnectLog::updateOrCreate(
+                        ['user_id' => $uid, 'ip' => $ip],
+                        [
+                            'email' => $user->email,
+                            'as_number' => $ipData['as']['number'] ?? null,
+                            'as_name' => $ipData['as']['name'] ?? null,
+                            'country' => $ipData['country']['name'] ?? null,
+                            'region' => implode(',', $ipData['regions_short'] ?? []),
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    \Log::warning('Failed to persist user connect log', [
+                        'user_id' => $uid,
+                        'ip' => $ip,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
         return response([

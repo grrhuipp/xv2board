@@ -585,4 +585,39 @@ CREATE TABLE `v2_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
+DROP TABLE IF EXISTS `v2_subscribe_log`;
+CREATE TABLE `v2_subscribe_log` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `ip` varchar(45) DEFAULT NULL,
+  `as` varchar(255) DEFAULT NULL,
+  `isp` varchar(255) DEFAULT NULL,
+  `country` varchar(64) DEFAULT NULL,
+  `city` varchar(64) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id_idx` (`user_id`),
+  KEY `email_idx` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+DROP TABLE IF EXISTS `v2_user_connect_log`;
+CREATE TABLE `v2_user_connect_log` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `ip` varchar(45) NOT NULL,
+  `as_number` varchar(64) DEFAULT NULL,
+  `as_name` varchar(255) DEFAULT NULL,
+  `country` varchar(64) DEFAULT NULL,
+  `region` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_ip` (`user_id`, `ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- 2025-09-12 10:05:00

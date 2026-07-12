@@ -856,3 +856,39 @@ CREATE TABLE `v2_server_v2node` (
 
 ALTER TABLE `v2_server_route`
 CHANGE `action_value` `action_value` text NULL AFTER `action`;
+
+/* 2026-07-12 21:00:00 */
+CREATE TABLE IF NOT EXISTS `v2_subscribe_log` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `ip` varchar(45) DEFAULT NULL,
+  `country` varchar(64) DEFAULT NULL,
+  `city` varchar(64) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id_idx` (`user_id`),
+  KEY `email_idx` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `v2_subscribe_log`
+ADD COLUMN `as` varchar(255) DEFAULT NULL AFTER `ip`;
+
+ALTER TABLE `v2_subscribe_log`
+ADD COLUMN `isp` varchar(255) DEFAULT NULL AFTER `as`;
+
+CREATE TABLE IF NOT EXISTS `v2_user_connect_log` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `ip` varchar(45) NOT NULL,
+  `as_number` varchar(64) DEFAULT NULL,
+  `as_name` varchar(255) DEFAULT NULL,
+  `country` varchar(64) DEFAULT NULL,
+  `region` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_ip` (`user_id`, `ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

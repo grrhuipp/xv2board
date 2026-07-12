@@ -10,7 +10,10 @@ use App\Protocols\ClashMeta;
 use App\Services\ServerService;
 use App\Services\UserService;
 use App\Utils\Helper;
+use App\Models\SubscribeLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class ClientController extends Controller
 {
@@ -20,6 +23,21 @@ class ClientController extends Controller
             ?? ($_SERVER['HTTP_USER_AGENT'] ?? '');
         $flag = strtolower($flag);
         $user = $request->user;
+
+        $ip = $request->getClientIp();
+        $location = $this->getLocationFromIp($ip);
+        SubscribeLog::create([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'ip' => $ip,
+            'as' => $location['as'],
+            'isp' => $location['isp'],
+            'country' => $location['country'],
+            'city' => $location['city'],
+            'user_agent' => $request->userAgent(),
+            'created_at' => now(),
+        ]);
+
         // account not expired and is not banned.
         $userService = new UserService();
         if ($userService->isAvailable($user)) {
@@ -75,5 +93,61 @@ class ClientController extends Controller
         array_unshift($servers, array_merge($servers[0], [
             'name' => "剩余流量：{$remainingTraffic}",
         ]));
+    }
+
+    private function getLocationFromIp(string $ip): array
+    {
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return $this->getEmptyLocation();
+        }
+
+        $cacheKey = "IP_GEO_DATA:{$ip}";
+        try {
+            $cached = Cache::get($cacheKey);
+            if (is_array($cached)) {
+                return $cached ? $this->parseLocationData($cached) : $this->getEmptyLocation();
+            }
+
+            $response = Http::timeout(5)
+                ->retry(2, 1000)
+                ->get("https://ip.bt3.one/{$ip}");
+            if (!$response->successful() || !is_array($response->json())) {
+                Cache::put($cacheKey, [], 300);
+                return $this->getEmptyLocation();
+            }
+
+            $data = $response->json();
+            Cache::put($cacheKey, $data, 86400);
+            return $this->parseLocationData($data);
+        } catch (\Throwable $e) {
+            Cache::put($cacheKey, [], 300);
+            \Log::warning('Failed to resolve subscribe IP location', [
+                'ip' => $ip,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->getEmptyLocation();
+        }
+    }
+
+    private function parseLocationData(array $data): array
+    {
+        return [
+            'as' => $data['as']['number'] ?? null,
+            'isp' => $data['as']['name'] ?? null,
+            'country' => $data['country']['name'] ?? null,
+            'city' => !empty($data['regions'])
+                ? implode(', ', array_filter($data['regions']))
+                : null,
+        ];
+    }
+
+    private function getEmptyLocation(): array
+    {
+        return [
+            'as' => null,
+            'isp' => null,
+            'country' => null,
+            'city' => null,
+        ];
     }
 }
