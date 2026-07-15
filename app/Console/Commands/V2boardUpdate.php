@@ -38,6 +38,14 @@ class V2boardUpdate extends Command
      */
     public function handle()
     {
+        $config = config('v2board', []);
+        if (array_key_exists('server_api_url', $config)) {
+            unset($config['server_api_url']);
+            $data = var_export($config, true);
+            if (\File::put(base_path() . '/config/v2board.php', "<?php\n return $data ;") === false) {
+                throw new \RuntimeException('Failed to remove retired server configuration');
+            }
+        }
         \Artisan::call('config:cache');
         DB::connection()->getPdo();
         $file = \File::get(base_path() . '/database/update.sql');

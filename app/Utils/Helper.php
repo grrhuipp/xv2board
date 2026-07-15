@@ -170,9 +170,6 @@ class Helper
 
     public static function buildUri($uuid, $server)
     {
-        if ($server['type'] == 'v2node') {
-            $server['type'] = $server['protocol'];
-        } 
         $method = "build" . ucfirst($server['type']) . "Uri";
 
         if (method_exists(self::class, $method)) {

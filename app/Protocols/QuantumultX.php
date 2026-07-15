@@ -30,10 +30,6 @@ class QuantumultX
         header("subscription-userinfo: upload={$upload}; download={$download}; total={$total}; expire={$expire}");
 
         foreach ($servers as $item) {
-            if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
-                $item['type'] = $item['protocol'];
-            }
-
             // 提前过滤不支持的传输协议 (QX 不支持 gRPC, HTTPUpgrade, XHTTP)
             $network = $item['network'] ?? 'tcp';
             if (in_array($network, ['grpc', 'httpupgrade', 'xhttp'])) {
@@ -64,7 +60,7 @@ class QuantumultX
 
     public static function buildShadowsocks($password, $server)
     {
-        // Standardization v2_server_shadowsocks -> v2node format
+        // Normalize the legacy shadowsocks fields.
         if (isset($server['obfs']) && !empty($server['obfs'])) {
             $server['network'] = $server['obfs'];
             $server['network_settings'] = $server['network_settings'] ?? [];
@@ -121,7 +117,7 @@ class QuantumultX
 
     public static function buildVmess($uuid, $server)
     {
-        // Standardization v2_server_vmess -> v2node format
+        // Normalize the legacy vmess fields.
         if (isset($server['networkSettings'])) {
             $legacy = is_array($server['networkSettings']) ? $server['networkSettings'] : [];
             $current = $server['network_settings'] ?? [];
@@ -315,7 +311,7 @@ class QuantumultX
 
     public static function buildTrojan($password, $server)
     {
-        // Standardization v2_server_trojan -> v2node format
+        // Normalize the legacy trojan fields.
         $server['tls_settings'] = $server['tls_settings'] ?? [];
 
         // v2_server_trojan 表：将外层列字段映射到 tls_settings

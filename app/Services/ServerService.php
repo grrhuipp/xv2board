@@ -7,7 +7,6 @@ use App\Models\ServerLog;
 use App\Models\ServerRoute;
 use App\Models\ServerShadowsocks;
 use App\Models\ServerVless;
-use App\Models\ServerV2node;
 use App\Models\User;
 use App\Models\ServerVmess;
 use App\Models\ServerTrojan;
@@ -190,38 +189,6 @@ class ServerService
         return $servers;
     }
 
-    public function getAvailableV2node(User $user)
-    {
-        $servers = [];
-        $model = ServerV2node::orderBy('sort', 'ASC');
-        $v2node = $model->get()->keyBy('id');
-        foreach ($v2node as $key => $v) {
-            if (!$v['show']) continue;
-            $v2node[$key]['type'] = 'v2node';
-            $v2node[$key]['last_check_at'] = Cache::get(CacheKey::get('SERVER_V2NODE_LAST_CHECK_AT', $v['id']));
-            if (!in_array($user->group_id, $v['group_id'])) continue;
-            if (isset($v2node[$v['parent_id']])) {
-                $v2node[$key]['last_check_at'] = Cache::get(CacheKey::get('SERVER_V2NODE_LAST_CHECK_AT', $v['parent_id']));
-                $v2node[$key]['created_at'] = $v2node[$v['parent_id']]['created_at'];
-            }
-            if (isset($v2node[$key]['tls_settings'])) {
-                $v2node[$key]['tls_settings'] = array_diff_key(
-                    $v2node[$key]['tls_settings'],
-                    array_flip(array_filter(['private_key', 'ech_key'], function($k) use ($v2node, $key) {
-                        return isset($v2node[$key]['tls_settings'][$k]);
-                    }))
-                );
-            }
-            if (isset($v2node[$key]['encryption_settings'])) {
-                if (isset($v2node[$key]['encryption_settings']['private_key'])) {
-                    $v2node[$key]['encryption_settings'] = array_diff_key($v2node[$key]['encryption_settings'], array('private_key' => ''));
-                }
-            }
-            $servers[] = $v2node[$key]->toArray();
-        }
-        return $servers;
-    }
-
     public function getAvailableServers(User $user)
     {
         $servers = array_merge(
@@ -231,8 +198,7 @@ class ServerService
             $this->getAvailableTuic($user),
             $this->getAvailableHysteria($user),
             $this->getAvailableVless($user),
-            $this->getAvailableAnyTLS($user),
-            $this->getAvailableV2node($user)
+            $this->getAvailableAnyTLS($user)
         );
         $tmp = array_column($servers, 'sort');
         array_multisort($tmp, SORT_ASC, $servers);
@@ -378,32 +344,6 @@ class ServerService
         return $servers;
     }
 
-    public function getAllV2node()
-    {
-        $servers = ServerV2node::orderBy('sort', 'ASC')
-            ->get()
-            ->toArray();
-        foreach ($servers as $k => $v) {
-            $servers[$k]['type'] = 'v2node';
-            if (isset($v['padding_scheme'])) {
-                $servers[$k]['padding_scheme'] = json_encode($v['padding_scheme']);
-            }
-
-            $apiHost = config('v2board.server_api_url', config('v2board.app_url'));
-            $apiKey = config('v2board.server_token', '');
-            $nodeId = (int) $v['id'];
-            $apiHostArg = escapeshellarg((string) $apiHost);
-            $apiKeyArg = escapeshellarg((string) $apiKey);
-            $servers[$k]['install_command'] = sprintf(
-                'wget -N https://raw.githubusercontent.com/wyx2685/v2node/master/script/install.sh && bash install.sh --api-host %s --node-id %d --api-key %s',
-                $apiHostArg,
-                $nodeId,
-                $apiKeyArg
-            );
-        }
-        return $servers;
-    }
-
     private function mergeData(&$servers)
     {
         foreach ($servers as $k => $v) {
@@ -430,8 +370,7 @@ class ServerService
             $this->getAllTuic(),
             $this->getAllHysteria(),
             $this->getAllVLess(),
-            $this->getAllAnyTLS(),
-            $this->getAllV2node()
+            $this->getAllAnyTLS()
         );
         $this->mergeData($servers);
         $tmp = array_column($servers, 'sort');
@@ -457,8 +396,6 @@ class ServerService
     public function getServer($serverId, $serverType)
     {
         switch ($serverType) {
-            case 'v2node':
-                return ServerV2node::find($serverId);
             case 'vmess':
                 return ServerVmess::find($serverId);
             case 'shadowsocks':
