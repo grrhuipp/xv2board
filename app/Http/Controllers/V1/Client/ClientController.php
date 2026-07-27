@@ -43,6 +43,7 @@ class ClientController extends Controller
         if ($userService->isAvailable($user)) {
             $serverService = new ServerService();
             $servers = $serverService->getAvailableServers($user);
+            $this->replaceServerHostByUserRule($servers, $user);
             if($flag) {
                 if (!strpos($flag, 'sing')) {
                     $this->setSubscribeInfoToServers($servers, $user);
@@ -149,5 +150,42 @@ class ClientController extends Controller
             'country' => null,
             'city' => null,
         ];
+    }
+
+    private function replaceServerHostByUserRule(array &$servers, $user)
+    {
+        $userRules = config('v2board.user_rule', '');
+        $userRuleLines = preg_split('/[;\r\n]+/', (string) $userRules);
+        $email = strtolower((string) ($user->email ?? ''));
+        $userId = (string) ($user->id ?? '');
+
+        foreach ($userRuleLines as $line) {
+            $parts = array_map('trim', explode(',', $line));
+            if (count($parts) !== 3) {
+                continue;
+            }
+
+            [$userKeyword, $nameKeyword, $newHost] = $parts;
+            if ($userKeyword === '' || $nameKeyword === '' || $newHost === '') {
+                continue;
+            }
+
+            $matchesUser = strpos($userKeyword, '@') !== false
+                ? ($email !== '' && strpos($email, strtolower($userKeyword)) !== false)
+                : ($userId !== '' && $userId === $userKeyword);
+
+            if (!$matchesUser) {
+                continue;
+            }
+
+            foreach ($servers as &$server) {
+                $matchesServer = $nameKeyword === '*'
+                    || (isset($server['name']) && stripos($server['name'], $nameKeyword) !== false);
+                if ($matchesServer && isset($server['host'])) {
+                    $server['host'] = $newHost;
+                }
+            }
+            unset($server);
+        }
     }
 }

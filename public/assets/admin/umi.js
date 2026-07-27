@@ -5724,6 +5724,16 @@
                     defaultValue: t.subscribe_url,
                     onChange: e => this.set("site", "subscribe_url", e.target.value)
                 })), f.a.createElement(m, {
+                    title: "\u7528\u6237\u5339\u914d\u89c4\u5219",
+                    description: "\u6839\u636e\u90ae\u7bb1\u5173\u952e\u5b57\u6216\u7528\u6237ID\u66ff\u6362\u8282\u70b9\u5730\u5740\uff08\u8282\u70b9\u5173\u952e\u5b57\u586b*\u5339\u914d\u5168\u90e8\uff09"
+                }, f.a.createElement("textarea", {
+                    rows: "4",
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "\u683c\u5f0f: \u90ae\u7bb1\u5173\u952e\u5b57\u6216\u7528\u6237ID,\u8282\u70b9\u5173\u952e\u5b57,\u65b0\u5165\u53e3\uff08\u5305\u542b@\u6309\u90ae\u7bb1\uff0c\u5426\u5219\u6309\u7528\u6237ID\uff09",
+                    defaultValue: t.user_rule,
+                    onChange: e => this.set("site", "user_rule", e.target.value)
+                })), f.a.createElement(m, {
                     title: "\u8ba2\u9605\u8def\u5f84",
                     description: "\u7528\u4e8e\u8ba2\u9605\u6240\u4f7f\u7528\uff0c\u7559\u7a7a\u5219\u4e3a/api/v1/client/subscribe\u3002\u5982\u9700\u66f4\u6362\u4e0d\u540c\u7684\u8ba2\u9605\u8def\u5f84\u8bf7\u8bbe\u7f6e\u3002"
                 }, f.a.createElement("input", {

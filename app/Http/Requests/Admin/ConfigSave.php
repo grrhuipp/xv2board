@@ -35,6 +35,7 @@ class ConfigSave extends FormRequest
         'app_description' => '',
         'app_url' => 'nullable|url',
         'subscribe_url' => 'nullable',
+        'user_rule' => 'nullable',
         'subscribe_path' => 'nullable|regex:/^\\//',
         'try_out_enable' => 'in:0,1',
         'try_out_plan_id' => 'integer',
