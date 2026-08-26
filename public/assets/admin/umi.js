@@ -5731,7 +5731,7 @@
                     type: "text",
                     className: "form-control",
                     placeholder: "\u683c\u5f0f: \u90ae\u7bb1\u5173\u952e\u5b57\u6216\u7528\u6237ID,\u8282\u70b9\u5173\u952e\u5b57,\u65b0\u5165\u53e3\uff08\u5305\u542b@\u6309\u90ae\u7bb1\uff0c\u5426\u5219\u6309\u7528\u6237ID\uff09",
-                    defaultValue: t.user_rule,
+                    value: null == t.user_rule ? "" : t.user_rule,
                     onChange: e => this.set("site", "user_rule", e.target.value)
                 })), f.a.createElement(m, {
                     title: "\u8ba2\u9605\u8def\u5f84",
