@@ -9,11 +9,10 @@ use App\Protocols\Singbox\SingboxOld;
 use App\Protocols\ClashMeta;
 use App\Services\ServerService;
 use App\Services\UserService;
+use App\Services\Geo\Ip2Region;
 use App\Utils\Helper;
 use App\Models\SubscribeLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 
 class ClientController extends Controller
 {
@@ -100,47 +99,35 @@ class ClientController extends Controller
     private function getLocationFromIp(string $ip): array
     {
         if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            \Log::warning('Invalid subscribe IP address', ['ip' => $ip]);
             return $this->getEmptyLocation();
         }
 
-        $cacheKey = "IP_GEO_DATA:{$ip}";
         try {
-            $cached = Cache::get($cacheKey);
-            if (is_array($cached)) {
-                return $cached ? $this->parseLocationData($cached) : $this->getEmptyLocation();
-            }
-
-            $response = Http::timeout(5)
-                ->retry(2, 1000)
-                ->get("https://ip.bt3.one/{$ip}");
-            if (!$response->successful() || !is_array($response->json())) {
-                Cache::put($cacheKey, [], 300);
+            $location = Ip2Region::instance()->query($ip);
+            if (!$location) {
                 return $this->getEmptyLocation();
             }
 
-            $data = $response->json();
-            Cache::put($cacheKey, $data, 86400);
-            return $this->parseLocationData($data);
+            $city = implode(', ', array_filter([
+                $location['province'] ?? null,
+                $location['city'] ?? null,
+                $location['area'] ?? null,
+            ]));
+
+            return [
+                'as' => ($location['as_number'] ?? null) ?: null,
+                'isp' => ($location['as_name'] ?? $location['isp'] ?? null) ?: null,
+                'country' => ($location['country'] ?? null) ?: null,
+                'city' => $city !== '' ? $city : null,
+            ];
         } catch (\Throwable $e) {
-            Cache::put($cacheKey, [], 300);
             \Log::warning('Failed to resolve subscribe IP location', [
                 'ip' => $ip,
                 'error' => $e->getMessage(),
             ]);
             return $this->getEmptyLocation();
         }
-    }
-
-    private function parseLocationData(array $data): array
-    {
-        return [
-            'as' => $data['as']['number'] ?? null,
-            'isp' => $data['as']['name'] ?? null,
-            'country' => $data['country']['name'] ?? null,
-            'city' => !empty($data['regions'])
-                ? implode(', ', array_filter($data['regions']))
-                : null,
-        ];
     }
 
     private function getEmptyLocation(): array

@@ -34,6 +34,27 @@
 
 最后进入后台重新保存主题： 主题配置-选择default主题-主题设置-确定保存
 
+## ip2region 离线 IP 归属地
+
+订阅日志和用户连接日志通过内置 PHP ip2region 读取器查询本地 XDB，无需 HTTP
+归属地服务、Docker 或额外 Composer 依赖。IPv4、IPv6 自动选择对应数据库。
+
+项目包含以下数据库（`storage/app/ip2region`）：
+
+- `ip2region-city-asn-org-v4.xdb`
+- `ip2region-city-asn-org-v6.xdb`
+
+这两个数据库的记录格式为 `国家|省|市|ASN|组织`，不是标准 ip2region ISP 数据格式。
+ASN 去掉 `AS` 前缀后用于黑白名单规则；组织名写入 AS 名称和订阅 ISP 字段。
+缺失的地理字段保持为空，数据库不包含区县。不能使用字段格式不同的 XDB 替换。
+
+默认直接使用项目内的数据；可在 `.env` 设置 `IP2REGION_DATABASE_PATH` 指向其他目录。
+每个地址族按需打开数据库并缓存 512 KiB 索引，不把整个数据库加载到每个 PHP 进程。
+查询失败时返回空归属地，不阻断订阅和连接日志流程。没有额外的 Redis 查询结果缓存。
+
+更新数据库时替换同名文件，执行 `php scripts/check-ip2region.php` 验证，然后重启
+PHP-FPM 和常驻队列进程。若修改路径配置，需刷新 Laravel 配置缓存。
+
 # **V2Board**
 
 - PHP7.3+

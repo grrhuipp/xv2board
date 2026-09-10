@@ -5,13 +5,13 @@ namespace App\Http\Controllers\V1\Server;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\V2UserConnectLog;
+use App\Services\Geo\Ip2Region;
 use App\Services\ServerService;
 use App\Services\UserService;
 use App\Utils\CacheKey;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use MessagePack\Packer;
 
 class UniProxyController extends Controller
@@ -237,24 +237,21 @@ class UniProxyController extends Controller
 
             foreach ($ips as $ip) {
                 try {
-                    $cacheKey = "IP_GEO_DATA:{$ip}";
-                    $ipData = Cache::get($cacheKey);
-                    if (!is_array($ipData)) {
-                        $response = Http::timeout(3)->get("https://ip.bt3.one/{$ip}");
-                        $ipData = $response->successful() && is_array($response->json())
-                            ? $response->json()
-                            : [];
-                        Cache::put($cacheKey, $ipData, $ipData ? 86400 : 300);
-                    }
+                    $ipData = Ip2Region::instance()->query($ip) ?? [];
+                    $region = implode(',', array_filter([
+                        $ipData['province'] ?? null,
+                        $ipData['city'] ?? null,
+                        $ipData['area'] ?? null,
+                    ]));
 
                     V2UserConnectLog::updateOrCreate(
                         ['user_id' => $uid, 'ip' => $ip],
                         [
                             'email' => $user->email,
-                            'as_number' => $ipData['as']['number'] ?? null,
-                            'as_name' => $ipData['as']['name'] ?? null,
-                            'country' => $ipData['country']['name'] ?? null,
-                            'region' => implode(',', $ipData['regions_short'] ?? []),
+                            'as_number' => $ipData['as_number'] ?? null,
+                            'as_name' => $ipData['as_name'] ?? $ipData['isp'] ?? null,
+                            'country' => $ipData['country'] ?? null,
+                            'region' => $region,
                         ]
                     );
                 } catch (\Throwable $e) {
