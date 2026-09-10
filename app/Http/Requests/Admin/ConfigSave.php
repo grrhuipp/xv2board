@@ -36,6 +36,13 @@ class ConfigSave extends FormRequest
         'app_url' => 'nullable|url',
         'subscribe_url' => 'nullable',
         'user_rule' => 'nullable',
+        'as_rule_mode' => 'in:blacklist,whitelist',
+        'as_rule_asns' => [
+            'nullable',
+            'string',
+        ],
+        'as_rule_node_keyword' => 'nullable|required_with:as_rule_asns|string|max:255',
+        'as_rule_host' => 'nullable|required_with:as_rule_asns|string|max:255',
         'subscribe_path' => 'nullable|regex:/^\\//',
         'try_out_enable' => 'in:0,1',
         'try_out_plan_id' => 'integer',
@@ -124,6 +131,15 @@ class ConfigSave extends FormRequest
                 }
             }
         };
+        $rules['as_rule_asns'][] = function ($attribute, $value, $fail) {
+            $tokens = preg_split('/[\s,;]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($tokens as $token) {
+                if (!preg_match('/^(?:AS)?0*[1-9][0-9]*$/i', $token)) {
+                    $fail('AS列表只能包含有效ASN，每行填写一个ASN');
+                    return;
+                }
+            }
+        };
         return $rules;
     }
 
@@ -134,6 +150,8 @@ class ConfigSave extends FormRequest
             'app_url.url' => '站点URL格式不正确，必须携带http(s)://',
             'subscribe_url.url' => '订阅URL格式不正确，必须携带http(s)://',
             'subscribe_path.regex' => '订阅路径必须以/开头',
+            'as_rule_node_keyword.required_with' => '填写AS列表时必须填写节点关键词',
+            'as_rule_host.required_with' => '填写AS列表时必须填写替换host',
             'server_token.min' => '通讯密钥长度必须大于16位',
             'tos_url.url' => '服务条款URL格式不正确，必须携带http(s)://',
             'telegram_discuss_link.url' => 'Telegram群组地址必须为URL格式，必须携带http(s)://',

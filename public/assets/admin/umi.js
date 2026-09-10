@@ -5734,6 +5734,45 @@
                     value: null == t.user_rule ? "" : t.user_rule,
                     onChange: e => this.set("site", "user_rule", e.target.value)
                 })), f.a.createElement(m, {
+                    title: "AS\u5339\u914d\u6a21\u5f0f",
+                    description: "\u9ed1\u540d\u5355\uff1a\u5217\u8868\u5185AS\u66ff\u6362\uff1b\u767d\u540d\u5355\uff1a\u5217\u8868\u5916AS\u66ff\u6362"
+                }, f.a.createElement("select", {
+                    className: "form-control",
+                    value: null == t.as_rule_mode ? "blacklist" : t.as_rule_mode,
+                    onChange: e => this.set("site", "as_rule_mode", e.target.value)
+                }, f.a.createElement("option", {
+                    value: "blacklist"
+                }, "\u9ed1\u540d\u5355\u6a21\u5f0f"), f.a.createElement("option", {
+                    value: "whitelist"
+                }, "\u767d\u540d\u5355\u6a21\u5f0f"))), f.a.createElement(m, {
+                    title: "AS\u5217\u8868",
+                    description: "\u6bcf\u884c\u4e00\u4e2aASN\uff0c\u53ef\u586b 4134 \u6216 AS4134"
+                }, f.a.createElement("textarea", {
+                    rows: "8",
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "\u4f8b\u5982\uff1a\\n4134\\n9808\\n4837",
+                    value: null == t.as_rule_asns ? "" : t.as_rule_asns,
+                    onChange: e => this.set("site", "as_rule_asns", e.target.value)
+                })), f.a.createElement(m, {
+                    title: "AS\u8282\u70b9\u5173\u952e\u5b57",
+                    description: "\u586b * \u5339\u914d\u5168\u90e8\u8282\u70b9\uff0c\u5426\u5219\u6309\u8282\u70b9\u540d\u79f0\u5173\u952e\u5b57\u5339\u914d"
+                }, f.a.createElement("input", {
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "*",
+                    value: null == t.as_rule_node_keyword ? "*" : t.as_rule_node_keyword,
+                    onChange: e => this.set("site", "as_rule_node_keyword", e.target.value)
+                })), f.a.createElement(m, {
+                    title: "AS\u66ff\u6362host",
+                    description: "\u7b26\u5408\u5f53\u524d\u6a21\u5f0f\u7684AS\u4f7f\u7528\u6b64host\uff0c\u7528\u6237\u89c4\u5219\u4ecd\u6700\u540e\u8986\u76d6"
+                }, f.a.createElement("input", {
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "\u4f8b\u5982 aaa.284.pics",
+                    value: null == t.as_rule_host ? "" : t.as_rule_host,
+                    onChange: e => this.set("site", "as_rule_host", e.target.value)
+                })), f.a.createElement(m, {
                     title: "\u8ba2\u9605\u8def\u5f84",
                     description: "\u7528\u4e8e\u8ba2\u9605\u6240\u4f7f\u7528\uff0c\u7559\u7a7a\u5219\u4e3a/api/v1/client/subscribe\u3002\u5982\u9700\u66f4\u6362\u4e0d\u540c\u7684\u8ba2\u9605\u8def\u5f84\u8bf7\u8bbe\u7f6e\u3002"
                 }, f.a.createElement("input", {

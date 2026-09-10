@@ -43,6 +43,7 @@ class ClientController extends Controller
         if ($userService->isAvailable($user)) {
             $serverService = new ServerService();
             $servers = $serverService->getAvailableServers($user);
+            $this->replaceServerHostByAsRule($servers, $location['as'] ?? null);
             $this->replaceServerHostByUserRule($servers, $user);
             if($flag) {
                 if (!strpos($flag, 'sing')) {
@@ -150,6 +151,100 @@ class ClientController extends Controller
             'country' => null,
             'city' => null,
         ];
+    }
+
+    private function replaceServerHostByAsRule(array &$servers, $asNumber)
+    {
+        $asNumber = $this->normalizeAsNumber($asNumber);
+        if ($asNumber === null) {
+            return;
+        }
+
+        $asListConfig = config('v2board.as_rule_asns');
+        if ($asListConfig !== null) {
+            $asRuleMode = (string) config('v2board.as_rule_mode', 'blacklist');
+            if (!in_array($asRuleMode, ['blacklist', 'whitelist'], true)) {
+                $asRuleMode = 'blacklist';
+            }
+
+            $asSet = [];
+            $asTokens = preg_split('/[\s,;]+/', (string) $asListConfig, -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($asTokens as $token) {
+                $normalized = $this->normalizeAsNumber($token);
+                if ($normalized !== null) {
+                    $asSet[$normalized] = true;
+                }
+            }
+            if (!$asSet) {
+                return;
+            }
+
+            $isListed = isset($asSet[$asNumber]);
+            $shouldReplace = $asRuleMode === 'whitelist' ? !$isListed : $isListed;
+            if (!$shouldReplace) {
+                return;
+            }
+
+            $nameKeyword = trim((string) config('v2board.as_rule_node_keyword', '*'));
+            $newHost = trim((string) config('v2board.as_rule_host', ''));
+            if ($nameKeyword === '' || $newHost === '') {
+                return;
+            }
+
+            foreach ($servers as &$server) {
+                $matchesServer = $nameKeyword === '*'
+                    || (isset($server['name']) && stripos($server['name'], $nameKeyword) !== false);
+                if ($matchesServer && isset($server['host'])) {
+                    $server['host'] = $newHost;
+                }
+            }
+            unset($server);
+            return;
+        }
+
+        // Backward compatibility for existing ASN,node keyword,new host rules.
+        $asRules = (string) config('v2board.as_rule', '');
+        $asRuleLines = preg_split('/[;\r\n]+/', $asRules, -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($asRuleLines as $line) {
+            $parts = array_map('trim', explode(',', $line));
+            if (count($parts) !== 3) {
+                continue;
+            }
+
+            [$ruleAsNumber, $nameKeyword, $newHost] = $parts;
+            $ruleAsNumber = $this->normalizeAsNumber($ruleAsNumber);
+            if ($ruleAsNumber === null || $ruleAsNumber !== $asNumber
+                || $nameKeyword === '' || $newHost === '') {
+                continue;
+            }
+
+            foreach ($servers as &$server) {
+                $matchesServer = $nameKeyword === '*'
+                    || (isset($server['name']) && stripos($server['name'], $nameKeyword) !== false);
+                if ($matchesServer && isset($server['host'])) {
+                    $server['host'] = $newHost;
+                }
+            }
+            unset($server);
+        }
+    }
+
+    private function normalizeAsNumber($value): ?string
+    {
+        if (!is_scalar($value)) {
+            return null;
+        }
+
+        $value = strtoupper(trim((string) $value));
+        if (strpos($value, 'AS') === 0) {
+            $value = substr($value, 2);
+        }
+        if ($value === '' || !ctype_digit($value)) {
+            return null;
+        }
+
+        $value = ltrim($value, '0');
+        return $value !== '' && $value !== '0' ? $value : null;
     }
 
     private function replaceServerHostByUserRule(array &$servers, $user)
