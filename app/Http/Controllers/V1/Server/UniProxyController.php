@@ -358,9 +358,6 @@ class UniProxyController extends Controller
             'push_interval' => (int)config('v2board.server_push_interval', 60),
             'pull_interval' => (int)config('v2board.server_pull_interval', 60)
         ];
-        if ($this->nodeInfo['route_id']) {
-            $response['routes'] = $this->serverService->getRoutes($this->nodeInfo['route_id']);
-        }
         $eTag = sha1(json_encode($response));
         if (strpos($request->header('If-None-Match'), $eTag) !== false) {
             abort(304);

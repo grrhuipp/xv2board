@@ -14,7 +14,6 @@ class AnyTLSController extends Controller
             'show' => '',
             'name' => 'required',
             'group_id' => 'required|array',
-            'route_id' => 'nullable|array',
             'parent_id' => 'nullable|integer',
             'host' => 'required',
             'port' => 'required',

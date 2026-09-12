@@ -13,7 +13,6 @@ class ServerHysteria extends Model
         'created_at' => 'timestamp',
         'updated_at' => 'timestamp',
         'group_id' => 'array',
-        'route_id' => 'array',
         'tags' => 'array'
     ];
 }

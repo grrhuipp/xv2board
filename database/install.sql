@@ -237,7 +237,6 @@ DROP TABLE IF EXISTS `v2_server_tuic`;
 CREATE TABLE `v2_server_tuic` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
                                       `group_id` varchar(255) NOT NULL,
-                                      `route_id` varchar(255) DEFAULT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,
@@ -264,7 +263,6 @@ CREATE TABLE `v2_server_hysteria` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
                                       `version` int(11) NOT NULL,
                                       `group_id` varchar(255) NOT NULL,
-                                      `route_id` varchar(255) DEFAULT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,
@@ -286,24 +284,12 @@ CREATE TABLE `v2_server_hysteria` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-DROP TABLE IF EXISTS `v2_server_route`;
-CREATE TABLE `v2_server_route` (
-                                   `id` int(11) NOT NULL AUTO_INCREMENT,
-                                   `remarks` varchar(255) NOT NULL,
-                                   `match` text NOT NULL,
-                                   `action` varchar(11) NOT NULL,
-                                   `action_value` text DEFAULT NULL,
-                                   `created_at` int(11) NOT NULL,
-                                   `updated_at` int(11) NOT NULL,
-                                   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 DROP TABLE IF EXISTS `v2_server_shadowsocks`;
 CREATE TABLE `v2_server_shadowsocks` (
                                          `id` int(11) NOT NULL AUTO_INCREMENT,
                                          `group_id` varchar(255) NOT NULL,
-                                         `route_id` varchar(255) DEFAULT NULL,
                                          `parent_id` int(11) DEFAULT NULL,
                                          `tags` varchar(255) DEFAULT NULL,
                                          `name` varchar(255) NOT NULL,
@@ -326,7 +312,6 @@ DROP TABLE IF EXISTS `v2_server_trojan`;
 CREATE TABLE `v2_server_trojan` (
                                     `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '节点ID',
                                     `group_id` varchar(255) NOT NULL COMMENT '节点组',
-                                    `route_id` varchar(255) DEFAULT NULL,
                                     `parent_id` int(11) DEFAULT NULL COMMENT '父节点',
                                     `tags` varchar(255) DEFAULT NULL COMMENT '节点标签',
                                     `name` varchar(255) NOT NULL COMMENT '节点名称',
@@ -350,7 +335,6 @@ DROP TABLE IF EXISTS `v2_server_vless`;
 CREATE TABLE `v2_server_vless` (
                                    `id` int(11) NOT NULL AUTO_INCREMENT,
                                    `group_id` text NOT NULL,
-                                   `route_id` text,
                                    `name` varchar(255) NOT NULL,
                                    `parent_id` int(11) DEFAULT NULL,
                                    `host` varchar(255) NOT NULL,
@@ -377,7 +361,6 @@ DROP TABLE IF EXISTS `v2_server_vmess`;
 CREATE TABLE `v2_server_vmess` (
                                    `id` int(11) NOT NULL AUTO_INCREMENT,
                                    `group_id` varchar(255) NOT NULL,
-                                   `route_id` varchar(255) DEFAULT NULL,
                                    `name` varchar(255) NOT NULL,
                                    `parent_id` int(11) DEFAULT NULL,
                                    `host` varchar(255) NOT NULL,
@@ -403,7 +386,6 @@ DROP TABLE IF EXISTS `v2_server_anytls`;
 CREATE TABLE `v2_server_anytls` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
                                       `group_id` varchar(255) NOT NULL,
-                                      `route_id` varchar(255) DEFAULT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,

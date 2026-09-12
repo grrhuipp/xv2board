@@ -14,7 +14,6 @@ class VlessController extends Controller
     {
         $params = $request->validate([
             'group_id' => 'required',
-            'route_id' => 'nullable|array',
             'name' => 'required',
             'parent_id' => 'nullable|integer',
             'host' => 'required',

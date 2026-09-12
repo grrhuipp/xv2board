@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\ServerHysteria;
 use App\Models\ServerLog;
-use App\Models\ServerRoute;
 use App\Models\ServerShadowsocks;
 use App\Models\ServerVless;
 use App\Models\User;
@@ -376,21 +375,6 @@ class ServerService
         $tmp = array_column($servers, 'sort');
         array_multisort($tmp, SORT_ASC, $servers);
         return $servers;
-    }
-
-    public function getRoutes(array $routeIds)
-    {
-        $routeIds = array_map('intval', $routeIds);
-        $order = implode(',', $routeIds);
-        $routes = ServerRoute::select(['id', 'match', 'action', 'action_value'])
-            ->whereIn('id', $routeIds)
-            ->orderByRaw("FIELD(id, $order)")
-            ->get();
-        foreach ($routes as $k => $route) {
-            $array = json_decode($route->match, true);
-            if (is_array($array)) $routes[$k]['match'] = $array;
-        }
-        return $routes;
     }
 
     public function getServer($serverId, $serverType)

@@ -16,7 +16,6 @@ class HysteriaController extends Controller
             'name' => 'required',
             'version' => 'required|in:1,2',
             'group_id' => 'required|array',
-            'route_id' => 'nullable|array',
             'parent_id' => 'nullable|integer',
             'host' => 'required',
             'port' => 'required',

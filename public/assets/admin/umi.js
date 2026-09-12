@@ -2405,564 +2405,6 @@
         }
         e.exports = l
     },
-    "0fn0": function(e, t, n) {
-        "use strict";
-        n.r(t);
-        var r = n("p0pE")
-          , i = n.n(r)
-          , o = n("t3Un");
-        function a() {
-            a = function() {
-                return e
-            }
-            ;
-            var e = {}
-              , t = Object.prototype
-              , n = t.hasOwnProperty
-              , r = Object.defineProperty || function(e, t, n) {
-                e[t] = n.value
-            }
-              , i = "function" == typeof Symbol ? Symbol : {}
-              , o = i.iterator || "@@iterator"
-              , s = i.asyncIterator || "@@asyncIterator"
-              , l = i.toStringTag || "@@toStringTag";
-            function c(e, t, n) {
-                return Object.defineProperty(e, t, {
-                    value: n,
-                    enumerable: !0,
-                    configurable: !0,
-                    writable: !0
-                }),
-                e[t]
-            }
-            try {
-                c({}, "")
-            } catch (e) {
-                c = function(e, t, n) {
-                    return e[t] = n
-                }
-            }
-            function u(e, t, n, i) {
-                var o = t && t.prototype instanceof d ? t : d
-                  , a = Object.create(o.prototype)
-                  , s = new C(i || []);
-                return r(a, "_invoke", {
-                    value: _(e, n, s)
-                }),
-                a
-            }
-            function h(e, t, n) {
-                try {
-                    return {
-                        type: "normal",
-                        arg: e.call(t, n)
-                    }
-                } catch (e) {
-                    return {
-                        type: "throw",
-                        arg: e
-                    }
-                }
-            }
-            e.wrap = u;
-            var f = {};
-            function d() {}
-            function p() {}
-            function m() {}
-            var g = {};
-            c(g, o, function() {
-                return this
-            });
-            var v = Object.getPrototypeOf
-              , y = v && v(v(O([])));
-            y && y !== t && n.call(y, o) && (g = y);
-            var b = m.prototype = d.prototype = Object.create(g);
-            function w(e) {
-                ["next", "throw", "return"].forEach(function(t) {
-                    c(e, t, function(e) {
-                        return this._invoke(t, e)
-                    })
-                })
-            }
-            function x(e, t) {
-                function i(r, o, a, s) {
-                    var l = h(e[r], e, o);
-                    if ("throw" !== l.type) {
-                        var c = l.arg
-                          , u = c.value;
-                        return u && "object" == typeof u && n.call(u, "__await") ? t.resolve(u.__await).then(function(e) {
-                            i("next", e, a, s)
-                        }, function(e) {
-                            i("throw", e, a, s)
-                        }) : t.resolve(u).then(function(e) {
-                            c.value = e,
-                            a(c)
-                        }, function(e) {
-                            return i("throw", e, a, s)
-                        })
-                    }
-                    s(l.arg)
-                }
-                var o;
-                r(this, "_invoke", {
-                    value: function(e, n) {
-                        function r() {
-                            return new t(function(t, r) {
-                                i(e, n, t, r)
-                            }
-                            )
-                        }
-                        return o = o ? o.then(r, r) : r()
-                    }
-                })
-            }
-            function _(e, t, n) {
-                var r = "suspendedStart";
-                return function(i, o) {
-                    if ("executing" === r)
-                        throw new Error("Generator is already running");
-                    if ("completed" === r) {
-                        if ("throw" === i)
-                            throw o;
-                        return T()
-                    }
-                    for (n.method = i,
-                    n.arg = o; ; ) {
-                        var a = n.delegate;
-                        if (a) {
-                            var s = E(a, n);
-                            if (s) {
-                                if (s === f)
-                                    continue;
-                                return s
-                            }
-                        }
-                        if ("next" === n.method)
-                            n.sent = n._sent = n.arg;
-                        else if ("throw" === n.method) {
-                            if ("suspendedStart" === r)
-                                throw r = "completed",
-                                n.arg;
-                            n.dispatchException(n.arg)
-                        } else
-                            "return" === n.method && n.abrupt("return", n.arg);
-                        r = "executing";
-                        var l = h(e, t, n);
-                        if ("normal" === l.type) {
-                            if (r = n.done ? "completed" : "suspendedYield",
-                            l.arg === f)
-                                continue;
-                            return {
-                                value: l.arg,
-                                done: n.done
-                            }
-                        }
-                        "throw" === l.type && (r = "completed",
-                        n.method = "throw",
-                        n.arg = l.arg)
-                    }
-                }
-            }
-            function E(e, t) {
-                var n = t.method
-                  , r = e.iterator[n];
-                if (void 0 === r)
-                    return t.delegate = null,
-                    "throw" === n && e.iterator.return && (t.method = "return",
-                    t.arg = void 0,
-                    E(e, t),
-                    "throw" === t.method) || "return" !== n && (t.method = "throw",
-                    t.arg = new TypeError("The iterator does not provide a '" + n + "' method")),
-                    f;
-                var i = h(r, e.iterator, t.arg);
-                if ("throw" === i.type)
-                    return t.method = "throw",
-                    t.arg = i.arg,
-                    t.delegate = null,
-                    f;
-                var o = i.arg;
-                return o ? o.done ? (t[e.resultName] = o.value,
-                t.next = e.nextLoc,
-                "return" !== t.method && (t.method = "next",
-                t.arg = void 0),
-                t.delegate = null,
-                f) : o : (t.method = "throw",
-                t.arg = new TypeError("iterator result is not an object"),
-                t.delegate = null,
-                f)
-            }
-            function S(e) {
-                var t = {
-                    tryLoc: e[0]
-                };
-                1 in e && (t.catchLoc = e[1]),
-                2 in e && (t.finallyLoc = e[2],
-                t.afterLoc = e[3]),
-                this.tryEntries.push(t)
-            }
-            function k(e) {
-                var t = e.completion || {};
-                t.type = "normal",
-                delete t.arg,
-                e.completion = t
-            }
-            function C(e) {
-                this.tryEntries = [{
-                    tryLoc: "root"
-                }],
-                e.forEach(S, this),
-                this.reset(!0)
-            }
-            function O(e) {
-                if (e) {
-                    var t = e[o];
-                    if (t)
-                        return t.call(e);
-                    if ("function" == typeof e.next)
-                        return e;
-                    if (!isNaN(e.length)) {
-                        var r = -1
-                          , i = function t() {
-                            for (; ++r < e.length; )
-                                if (n.call(e, r))
-                                    return t.value = e[r],
-                                    t.done = !1,
-                                    t;
-                            return t.value = void 0,
-                            t.done = !0,
-                            t
-                        };
-                        return i.next = i
-                    }
-                }
-                return {
-                    next: T
-                }
-            }
-            function T() {
-                return {
-                    value: void 0,
-                    done: !0
-                }
-            }
-            return p.prototype = m,
-            r(b, "constructor", {
-                value: m,
-                configurable: !0
-            }),
-            r(m, "constructor", {
-                value: p,
-                configurable: !0
-            }),
-            p.displayName = c(m, l, "GeneratorFunction"),
-            e.isGeneratorFunction = function(e) {
-                var t = "function" == typeof e && e.constructor;
-                return !!t && (t === p || "GeneratorFunction" === (t.displayName || t.name))
-            }
-            ,
-            e.mark = function(e) {
-                return Object.setPrototypeOf ? Object.setPrototypeOf(e, m) : (e.__proto__ = m,
-                c(e, l, "GeneratorFunction")),
-                e.prototype = Object.create(b),
-                e
-            }
-            ,
-            e.awrap = function(e) {
-                return {
-                    __await: e
-                }
-            }
-            ,
-            w(x.prototype),
-            c(x.prototype, s, function() {
-                return this
-            }),
-            e.AsyncIterator = x,
-            e.async = function(t, n, r, i, o) {
-                void 0 === o && (o = Promise);
-                var a = new x(u(t, n, r, i),o);
-                return e.isGeneratorFunction(n) ? a : a.next().then(function(e) {
-                    return e.done ? e.value : a.next()
-                })
-            }
-            ,
-            w(b),
-            c(b, l, "Generator"),
-            c(b, o, function() {
-                return this
-            }),
-            c(b, "toString", function() {
-                return "[object Generator]"
-            }),
-            e.keys = function(e) {
-                var t = Object(e)
-                  , n = [];
-                for (var r in t)
-                    n.push(r);
-                return n.reverse(),
-                function e() {
-                    for (; n.length; ) {
-                        var r = n.pop();
-                        if (r in t)
-                            return e.value = r,
-                            e.done = !1,
-                            e
-                    }
-                    return e.done = !0,
-                    e
-                }
-            }
-            ,
-            e.values = O,
-            C.prototype = {
-                constructor: C,
-                reset: function(e) {
-                    if (this.prev = 0,
-                    this.next = 0,
-                    this.sent = this._sent = void 0,
-                    this.done = !1,
-                    this.delegate = null,
-                    this.method = "next",
-                    this.arg = void 0,
-                    this.tryEntries.forEach(k),
-                    !e)
-                        for (var t in this)
-                            "t" === t.charAt(0) && n.call(this, t) && !isNaN(+t.slice(1)) && (this[t] = void 0)
-                },
-                stop: function() {
-                    this.done = !0;
-                    var e = this.tryEntries[0].completion;
-                    if ("throw" === e.type)
-                        throw e.arg;
-                    return this.rval
-                },
-                dispatchException: function(e) {
-                    if (this.done)
-                        throw e;
-                    var t = this;
-                    function r(n, r) {
-                        return a.type = "throw",
-                        a.arg = e,
-                        t.next = n,
-                        r && (t.method = "next",
-                        t.arg = void 0),
-                        !!r
-                    }
-                    for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-                        var o = this.tryEntries[i]
-                          , a = o.completion;
-                        if ("root" === o.tryLoc)
-                            return r("end");
-                        if (o.tryLoc <= this.prev) {
-                            var s = n.call(o, "catchLoc")
-                              , l = n.call(o, "finallyLoc");
-                            if (s && l) {
-                                if (this.prev < o.catchLoc)
-                                    return r(o.catchLoc, !0);
-                                if (this.prev < o.finallyLoc)
-                                    return r(o.finallyLoc)
-                            } else if (s) {
-                                if (this.prev < o.catchLoc)
-                                    return r(o.catchLoc, !0)
-                            } else {
-                                if (!l)
-                                    throw new Error("try statement without catch or finally");
-                                if (this.prev < o.finallyLoc)
-                                    return r(o.finallyLoc)
-                            }
-                        }
-                    }
-                },
-                abrupt: function(e, t) {
-                    for (var r = this.tryEntries.length - 1; r >= 0; --r) {
-                        var i = this.tryEntries[r];
-                        if (i.tryLoc <= this.prev && n.call(i, "finallyLoc") && this.prev < i.finallyLoc) {
-                            var o = i;
-                            break
-                        }
-                    }
-                    o && ("break" === e || "continue" === e) && o.tryLoc <= t && t <= o.finallyLoc && (o = null);
-                    var a = o ? o.completion : {};
-                    return a.type = e,
-                    a.arg = t,
-                    o ? (this.method = "next",
-                    this.next = o.finallyLoc,
-                    f) : this.complete(a)
-                },
-                complete: function(e, t) {
-                    if ("throw" === e.type)
-                        throw e.arg;
-                    return "break" === e.type || "continue" === e.type ? this.next = e.arg : "return" === e.type ? (this.rval = this.arg = e.arg,
-                    this.method = "return",
-                    this.next = "end") : "normal" === e.type && t && (this.next = t),
-                    f
-                },
-                finish: function(e) {
-                    for (var t = this.tryEntries.length - 1; t >= 0; --t) {
-                        var n = this.tryEntries[t];
-                        if (n.finallyLoc === e)
-                            return this.complete(n.completion, n.afterLoc),
-                            k(n),
-                            f
-                    }
-                },
-                catch: function(e) {
-                    for (var t = this.tryEntries.length - 1; t >= 0; --t) {
-                        var n = this.tryEntries[t];
-                        if (n.tryLoc === e) {
-                            var r = n.completion;
-                            if ("throw" === r.type) {
-                                var i = r.arg;
-                                k(n)
-                            }
-                            return i
-                        }
-                    }
-                    throw new Error("illegal catch attempt")
-                },
-                delegateYield: function(e, t, n) {
-                    return this.delegate = {
-                        iterator: O(e),
-                        resultName: t,
-                        nextLoc: n
-                    },
-                    "next" === this.method && (this.arg = void 0),
-                    f
-                }
-            },
-            e
-        }
-        var s = {
-            routes: [],
-            saveLoading: !1,
-            fetchLoading: !1
-        };
-        t["default"] = {
-            name: "serverRoute",
-            state: i()({}, s),
-            reducers: {
-                setState(e, t) {
-                    var n = t.payload;
-                    return i()({}, e, n)
-                }
-            },
-            effects: {
-                fetch(e, t) {
-                    var n = t.put;
-                    return a().mark(function e() {
-                        var t;
-                        return a().wrap(function(e) {
-                            while (1)
-                                switch (e.prev = e.next) {
-                                case 0:
-                                    return e.next = 2,
-                                    n({
-                                        type: "setState",
-                                        payload: {
-                                            fetchLoading: !0
-                                        }
-                                    });
-                                case 2:
-                                    return e.next = 4,
-                                    Object(o["a"])("/" + window.settings.secure_path + "/server/route/fetch");
-                                case 4:
-                                    return t = e.sent,
-                                    e.next = 7,
-                                    n({
-                                        type: "setState",
-                                        payload: {
-                                            fetchLoading: !1
-                                        }
-                                    });
-                                case 7:
-                                    if (200 === t.code) {
-                                        e.next = 9;
-                                        break
-                                    }
-                                    return e.abrupt("return");
-                                case 9:
-                                    return e.next = 11,
-                                    n({
-                                        type: "setState",
-                                        payload: {
-                                            routes: t.data
-                                        }
-                                    });
-                                case 11:
-                                case "end":
-                                    return e.stop()
-                                }
-                        }, e)
-                    })()
-                },
-                drop(e, t) {
-                    var n = e.id
-                      , r = t.put;
-                    return a().mark(function e() {
-                        var t;
-                        return a().wrap(function(e) {
-                            while (1)
-                                switch (e.prev = e.next) {
-                                case 0:
-                                    return e.next = 2,
-                                    Object(o["b"])("/" + window.settings.secure_path + "/server/route/drop", {
-                                        id: n
-                                    });
-                                case 2:
-                                    if (t = e.sent,
-                                    200 === t.code) {
-                                        e.next = 5;
-                                        break
-                                    }
-                                    return e.abrupt("return");
-                                case 5:
-                                    return e.next = 7,
-                                    r({
-                                        type: "fetch"
-                                    });
-                                case 7:
-                                case "end":
-                                    return e.stop()
-                                }
-                        }, e)
-                    })()
-                },
-                save(e, t) {
-                    var n = e.params
-                      , r = e.callback
-                      , i = t.put;
-                    return a().mark(function e() {
-                        var t;
-                        return a().wrap(function(e) {
-                            while (1)
-                                switch (e.prev = e.next) {
-                                case 0:
-                                    return e.next = 2,
-                                    Object(o["b"])("/" + window.settings.secure_path + "/server/route/save", n);
-                                case 2:
-                                    if (t = e.sent,
-                                    200 === t.code) {
-                                        e.next = 5;
-                                        break
-                                    }
-                                    return e.abrupt("return");
-                                case 5:
-                                    return e.next = 7,
-                                    i({
-                                        type: "fetch"
-                                    });
-                                case 7:
-                                    "function" === typeof r && r();
-                                case 8:
-                                case "end":
-                                    return e.stop()
-                                }
-                        }, e)
-                    })()
-                }
-            }
-        }
-    },
     "0hpf": function(e, t, n) {
         "use strict";
         function r(e) {
@@ -12534,8 +11976,7 @@
                 var e = this.state.server
                   , t = this.props.serverVmess.saveLoading
                   , n = this.props.serverManage.servers
-                  , c = this.props.serverGroup.groups
-                  , u = this.props.serverRoute.routes;
+                  , c = this.props.serverGroup.groups;
                 return d.a.createElement(d.a.Fragment, null, d.a.cloneElement(this.props.children, {
                     onClick: ()=>this.onShow()
                 }), d.a.createElement(r["a"], {
@@ -12680,21 +12121,6 @@
                             value: t.id
                         }, t.name)
                 }
-                ))), d.a.createElement("div", {
-                    className: "form-group"
-                }, d.a.createElement("label", null, "\u8def\u7531\u7ec4"), d.a.createElement(a["a"], {
-                    mode: "multiple",
-                    value: e.route_id || [],
-                    placeholder: "\u8bf7\u9009\u62e9\u8def\u7531\u7ec4",
-                    style: {
-                        width: "100%"
-                    },
-                    onChange: e=>this.formChange("route_id", e.length > 0 ? e : null)
-                }, u.map(e=>{
-                    return d.a.createElement(a["a"].Option, {
-                        key: e.id
-                    }, e.remarks)
-                }
                 )))), d.a.createElement("div", {
                     className: "v2board-drawer-action"
                 }, d.a.createElement(i["a"], {
@@ -12719,13 +12145,11 @@
         t["a"] = Object(p["c"])(e=>{
             var t = e.serverVmess
               , n = e.serverGroup
-              , r = e.serverManage
-              , i = e.serverRoute;
+              , r = e.serverManage;
             return {
                 serverVmess: t,
                 serverGroup: n,
-                serverManage: r,
-                serverRoute: i
+                serverManage: r
             }
         }
         )(E)
@@ -21084,13 +20508,6 @@
                             className: "nav-main-link-icon si si-wrench"
                         })
                     }, {
-                        title: "\u8def\u7531\u7ba1\u7406",
-                        type: "item",
-                        href: "/server/route",
-                        icon: o.a.createElement("i", {
-                            className: "nav-main-link-icon si si-shuffle"
-                        })
-                    }, {
                         title: "\u8d22\u52a1",
                         type: "heading"
                     }, {
@@ -28231,8 +27648,7 @@
                 var e = this.state.server
                   , t = this.props.serverShadowsocks.saveLoading
                   , n = this.props.serverManage.servers
-                  , l = this.props.serverGroup.groups
-                  , c = this.props.serverRoute.routes;
+                  , l = this.props.serverGroup.groups;
                 return h.a.createElement(h.a.Fragment, null, h.a.cloneElement(this.props.children, {
                     onClick: ()=>this.setState({
                         visible: !0
@@ -28367,21 +27783,6 @@
                             value: t.id
                         }, t.name)
                 }
-                ))), h.a.createElement("div", {
-                    className: "form-group"
-                }, h.a.createElement("label", null, "\u8def\u7531\u7ec4"), h.a.createElement(a["a"], {
-                    mode: "multiple",
-                    value: e.route_id || [],
-                    placeholder: "\u8bf7\u9009\u62e9\u8def\u7531\u7ec4",
-                    style: {
-                        width: "100%"
-                    },
-                    onChange: e=>this.formChange("route_id", e.length > 0 ? e : null)
-                }, c.map(e=>{
-                    return h.a.createElement(a["a"].Option, {
-                        key: e.id
-                    }, e.remarks)
-                }
                 )))), h.a.createElement("div", {
                     className: "v2board-drawer-action"
                 }, h.a.createElement(i["a"], {
@@ -28399,13 +27800,11 @@
         t["a"] = Object(f["c"])(e=>{
             var t = e.serverShadowsocks
               , n = e.serverGroup
-              , r = e.serverManage
-              , i = e.serverRoute;
+              , r = e.serverManage;
             return {
                 serverShadowsocks: t,
                 serverGroup: n,
-                serverManage: r,
-                serverRoute: i
+                serverManage: r
             }
         }
         )(p)
@@ -81833,10 +81232,6 @@
             exact: !0,
             component: n("uzXD").default
         }, {
-            path: "/server/route",
-            exact: !0,
-            component: n("wtkT").default
-        }, {
             path: "/ticket/:ticket_id",
             exact: !0,
             component: n("FPmv").default
@@ -103882,8 +103277,7 @@
                 var e = this.state.server
                   , t = this.props.serverHysteria.saveLoading
                   , n = this.props.serverManage.servers
-                  , r = this.props.serverGroup.groups
-                  , i = this.props.serverRoute.routes;
+                  , r = this.props.serverGroup.groups;
                 return y.a.createElement(y.a.Fragment, null, y.a.cloneElement(this.props.children, {
                     onClick: ()=>this.setState({
                         visible: !0
@@ -104084,21 +103478,6 @@
                             value: t.id
                         }, t.name)
                 }
-                ))), y.a.createElement("div", {
-                    className: "form-group"
-                }, y.a.createElement("label", null, "\u8def\u7531\u7ec4"), y.a.createElement(N["a"], {
-                    mode: "multiple",
-                    value: e.route_id || [],
-                    placeholder: "\u8bf7\u9009\u62e9\u8def\u7531\u7ec4",
-                    style: {
-                        width: "100%"
-                    },
-                    onChange: e=>this.formChange("route_id", e.length > 0 ? e : null)
-                }, i.map(e=>{
-                    return y.a.createElement(N["a"].Option, {
-                        key: e.id
-                    }, e.remarks)
-                }
                 )))), y.a.createElement("div", {
                     className: "v2board-drawer-action"
                 }, y.a.createElement(l["a"], {
@@ -104116,13 +103495,11 @@
         var W = Object(_["c"])(e=>{
             var t = e.serverHysteria
               , n = e.serverGroup
-              , r = e.serverManage
-              , i = e.serverRoute;
+              , r = e.serverManage;
             return {
                 serverHysteria: t,
                 serverGroup: n,
-                serverManage: r,
-                serverRoute: i
+                serverManage: r
             }
         }
         )(V)
@@ -104602,8 +103979,7 @@
                 var e = this.state.server
                   , t = this.props.serverVless.saveLoading
                   , n = this.props.serverManage.servers
-                  , r = this.props.serverGroup.groups
-                  , i = this.props.serverRoute.routes;
+                  , r = this.props.serverGroup.groups;
                 return y.a.createElement(y.a.Fragment, null, y.a.cloneElement(this.props.children, {
                     onClick: ()=>this.onShow()
                 }), y.a.createElement(R["a"], {
@@ -104783,21 +104159,6 @@
                             value: t.id
                         }, t.name)
                 }
-                ))), y.a.createElement("div", {
-                    className: "form-group"
-                }, y.a.createElement("label", null, "\u8def\u7531\u7ec4"), y.a.createElement(N["a"], {
-                    mode: "multiple",
-                    value: e.route_id || [],
-                    placeholder: "\u8bf7\u9009\u62e9\u8def\u7531\u7ec4",
-                    style: {
-                        width: "100%"
-                    },
-                    onChange: e=>this.formChange("route_id", e.length > 0 ? e : null)
-                }, i.map(e=>{
-                    return y.a.createElement(N["a"].Option, {
-                        key: e.id
-                    }, e.remarks)
-                }
                 )))), y.a.createElement("div", {
                     className: "v2board-drawer-action"
                 }, y.a.createElement(l["a"], {
@@ -104822,13 +104183,11 @@
         var G = Object(_["c"])(e=>{
             var t = e.serverVless
               , n = e.serverGroup
-              , r = e.serverManage
-              , i = e.serverRoute;
+              , r = e.serverManage;
             return {
                 serverVless: t,
                 serverGroup: n,
-                serverManage: r,
-                serverRoute: i
+                serverManage: r
             }
         }
         )(z);
@@ -104886,8 +104245,7 @@
                 var e = this.state.server,
                 t = this.props.serverTuic.saveLoading,
                 n = this.props.serverManage.servers,
-                r = this.props.serverGroup.groups,
-                i = this.props.serverRoute.routes;
+                r = this.props.serverGroup.groups;
                 return y.a.createElement(y.a.Fragment, null, y.a.cloneElement(this.props.children, {
                     onClick: ()=>this.setState({
                         visible: !0
@@ -105119,23 +104477,6 @@
                         value: t.id
                     },
                     t.name)
-                }))), y.a.createElement("div", {
-                    className: "form-group"
-                },
-                y.a.createElement("label", null, "\u8def\u7531\u7ec4"), y.a.createElement(N["a"], {
-                    mode: "multiple",
-                    value: e.route_id || [],
-                    placeholder: "\u8bf7\u9009\u62e9\u8def\u7531\u7ec4",
-                    style: {
-                        width: "100%"
-                    },
-                    onChange: e=>this.formChange("route_id", e.length > 0 ? e: null)
-                },
-                i.map(e=>{
-                    return y.a.createElement(N["a"].Option, {
-                        key: e.id
-                    },
-                    e.remarks)
                 })))), y.a.createElement("div", {
                     className: "v2board-drawer-action"
                 },
@@ -105156,13 +104497,11 @@
         var mTuic = Object(_["c"])(e=>{
             var t = e.serverTuic,
             n = e.serverGroup,
-            r = e.serverManage,
-            i = e.serverRoute;
+            r = e.serverManage;
             return {
                 serverTuic: t,
                 serverGroup: n,
-                serverManage: r,
-                serverRoute: i
+                serverManage: r
             }
         })(wTuic);
         class wAnyTLS extends y.a.Component {
@@ -105255,8 +104594,7 @@
                 var e = this.state.server,
                 t = this.props.serverAnyTLS.saveLoading,
                 n = this.props.serverManage.servers,
-                r = this.props.serverGroup.groups,
-                i = this.props.serverRoute.routes;
+                r = this.props.serverGroup.groups;
                 return y.a.createElement(y.a.Fragment, null, y.a.cloneElement(this.props.children, {
                     onClick: ()=>this.setState({
                         visible: !0
@@ -105415,23 +104753,6 @@
                         value: t.id
                     },
                     t.name)
-                }))), y.a.createElement("div", {
-                    className: "form-group"
-                },
-                y.a.createElement("label", null, "\u8def\u7531\u7ec4"), y.a.createElement(N["a"], {
-                    mode: "multiple",
-                    value: e.route_id || [],
-                    placeholder: "\u8bf7\u9009\u62e9\u8def\u7531\u7ec4",
-                    style: {
-                        width: "100%"
-                    },
-                    onChange: e=>this.formChange("route_id", e.length > 0 ? e: null)
-                },
-                i.map(e=>{
-                    return y.a.createElement(N["a"].Option, {
-                        key: e.id
-                    },
-                    e.remarks)
                 })))), y.a.createElement("div", {
                     className: "v2board-drawer-action"
                 },
@@ -105459,13 +104780,11 @@
         var mAnyTLS = Object(_["c"])(e=>{
             var t = e.serverAnyTLS,
             n = e.serverGroup,
-            r = e.serverManage,
-            i = e.serverRoute;
+            r = e.serverManage;
             return {
                 serverAnyTLS: t,
                 serverGroup: n,
-                serverManage: r,
-                serverRoute: i
+                serverManage: r
             }
         })(wAnyTLS);
         class q extends y.a.Component {
@@ -105483,9 +104802,6 @@
                 }),
                 this.props.dispatch({
                     type: "serverGroup/fetch"
-                }),
-                this.props.dispatch({
-                    type: "serverRoute/fetch"
                 })
             }
             getTypeTag(e, t) {
@@ -109940,318 +109256,6 @@
             }
         }
     },
-    wtkT: function(e, t, n) {
-        "use strict";
-        n.r(t);
-        var r = n("jehZ")
-          , i = n.n(r)
-          , o = (n("g9YV"),
-        n("wCAj"))
-          , a = (n("+L6B"),
-        n("2/Rp"))
-          , s = (n("Pwec"),
-        n("CtXQ"))
-          , l = (n("/zsF"),
-        n("PArb"))
-          , c = n("p0pE")
-          , u = n.n(c)
-          , h = n("q1tI")
-          , f = n.n(h)
-          , d = n("Bl7J")
-          , p = n("/MKj")
-          , m = (n("8zNj"),
-        n("v32e"))
-          , g = (n("2qtc"),
-        n("kLXV"))
-          , v = (n("OaEy"),
-        n("2fM7"))
-          , y = (n("5NDa"),
-        n("5rEg"))
-          , b = n("tI4l");
-        class w extends f.a.Component {
-            constructor(e) {
-                super(e),
-                this.state = {
-                    route: e.route || {},
-                    visible: !1
-                }
-            }
-            save() {
-                var e = u()({}, this.state.route);
-                if (Array.isArray(e.match)) {
-                    e.match = e.match.filter(e=>!!e);
-                } else if (e.match && "string" === typeof e.match) {
-                    e.match = e.match.split(",").filter(e=>!!e);
-                } else {
-                    e.match = [];
-                }
-                this.props.dispatch({
-                    type: "serverRoute/save",
-                    params: e,
-                    callback: ()=>{
-                        this.setState({
-                            visible: !1
-                        })
-                    }
-                })
-            }
-            render() {
-                var e, t, n, r = this.props.serverRoute.fetchLoading;
-                return f.a.createElement(f.a.Fragment, null, f.a.cloneElement(this.props.children, {
-                    onClick: ()=>this.setState({
-                        visible: !0
-                    })
-                }), f.a.createElement(g["a"], {
-                    title: "".concat(this.state.route.id ? "\u7f16\u8f91\u8def\u7531" : "\u521b\u5efa\u8def\u7531"),
-                    visible: this.state.visible,
-                    onCancel: ()=>this.setState({
-                        visible: !1
-                    }),
-                    onOk: ()=>r || this.save(),
-                    okText: r ? f.a.createElement(s["a"], {
-                        type: "loading"
-                    }) : "\u63d0\u4ea4",
-                    cancelText: "\u53d6\u6d88"
-                }, f.a.createElement("div", null, f.a.createElement("div", {
-                    className: "form-group"
-                }, f.a.createElement("label", {
-                    for: "example-text-input-alt"
-                }, "\u5907\u6ce8"), f.a.createElement(y["a"], {
-                    placeholder: "\u8bf7\u8f93\u5165\u5907\u6ce8",
-                    value: this.state.route.remarks,
-                    onChange: e=>{
-                        this.setState({
-                            route: u()({}, this.state.route, {
-                                remarks: e.target.value
-                            })
-                        })
-                    }
-                })), "default_out" != this.state.route.action && f.a.createElement("div", {
-                    className: "form-group"
-                }, f.a.createElement("label", {
-                    for: "example-text-input-alt"
-                }, "\u5339\u914d\u503c", f.a.createElement("a", {
-                        href: "https://xtls.github.io/config/routing.html#ruleobject"
-                    }, f.a.createElement(a["a"], {
-                        type: "link"
-                    }), "\u586b\u5199\u53c2\u8003")), f.a.createElement(y["a"].TextArea, {
-                    rows: 5,
-                    placeholder: (()=> {
-                        const action = this.state.route.action;
-                        if (action === "protocol") {
-                            return "http\ntls\nquic\nbittorrent";
-                        }
-                        if (action === "block_port") {
-                            return "53\n443\n1000-2000";
-                        }
-                        if (["route_ip", "block_ip"].includes(action)) {
-                            return "127.0.0.1(\u5355\u4e00\u5339\u914d)\n10.0.0.0/8(\u8303\u56f4\u5339\u914d)\ngeoip:cn(\u9884\u5b9a\u4e49\u5217\u8868\u5339\u914d)";
-                        }
-                        return "example.com(\u5173\u952e\u5b57\u5339\u914d)\ndomain:example.com(\u5b50\u57df\u540d\u5339\u914d)\ngeosite:netflix(\u9884\u5b9a\u4e49\u57df\u540d\u5217\u8868)";
-                    })(),
-                    value: "object" === typeof this.state.route.match ? null === (e = this.state.route.match) || void 0 === e ? void 0 : e.join("\n") : null === (t = this.state.route.match) || void 0 === t ? void 0 : null === (n = t.split(",")) || void 0 === n ? void 0 : n.join("\n"),
-                    onChange: e=>{
-                        var t;
-                        this.setState({
-                            route: u()({}, this.state.route, {
-                                match: null === (t = e.target.value) || void 0 === t ? void 0 : t.split("\n")
-                            })
-                        })
-                    }
-                })), f.a.createElement("div", {
-                    className: "form-group"
-                }, f.a.createElement("label", {
-                    for: "example-text-input-alt"
-                }, "\u52a8\u4f5c"), f.a.createElement("div", null, f.a.createElement(v["a"], {
-                    value: this.state.route.action,
-                    placeholder: "\u8bf7\u9009\u62e9\u52a8\u4f5c",
-                    style: {
-                        width: "100%"
-                    },
-                    onChange: e=>this.setState({
-                        route: u()({}, this.state.route, {
-                            action: e
-                        })
-                    })
-                }, f.a.createElement(v["a"].Option, {
-                    value: "block"
-                }, b["a"].routeActionText["block"]), f.a.createElement(v["a"].Option, {
-                    value: "block_ip"
-                }, b["a"].routeActionText["block_ip"]), f.a.createElement(v["a"].Option, {
-                    value: "block_port"
-                }, b["a"].routeActionText["block_port"]), f.a.createElement(v["a"].Option, {
-                    value: "protocol"
-                }, b["a"].routeActionText["protocol"]), f.a.createElement(v["a"].Option, {
-                    value: "dns"
-                }, b["a"].routeActionText["dns"]), f.a.createElement(v["a"].Option, {
-                    value: "route"
-                }, b["a"].routeActionText["route"]), f.a.createElement(v["a"].Option, {
-                    value: "route_ip"
-                }, b["a"].routeActionText["route_ip"]), f.a.createElement(v["a"].Option, {
-                    value: "default_out"
-                }, b["a"].routeActionText["default_out"])))), "dns" === this.state.route.action && f.a.createElement("div", {
-                    className: "form-group"
-                }, f.a.createElement("label", {
-                    for: "example-text-input-alt"
-                }, "DNS\u670d\u52a1\u5668"), f.a.createElement(y["a"], {
-                    placeholder: "\u8bf7\u8f93\u5165\u7528\u4e8e\u89e3\u6790\u7684DNS\u670d\u52a1\u5668\u5730\u5740",
-                    value: this.state.route.action_value,
-                    onChange: e=>{
-                        this.setState({
-                            route: u()({}, this.state.route, {
-                                action_value: e.target.value
-                            })
-                        })
-                    }
-                })), ("route" === this.state.route.action || "route_ip"=== this.state.route.action || "default_out"=== this.state.route.action) && f.a.createElement("div", {
-                    className: "form-group"
-                }, f.a.createElement("label", {
-                    for: "example-text-input-alt"
-                }, "Xray\u51fa\u7ad9\u914d\u7f6e", f.a.createElement("a", {
-                        href: "https://xtls.github.io/config/outbound.html"
-                    }, f.a.createElement(a["a"], {
-                        type: "link"
-                    }), "\u586b\u5199\u53c2\u8003")), f.a.createElement(y["a"].TextArea, {
-                    rows: 8,
-                    placeholder: JSON.stringify({
-                        tag: "ss_out",
-                        sendThrough: "0.0.0.0",
-                        protocol: "shadowsocks",
-                        settings: {
-                            email: "love@xray.com",
-                            address: "8.8.8.8",
-                            port: 5555,
-                            method: "chacha20-ietf-poly1305",
-                            password: "abcdefghijklmnopqrstuvwxyz",
-                            level: 0
-                        }
-                    }, null, 4),
-                    value: this.state.route.action_value,
-                    onChange: e=>{
-                        this.setState({
-                            route: u()({}, this.state.route, {
-                                action_value: e.target.value
-                            })
-                        })
-                    }
-                })))))
-            }
-        }
-        var x = Object(p["c"])(e=>{
-            var t = e.serverRoute;
-            return {
-                serverRoute: t
-            }
-        }
-        )(w);
-        class _ extends f.a.Component {
-            constructor(e) {
-                super(e),
-                this.state = {
-                    route: {}
-                }
-            }
-            componentDidMount() {
-                this.props.dispatch({
-                    type: "serverRoute/fetch"
-                })
-            }
-            save() {
-                var e = u()({}, this.state.submit);
-                this.props.dispatch({
-                    type: "serverRoute/save",
-                    params: e,
-                    callback: ()=>{
-                        this.modalVisible()
-                    }
-                })
-            }
-            drop(e) {
-                this.props.dispatch({
-                    type: "serverRoute/drop",
-                    id: e
-                })
-            }
-            render() {
-                var e = this.props.serverRoute
-                  , t = e.routes
-                  , n = e.fetchLoading
-                  , r = [{
-                    title: "ID",
-                    dataIndex: "id",
-                    key: "id"
-                }, {
-                    title: "\u5907\u6ce8",
-                    dataIndex: "remarks",
-                    key: "remarks"
-                }, {
-                    title: "\u5339\u914d\u6570\u91cf",
-                    dataIndex: "match",
-                    key: "match",
-                    render: e=>{
-                        var t;
-                        return e.length == 0 ? "\u65e0\u89c4\u5219\u65f6\u9ed8\u8ba4" : "\u5339\u914d ".concat("string" === typeof e ? null === (t = e.split(",").filter(e=>!!e)) || void 0 === t ? void 0 : t.length : e.length, " \u6761\u89c4\u5219")
-                    }
-                }, {
-                    title: "\u52a8\u4f5c",
-                    dataIndex: "action",
-                    key: "action",
-                    render: e=>{
-                        return b["a"].routeActionText[e]
-                    }
-                }, {
-                    title: "\u64cd\u4f5c",
-                    dataIndex: "action2",
-                    key: "action2",
-                    align: "right",
-                    render: (e,t)=>{
-                        return f.a.createElement("div", null, f.a.createElement(x, {
-                            route: t,
-                            key: t.id
-                        }, f.a.createElement("a", {
-                            href: "javascript:void(0);"
-                        }, "\u7f16\u8f91")), f.a.createElement(l["a"], {
-                            type: "vertical"
-                        }), f.a.createElement("a", {
-                            href: "javascript:void(0);",
-                            onClick: ()=>this.drop(t.id)
-                        }, "\u5220\u9664"))
-                    }
-                }];
-                return f.a.createElement(d["a"], i()({}, this.props, {
-                    title: "\u8def\u7531\u7ba1\u7406"
-                }), f.a.createElement("div", {
-                    className: "d-flex justify-content-between align-items-center"
-                }), f.a.createElement(m["a"], {
-                    loading: n
-                }, f.a.createElement("div", {
-                    className: "block block-rounded"
-                }, f.a.createElement("div", {
-                    className: "bg-white"
-                }, f.a.createElement("div", {
-                    style: {
-                        padding: 15
-                    }
-                }, f.a.createElement(x, null, f.a.createElement(a["a"], {
-                    onClick: ()=>this.modalVisible()
-                }, f.a.createElement(s["a"], {
-                    type: "plus"
-                }), " \u6dfb\u52a0\u8def\u7531"))), f.a.createElement(o["a"], {
-                    tableLayout: "auto",
-                    columns: r,
-                    dataSource: t,
-                    pagination: !1
-                })))))
-            }
-        }
-        t["default"] = Object(p["c"])(e=>{
-            var t = e.serverRoute;
-            return {
-                serverRoute: t
-            }
-        }
-        )(_)
-    },
     x1Ya: function(e, t, n) {
         "use strict";
         var r = n("jo6Y")
@@ -110783,9 +109787,6 @@
             u.model(i()({
                 namespace: "serverManage"
             }, n("1dD/").default)),
-            u.model(i()({
-                namespace: "serverRoute"
-            }, n("0fn0").default)),
             u.model(i()({
                 namespace: "serverShadowsocks"
             }, n("LMyI").default)),
@@ -112398,8 +111399,7 @@
                 var e = this.state.server
                   , t = this.props.serverTrojan.saveLoading
                   , n = this.props.serverManage.servers
-                  , c = this.props.serverGroup.groups
-                  , u = this.props.serverRoute.routes;
+                  , c = this.props.serverGroup.groups;
                 return f.a.createElement(f.a.Fragment, null, f.a.cloneElement(this.props.children, {
                     onClick: ()=>this.onShow()
                 }), f.a.createElement(r["a"], {
@@ -112546,21 +111546,6 @@
                             value: t.id
                         }, t.name)
                 }
-                ))), f.a.createElement("div", {
-                    className: "form-group"
-                }, f.a.createElement("label", null, "\u8def\u7531\u7ec4"), f.a.createElement(s["a"], {
-                    mode: "multiple",
-                    value: e.route_id || [],
-                    placeholder: "\u8bf7\u9009\u62e9\u8def\u7531\u7ec4",
-                    style: {
-                        width: "100%"
-                    },
-                    onChange: e=>this.formChange("route_id", e.length > 0 ? e : null)
-                }, u.map(e=>{
-                    return f.a.createElement(s["a"].Option, {
-                        key: e.id
-                    }, e.remarks)
-                }
                 )))), f.a.createElement("div", {
                     className: "v2board-drawer-action"
                 }, f.a.createElement(i["a"], {
@@ -112585,13 +111570,11 @@
         t["a"] = Object(d["c"])(e=>{
             var t = e.serverTrojan
               , n = e.serverGroup
-              , r = e.serverManage
-              , i = e.serverRoute;
+              , r = e.serverManage;
             return {
                 serverTrojan: t,
                 serverGroup: n,
-                serverManage: r,
-                serverRoute: i
+                serverManage: r
             }
         }
         )(m)

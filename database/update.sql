@@ -574,18 +574,13 @@ ALTER TABLE `v2_server_shadowsocks`
 ALTER TABLE `v2_server_trojan`
     CHANGE `port` `port` varchar(11) NOT NULL COMMENT '连接端口' AFTER `host`;
 
-ALTER TABLE `v2_server_shadowsocks`
-    ADD `route_id` varchar(255) COLLATE 'utf8mb4_general_ci' NULL AFTER `group_id`;
 
-ALTER TABLE `v2_server_trojan`
-    ADD `route_id` varchar(255) COLLATE 'utf8mb4_general_ci' NULL AFTER `group_id`;
 
 ALTER TABLE `v2_server_v2ray`
     COLLATE 'utf8mb4_general_ci';
 
 ALTER TABLE `v2_server_v2ray`
     CHANGE `group_id` `group_id` varchar(255) NOT NULL AFTER `id`,
-    CHANGE `route_id` `route_id` varchar(255) NULL AFTER `group_id`,
     CHANGE `host` `host` varchar(255) NOT NULL AFTER `parent_id`,
     CHANGE `port` `port` varchar(11) NOT NULL AFTER `host`,
     CHANGE `tags` `tags` varchar(255) NULL AFTER `tls`,
@@ -597,23 +592,9 @@ ALTER TABLE `v2_server_v2ray`
     CHANGE `ruleSettings` `ruleSettings` text NULL AFTER `tlsSettings`,
     CHANGE `dnsSettings` `dnsSettings` text NULL AFTER `ruleSettings`;
 
-ALTER TABLE `v2_server_v2ray`
-    ADD `route_id` varchar(255) COLLATE 'utf8mb4_general_ci' NULL AFTER `group_id`;
 
 
-CREATE TABLE `v2_server_route` (
-                                   `id` int(11) NOT NULL AUTO_INCREMENT,
-                                   `remarks` varchar(255) NOT NULL,
-                                   `match` varchar(255) NOT NULL,
-                                   `action` varchar(11) NOT NULL,
-                                   `action_value` varchar(255) DEFAULT NULL,
-                                   `created_at` int(11) NOT NULL,
-                                   `updated_at` int(11) NOT NULL,
-                                   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-ALTER TABLE `v2_server_route`
-    CHANGE `match` `match` text COLLATE 'utf8mb4_general_ci' NOT NULL AFTER `remarks`;
 
 ALTER TABLE `v2_order`
     ADD UNIQUE `trade_no` (`trade_no`);
@@ -633,7 +614,6 @@ ALTER TABLE `v2_server_vmess`
 CREATE TABLE `v2_server_hysteria` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
                                       `group_id` varchar(255) NOT NULL,
-                                      `route_id` varchar(255) DEFAULT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,
@@ -690,7 +670,6 @@ ALTER TABLE `v2_log`
 CREATE TABLE `v2_server_vless` (
                                    `id` int(11) NOT NULL AUTO_INCREMENT,
                                    `group_id` text NOT NULL,
-                                   `route_id` text,
                                    `name` varchar(255) NOT NULL,
                                    `parent_id` int(11) DEFAULT NULL,
                                    `host` varchar(255) NOT NULL,
@@ -764,7 +743,6 @@ CHANGE `reply_status` `reply_status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0:
 CREATE TABLE `v2_server_tuic` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
                                       `group_id` varchar(255) NOT NULL,
-                                      `route_id` varchar(255) DEFAULT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,
@@ -788,7 +766,6 @@ CREATE TABLE `v2_server_tuic` (
 CREATE TABLE `v2_server_anytls` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
                                       `group_id` varchar(255) NOT NULL,
-                                      `route_id` varchar(255) DEFAULT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,
@@ -817,8 +794,6 @@ ALTER TABLE `v2_server_vless`
 ADD `encryption` varchar(64) COLLATE 'utf8mb4_general_ci' NULL AFTER `network_settings`,
 ADD `encryption_settings` text COLLATE 'utf8mb4_general_ci' NULL AFTER `encryption`;
 
-ALTER TABLE `v2_server_route`
-CHANGE `action_value` `action_value` text NULL AFTER `action`;
 
 /* 2026-07-12 21:00:00 */
 CREATE TABLE IF NOT EXISTS `v2_subscribe_log` (
