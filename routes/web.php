@@ -55,6 +55,18 @@ Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_pa
 if (!empty(config('v2board.subscribe_path'))) {
     Route::get(config('v2board.subscribe_path'), 'V1\\Client\\ClientController@subscribe')->middleware('client');
 }
+// Subscription analysis shell; all data APIs require administrator authentication.
+Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))) . '/subscription-analysis', function (Request $request) {
+    $host = $request->header('x-forwarded-host', $request->server('HTTP_HOST'));
+    if ($wh = config('v2board.whitehost')) {
+        if (!in_array(strtolower($host), array_map('strtolower', explode(',', $wh)))) abort(403);
+    }
+    return view('admin.subscription-analysis', [
+        'secure_path' => config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))),
+        'version' => config('app.version'),
+    ]);
+});
+
 // SmartRoute 管理页面
 Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))) . '/smart-route', function (Request $request) {
     $host = $request->header('x-forwarded-host', $request->server('HTTP_HOST'));

@@ -20549,6 +20549,13 @@
                             className: "nav-main-link-icon si si-users"
                         })
                     }, {
+                        title: "\u8ba2\u9605\u5206\u6790",
+                        type: "item",
+                        href: "/subscription/analysis",
+                        icon: o.a.createElement("i", {
+                            className: "nav-main-link-icon si si-chart"
+                        })
+                    }, {
                         title: "\u516c\u544a\u7ba1\u7406",
                         type: "item",
                         href: "/notice",
@@ -81243,6 +81250,16 @@
             path: "/user",
             exact: !0,
             component: n("d1ca").default
+        }, {
+            path: "/subscription/analysis",
+            exact: !0,
+            component: function () {
+                return n("q1tI").createElement("iframe", {
+                    src: "/" + window.settings.secure_path + "/subscription-analysis",
+                    title: "订阅分析",
+                    style: {width: "100%", height: "calc(100vh - 90px)", border: 0}
+                });
+            }
         }];
         window.g_routes = u;
         var h = n("PszG");

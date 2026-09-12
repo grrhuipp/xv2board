@@ -90,6 +90,9 @@ class V2boardInstall extends Command
                 throw new \RuntimeException(\Artisan::output());
             }
             $this->info('数据库导入完成');
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000001_add_subscription_analysis.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
             $email = '';
             while (!$email) {
                 $email = $this->ask('请输入管理员邮箱?');

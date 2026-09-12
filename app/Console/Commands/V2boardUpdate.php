@@ -69,6 +69,9 @@ class V2boardUpdate extends Command
             throw new \RuntimeException(\Artisan::output());
         }
         \Artisan::call('horizon:terminate');
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000001_add_subscription_analysis.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
         $this->info('更新完毕，队列服务已重启，你无需进行任何操作。');
     }
 }

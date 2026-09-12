@@ -94,6 +94,8 @@ class AdminRoute
             $router->post('/order/cancel', 'V1\\Admin\\OrderController@cancel');
             $router->post('/order/detail', 'V1\\Admin\\OrderController@detail');
             // User
+            $router->get('/subscription-analysis/fetch', 'V1\\Admin\\SubscriptionAnalysisController@fetch');
+            $router->post('/subscription-analysis/mark', 'V1\\Admin\\SubscriptionAnalysisController@mark');
             $router->get ('/user/fetch', 'V1\\Admin\\UserController@fetch');
             $router->get ('/user/fetchSubscribeLogs', 'V1\\Admin\\UserController@fetchSubscribeLogs');
             $router->post('/user/update', 'V1\\Admin\\UserController@update');
