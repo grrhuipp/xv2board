@@ -45017,6 +45017,47 @@
         }
         e.exports = n
     },
+    UserSubscribeLogs: function(e, t, n) {
+        "use strict";
+        n.d(t, "a", function() { return Logs; });
+        n("2qtc"); n("g9YV");
+        var React = n.n(n("q1tI")).a, Modal = n("kLXV")["a"], Table = n("wCAj")["a"], request = n("t3Un")["a"], moment = n.n(n("wd/R"));
+        class Logs extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {visible: false, loading: false, records: [], error: null, pagination: {current: 1, pageSize: 10, total: 0}};
+                this.requestId = 0;
+            }
+            componentWillUnmount() { this.requestId++; }
+            close() { this.requestId++; this.setState({visible: false, loading: false}); }
+            load(current, pageSize) {
+                var id = ++this.requestId;
+                this.setState({loading: true, error: null, records: [], pagination: {current: current, pageSize: pageSize, total: this.state.pagination.total}});
+                Promise.resolve().then(() => request("/" + window.settings.secure_path + "/user/fetchSubscribeLogs", {user_id: this.props.userId, current: current, pageSize: pageSize})).then(result => {
+                    if (id !== this.requestId) return;
+                    if (!result || result.code !== 200) throw new Error("加载失败，请重试");
+                    this.setState({loading: false, records: result.data, pagination: {current: current, pageSize: pageSize, total: result.total}});
+                }).catch(() => {
+                    if (id === this.requestId) this.setState({loading: false, error: "订阅记录加载失败，请重试"});
+                });
+            }
+            render() {
+                var columns = [
+                    {title: "订阅时间", dataIndex: "created_at", width: 170, render: value => value ? moment()(typeof value === "number" ? value * 1000 : value).format("YYYY-MM-DD HH:mm:ss") : "—"},
+                    {title: "IP", dataIndex: "ip", width: 220},
+                    {title: "归属地", key: "location", width: 220, render: (value, row) => [row.country, row.city].filter(Boolean).join(" / ") || "—"},
+                    {title: "ASN", dataIndex: "as", width: 110, render: value => value || "—"},
+                    {title: "组织 / ISP", dataIndex: "isp", width: 230, render: value => value || "—"},
+                    {title: "客户端 / User-Agent", dataIndex: "user_agent", width: 360, render: value => React.createElement("span", {style: {wordBreak: "break-all"}}, value || "—")}
+                ];
+                return React.createElement(React.Fragment, null,
+                    React.cloneElement(this.props.children, {onClick: () => {this.setState({visible: true}); this.load(1, 10);}}),
+                    React.createElement(Modal, {title: "TA的订阅记录 · " + (this.props.email || this.props.userId), visible: this.state.visible, width: "95%", style: {maxWidth: 1350, top: 20}, footer: null, onCancel: () => this.close()},
+                        this.state.error && React.createElement("div", {role: "alert", style: {marginBottom: 12}}, this.state.error, " ", React.createElement("button", {onClick: () => this.load(this.state.pagination.current, this.state.pagination.pageSize)}, "重试")),
+                        React.createElement(Table, {rowKey: "id", loading: this.state.loading, columns: columns, dataSource: this.state.records, scroll: {x: 1310}, locale: {emptyText: this.state.error ? "加载失败" : "暂无订阅记录"}, pagination: Object.assign({}, this.state.pagination, {showSizeChanger: true, pageSizeOptions: ["10", "20", "50", "100"], showTotal: total => "共 " + total + " 条"}), onChange: page => this.load(page.pageSize !== this.state.pagination.pageSize ? 1 : page.current, page.pageSize)})));
+            }
+        }
+    },
     X0q5: function(e, t, n) {
         "use strict";
         n.d(t, "a", function() {
@@ -70774,7 +70815,7 @@
           , L = n("yWgo")
           , A = n("Oa6W")
           , P = n("v32e")
-          , j = n("X0q5");
+          , j = n("X0q5"), UserSubscribeLogs = n("UserSubscribeLogs");
         class M extends g.a.Component {
             constructor(e) {
                 super(e),
@@ -71064,7 +71105,9 @@
                                 key: null === t || void 0 === t ? void 0 : t.email
                             }, g.a.createElement("a", null, g.a.createElement(u["a"], {
                                 type: "solution"
-                            }), " TA\u7684\u6d41\u91cf\u8bb0\u5f55"))), g.a.createElement(c["a"].Item, null, g.a.createElement("a", {
+                            }), " TA\u7684\u6d41\u91cf\u8bb0\u5f55"))), g.a.createElement(c["a"].Item, null, g.a.createElement(UserSubscribeLogs["a"], {
+                                userId: t.id, email: t.email, key: t.id
+                            }, g.a.createElement("a", null, g.a.createElement(u["a"], {type: "history"}), " TA的订阅记录"))), g.a.createElement(c["a"].Item, null, g.a.createElement("a", {
                                 onClick: ()=>this.delUser(t)
                             }, g.a.createElement(u["a"], {
                                 type: "delete"

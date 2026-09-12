@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\Plan;
 use App\Models\TicketMessage;
 use App\Models\User;
+use App\Models\SubscribeLog;
 use App\Services\AuthService;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
@@ -22,6 +23,24 @@ use Illuminate\Support\Facades\Cache;
 
 class UserController extends Controller
 {
+    public function fetchSubscribeLogs(Request $request)
+    {
+        $params = $request->validate([
+            'user_id' => 'required|integer|min:1',
+            'current' => 'sometimes|integer|min:1',
+            'pageSize' => 'sometimes|integer|min:1|max:100',
+        ]);
+        if (!User::where('id', $params['user_id'])->exists()) {
+            abort(404, '用户不存在');
+        }
+        $query = SubscribeLog::where('user_id', $params['user_id']);
+        $total = $query->count();
+        $records = $query->orderByDesc('created_at')->orderByDesc('id')
+            ->forPage($params['current'] ?? 1, $params['pageSize'] ?? 10)
+            ->get(['id', 'ip', 'as', 'isp', 'country', 'city', 'user_agent', 'created_at']);
+        return response(['data' => $records, 'total' => $total]);
+    }
+
     public function resetSecret(Request $request)
     {
         $user = User::find($request->input('id'));

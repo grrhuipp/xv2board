@@ -98,6 +98,7 @@ class AdminRoute
             $router->post('/order/detail', 'V1\\Admin\\OrderController@detail');
             // User
             $router->get ('/user/fetch', 'V1\\Admin\\UserController@fetch');
+            $router->get ('/user/fetchSubscribeLogs', 'V1\\Admin\\UserController@fetchSubscribeLogs');
             $router->post('/user/update', 'V1\\Admin\\UserController@update');
             $router->get ('/user/getUserInfoById', 'V1\\Admin\\UserController@getUserInfoById');
             $router->post('/user/generate', 'V1\\Admin\\UserController@generate');
