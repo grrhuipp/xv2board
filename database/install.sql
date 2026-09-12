@@ -543,7 +543,25 @@ CREATE TABLE `v2_subscribe_log` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `user_id_idx` (`user_id`),
-  KEY `email_idx` (`email`)
+    KEY `email_idx` (`email`),
+    KEY `subscribe_created_user_idx` (`created_at`, `user_id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `v2_subscription_analysis_marks` (
+  `user_id` int unsigned NOT NULL,
+  `note` varchar(500) NOT NULL DEFAULT '',
+  `updated_by` int unsigned DEFAULT NULL,
+  `updated_at` int unsigned NOT NULL,
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `v2_subscription_analysis_settings` (
+  `id` tinyint unsigned NOT NULL,
+  `thresholds` text NOT NULL,
+  `marked_host_rule` text DEFAULT NULL,
+  `updated_by` int unsigned DEFAULT NULL,
+  `updated_at` int unsigned NOT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 

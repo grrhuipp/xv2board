@@ -97,6 +97,7 @@ class AdminRoute
             $router->get('/subscription-analysis/fetch', 'V1\\Admin\\SubscriptionAnalysisController@fetch');
             $router->post('/subscription-analysis/mark', 'V1\\Admin\\SubscriptionAnalysisController@mark');
             $router->post('/subscription-analysis/settings', 'V1\\Admin\\SubscriptionAnalysisController@settings');
+            $router->post('/subscription-analysis/host-rule', 'V1\\Admin\\SubscriptionAnalysisController@hostRule');
             $router->get ('/user/fetch', 'V1\\Admin\\UserController@fetch');
             $router->get ('/user/fetchSubscribeLogs', 'V1\\Admin\\UserController@fetchSubscribeLogs');
             $router->post('/user/update', 'V1\\Admin\\UserController@update');

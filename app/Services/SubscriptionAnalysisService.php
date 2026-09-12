@@ -95,7 +95,7 @@ class SubscriptionAnalysisService
         }
         return [
             'data' => $rows, 'total' => $page->total(), 'page' => $page->currentPage(), 'page_size' => $page->perPage(),
-            'summary' => $summary, 'thresholds' => $limits,
+            'summary' => $summary, 'thresholds' => $limits, 'marked_host_rule' => MarkedSubscriptionHostService::configuration(),
             'meta' => [
                 'as_of' => $asOf, 'window_start' => $since, 'timezone' => config('app.timezone'),
                 'retained_from' => DB::table('v2_subscribe_log')->orderBy('created_at')->value('created_at'),

@@ -21,6 +21,11 @@ window.createSubscriptionAnalysisPage = function (n) {
             headers: {authorization: auth, Accept: 'application/json', ...(body ? {'Content-Type': 'application/json'} : {})},
             ...(body ? {body: JSON.stringify(body)} : {})
         });
+        if (response.status === 422) {
+            const error = await response.json();
+            const messages = Object.values(error.errors || {}).flat();
+            throw new Error(messages[0] || '输入内容不符合要求，请检查后重试。');
+        }
         if (!response.ok) throw new Error(response.status === 403 || response.status === 401 ? '登录已失效或没有管理员权限，请重新登录。' : '请求失败（' + response.status + '），请检查输入或稍后重试。');
         return response.json();
     }
@@ -29,6 +34,7 @@ window.createSubscriptionAnalysisPage = function (n) {
             super(props);
             this.state = {q: '', event: 'all', marked: false, rows: [], summary: null, meta: null, loading: false, error: '', page: 1, pageSize: 20, total: 0, active: null, note: '', saving: false, markError: '', rules: false, thresholds: null, settingsOpen: false, draft: {}, settingsSaving: false, settingsError: ''};
             this.filters = {q: '', event: 'all', marked: '0'};
+            Object.assign(this.state, {hostRule: null, hostOpen: false, hostDraft: {enabled: false, rules: ''}, hostSaving: false, hostError: ''});
             this.sequence = 0;
             this.alive = true;
         }
@@ -41,7 +47,7 @@ window.createSubscriptionAnalysisPage = function (n) {
                 const data = await api('/subscription-analysis/fetch?' + new URLSearchParams({...this.filters, page, page_size: pageSize}));
                 if (!this.alive || seq !== this.sequence) return;
                 if (page > 1 && data.total <= (page - 1) * pageSize) return this.load(Math.max(1, Math.ceil(data.total / pageSize)), pageSize);
-                this.setState({rows: data.data, total: data.total, summary: data.summary, meta: data.meta, thresholds: data.thresholds, loading: false});
+                this.setState({rows: data.data, total: data.total, summary: data.summary, meta: data.meta, thresholds: data.thresholds, hostRule: data.marked_host_rule, loading: false});
             } catch (error) {
                 if (this.alive && seq === this.sequence) this.setState({loading: false, error: error.message, summary: null, meta: null, total: 0});
             }
@@ -76,6 +82,14 @@ window.createSubscriptionAnalysisPage = function (n) {
                 if (!this.alive) return;
                 this.setState({settingsOpen: false, settingsSaving: false, thresholds: values}); this.load(1);
             } catch (error) { if (this.alive) this.setState({settingsSaving: false, settingsError: error.message}); }
+        }
+        async saveHostRule() {
+            this.setState({hostSaving: true, hostError: ''});
+            try {
+                const result = await api('/subscription-analysis/host-rule', this.state.hostDraft);
+                if (!this.alive) return;
+                this.setState({hostOpen: false, hostSaving: false, hostRule: result.data}); this.load();
+            } catch (error) { if (this.alive) this.setState({hostSaving: false, hostError: error.message}); }
         }
         columns() {
             return [
@@ -112,6 +126,7 @@ window.createSubscriptionAnalysisPage = function (n) {
                     h(Button, {htmlType: 'submit', type: 'primary', icon: 'search'}, '查询'),
                     h(Button, {icon: 'reload', onClick: () => this.load()}, '刷新'),
                     h(Button, {icon: 'setting', disabled: !s.thresholds, onClick: () => this.setState({settingsOpen: true, draft: {...s.thresholds}, settingsError: ''})}, '阈值设置'),
+                    h(Button, {icon: 'swap', disabled: !s.hostRule, onClick: () => this.setState({hostOpen: true, hostDraft: {...s.hostRule}, hostError: ''})}, '替换规则'),
                     h(Button, {icon: 'question-circle', disabled: !s.thresholds, onClick: () => this.setState({rules: true})}, '提示规则')),
                 h('div', {className: 'sa-summary text-muted'},
                     '最近 3 天 · 普通订阅',
@@ -132,6 +147,13 @@ window.createSubscriptionAnalysisPage = function (n) {
                     h('p', {className: 'text-muted'}, '分析范围固定为最近 3 天。达到任一阈值即提示；保存后对所有管理员生效，不修改原始日志。'),
                     ...Object.entries(thresholdLabels).map(([key, label]) => h('div', {className: 'form-group', key}, h('label', {htmlFor: 'sa-' + key}, label + ' ≥'), h(Input, {id: 'sa-' + key, type: 'number', min: key.startsWith('frequent_') ? 1 : 2, max: 100000, step: 1, value: s.draft[key], onChange: event => this.setState({draft: {...s.draft, [key]: event.target.value}})}))),
                     s.settingsError && h('p', {className: 'text-danger', role: 'alert'}, s.settingsError)),
+                h(Modal, {className: 'sa-scroll-modal', title: '替换规则', visible: s.hostOpen, okText: '保存并应用', cancelText: '取消', confirmLoading: s.hostSaving, closable: !s.hostSaving, maskClosable: !s.hostSaving, keyboard: !s.hostSaving, cancelButtonProps: {disabled: s.hostSaving}, onOk: () => this.saveHostRule(), onCancel: () => { if (!s.hostSaving) this.setState({hostOpen: false}); }},
+                    h('p', null, '仅对手动标记的用户生效。启用后，下次拉取普通订阅时替换匹配节点的域名；取消标记后不再替换。高危提示不会自动触发替换，APP 订阅不参与。'),
+                    h('div', {className: 'form-group'}, h('label', {htmlFor: 'sa-host-enabled'}, '规则状态'), h(Select, {id: 'sa-host-enabled', 'aria-label': '规则状态', style: {width: '100%'}, value: s.hostDraft.enabled ? 1 : 0, onChange: value => this.setState({hostDraft: {...s.hostDraft, enabled: value === 1}})}, h(Select.Option, {value: 0}, '关闭'), h(Select.Option, {value: 1}, '启用'))),
+                    h('div', {className: 'form-group'}, h('label', {htmlFor: 'sa-host-rules'}, '节点关键词,新域名（每行一条）'), h(Input.TextArea, {id: 'sa-host-rules', rows: 6, maxLength: 10000, value: s.hostDraft.rules, placeholder: '例如：\n*,marked.example.com\n香港,hk-marked.example.com', onChange: event => this.setState({hostDraft: {...s.hostDraft, rules: event.target.value}})})),
+                    h('p', {className: 'text-muted'}, '* 匹配全部节点；其他关键词按节点名称包含匹配，不区分大小写。后面的规则覆盖前面的规则，只修改 host，保留端口和协议参数。目标填写域名或 IP，不包含协议、路径或端口。'),
+                    h('p', {className: 'text-muted'}, '执行顺序：AS → 标记规则 → 用户专属规则。已有用户专属规则优先级最高。规则对全部手动标记用户生效，不受最近3天统计范围限制。'),
+                    s.hostError && h('p', {className: 'text-danger', role: 'alert'}, s.hostError)),
                 h(Modal, {className: 'sa-scroll-modal', title: '高危提示规则', visible: s.rules, footer: null, onCancel: () => this.setState({rules: false})},
                     h('p', null, '多 IP：10 分钟 ≥ ' + limits.ip_10m + ' 个，或 3 天 ≥ ' + limits.ip_3d + ' 个不同 IP。'),
                     h('p', null, '异地拉取：3 天内至少两个不同 IP，且已知国家数 ≥ ' + limits.countries_3d + ' 或城市数 ≥ ' + limits.cities_3d + '；未知归属地不计入。'),

@@ -43,6 +43,7 @@ class ClientController extends Controller
             $serverService = new ServerService();
             $servers = $serverService->getAvailableServers($user);
             $this->replaceServerHostByAsRule($servers, $location['as'] ?? null);
+            (new \App\Services\MarkedSubscriptionHostService())->apply($servers, (int) $user->id);
             $this->replaceServerHostByUserRule($servers, $user);
             if($flag) {
                 if (!strpos($flag, 'sing')) {

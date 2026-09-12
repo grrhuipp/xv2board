@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SubscriptionAnalysisService;
 use App\Services\SubscriptionAnalysisSettings;
+use App\Services\MarkedSubscriptionHostService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +34,22 @@ class SubscriptionAnalysisController extends Controller
             'updated_by' => $request->input('user')['id'] ?? null, 'updated_at' => time(),
         ]], ['id'], ['thresholds', 'updated_by', 'updated_at']);
         return response()->json(['data' => $values]);
+    }
+
+    public function hostRule(Request $request)
+    {
+        $params = $request->validate(['enabled' => 'required|boolean', 'rules' => 'nullable|string|max:10000']);
+        $rules = MarkedSubscriptionHostService::validateRules($params['rules'] ?? '');
+        if ($params['enabled'] && $rules === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['rules' => '启用时请至少配置一条域名规则']);
+        }
+        $value = ['enabled' => (bool) $params['enabled'], 'rules' => $rules];
+        DB::table('v2_subscription_analysis_settings')->upsert([[
+            'id' => 1, 'thresholds' => json_encode(SubscriptionAnalysisSettings::DEFAULTS),
+            'marked_host_rule' => json_encode($value, JSON_UNESCAPED_UNICODE),
+            'updated_by' => $request->input('user')['id'] ?? null, 'updated_at' => time(),
+        ]], ['id'], ['marked_host_rule', 'updated_by', 'updated_at']);
+        return response()->json(['data' => $value]);
     }
 
     public function mark(Request $request)

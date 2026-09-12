@@ -75,6 +75,9 @@ class V2boardUpdate extends Command
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000002_add_subscription_analysis_settings.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000003_add_marked_subscription_host_rule.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
         $this->info('更新完毕，队列服务已重启，你无需进行任何操作。');
     }
 }

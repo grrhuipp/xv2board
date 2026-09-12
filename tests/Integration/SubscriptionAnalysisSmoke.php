@@ -22,9 +22,12 @@ require_once database_path('migrations/2026_09_13_000001_add_subscription_analys
 require_once database_path('migrations/2026_09_13_000002_add_subscription_analysis_settings.php');
 (new AddSubscriptionAnalysisSettings())->up();
 (new AddSubscriptionAnalysisSettings())->up();
+require_once database_path('migrations/2026_09_13_000003_add_marked_subscription_host_rule.php');
+(new AddMarkedSubscriptionHostRule())->up();
+(new AddMarkedSubscriptionHostRule())->up();
 checkAnalysis(true, 'migration is idempotent');
 $prefix = config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key'))));
-foreach (['fetch' => 'GET', 'mark' => 'POST', 'settings' => 'POST'] as $action => $method) {
+foreach (['fetch' => 'GET', 'mark' => 'POST', 'settings' => 'POST', 'host-rule' => 'POST'] as $action => $method) {
     $request = Request::create('/api/v1/' . $prefix . '/subscription-analysis/' . $action, $method);
     $route = app('router')->getRoutes()->match($request);
     checkAnalysis(in_array('admin', $route->gatherMiddleware(), true), $action . ' uses administrator middleware');

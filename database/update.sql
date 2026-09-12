@@ -834,3 +834,24 @@ CREATE TABLE IF NOT EXISTS `v2_user_connect_log` (
 /* 2026-07-16: remove the retired unified-node backend. */ DROP TABLE IF EXISTS `v2_server_v2node`;
 
 DELETE FROM `v2_stat_server` WHERE `server_type` = 'v2node';
+
+/* Subscription analysis: 2026-09-13 schema. Duplicate columns/indexes are ignored by v2board:update. */
+CREATE TABLE IF NOT EXISTS `v2_subscription_analysis_marks` (
+  `user_id` int unsigned NOT NULL,
+  `note` varchar(500) NOT NULL DEFAULT '',
+  `updated_by` int unsigned DEFAULT NULL,
+  `updated_at` int unsigned NOT NULL,
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `v2_subscription_analysis_settings` (
+  `id` tinyint unsigned NOT NULL,
+  `thresholds` text NOT NULL,
+  `marked_host_rule` text DEFAULT NULL,
+  `updated_by` int unsigned DEFAULT NULL,
+  `updated_at` int unsigned NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `v2_subscription_analysis_settings` ADD COLUMN `marked_host_rule` text DEFAULT NULL;
+ALTER TABLE `v2_subscribe_log` ADD INDEX `subscribe_created_user_idx` (`created_at`, `user_id`);
