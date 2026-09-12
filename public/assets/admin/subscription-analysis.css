@@ -10,3 +10,7 @@
 #subscription-analysis .sa-actions a { display:block; margin-bottom:6px; }
 #subscription-analysis .sa-footnote { clear:both; padding:0 16px 12px; font-size:12px; }
 @media(max-width:767px) { #subscription-analysis .sa-search { width:100%; } }
+.sa-scroll-modal.ant-modal { top:20px; padding-bottom:0; }
+.sa-scroll-modal .ant-modal-content { display:flex; flex-direction:column; max-height:calc(100vh - 40px); max-height:calc(100dvh - 40px); }
+.sa-scroll-modal .ant-modal-header, .sa-scroll-modal .ant-modal-footer { flex-shrink:0; }
+.sa-scroll-modal .ant-modal-body { flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; }

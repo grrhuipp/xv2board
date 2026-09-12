@@ -95,7 +95,7 @@ window.createSubscriptionAnalysisPage = function (n) {
                     row.note && h('div', {className: 'sa-note'}, row.note), row.marked_at && muted('标记更新 ' + date(row.marked_at)))},
                 {title: '操作', key: 'actions', width: 110, fixed: 'right', render: (_, row) => h('div', {className: 'sa-actions'},
                     h('a', {onClick: () => this.setState({active: row, note: row.note || '', markError: ''})}, row.is_marked ? '编辑标记' : '标记'),
-                    h(Logs, {userId: row.user_id, email: row.email}, h('a', null, '订阅记录')))}
+                    h(Logs, {userId: row.user_id, email: row.email, modalClassName: 'sa-scroll-modal'}, h('a', null, '订阅记录')))}
             ];
         }
         render() {
@@ -123,16 +123,16 @@ window.createSubscriptionAnalysisPage = function (n) {
                     pagination: {current: s.page, pageSize: s.pageSize, total: s.total, size: 'small', showSizeChanger: true, pageSizeOptions: ['10', '20', '50'], showTotal: total => '共 ' + total + ' 位用户'},
                     onChange: page => this.load(page.pageSize !== s.pageSize ? 1 : page.current, page.pageSize)}),
                 s.meta && h('div', {className: 'sa-footnote text-muted'}, '统计时间：' + s.meta.as_of + '（' + s.meta.timezone + '） · 不包含 APP 订阅；提示仅供排查，不自动封禁。'),
-                h(Modal, {title: '用户标记', visible: !!s.active, onCancel: close, confirmLoading: s.saving, maskClosable: !s.saving, closable: !s.saving, keyboard: !s.saving,
+                h(Modal, {className: 'sa-scroll-modal', title: '用户标记', visible: !!s.active, onCancel: close, confirmLoading: s.saving, maskClosable: !s.saving, closable: !s.saving, keyboard: !s.saving,
                     footer: [s.active && s.active.is_marked && h(Button, {key: 'unmark', disabled: s.saving, onClick: () => this.save(false)}, '取消标记'), h(Button, {key: 'cancel', disabled: s.saving, onClick: close}, '关闭'), h(Button, {key: 'save', type: 'primary', loading: s.saving, onClick: () => this.save(true)}, '保存标记')]},
                     s.active && h('p', null, s.active.email + ' · UID ' + s.active.user_id),
                     h(Input.TextArea, {rows: 5, maxLength: 500, value: s.note, 'aria-label': '排查备注', placeholder: '排查备注（最多500字）', onChange: event => this.setState({note: event.target.value})}),
                     s.markError && h('p', {className: 'text-danger', role: 'alert'}, s.markError)),
-                h(Modal, {title: '阈值设置', visible: s.settingsOpen, okText: '保存并应用', cancelText: '取消', confirmLoading: s.settingsSaving, closable: !s.settingsSaving, maskClosable: !s.settingsSaving, keyboard: !s.settingsSaving, cancelButtonProps: {disabled: s.settingsSaving}, onOk: () => this.saveSettings(), onCancel: () => { if (!s.settingsSaving) this.setState({settingsOpen: false}); }},
+                h(Modal, {className: 'sa-scroll-modal', title: '阈值设置', visible: s.settingsOpen, okText: '保存并应用', cancelText: '取消', confirmLoading: s.settingsSaving, closable: !s.settingsSaving, maskClosable: !s.settingsSaving, keyboard: !s.settingsSaving, cancelButtonProps: {disabled: s.settingsSaving}, onOk: () => this.saveSettings(), onCancel: () => { if (!s.settingsSaving) this.setState({settingsOpen: false}); }},
                     h('p', {className: 'text-muted'}, '分析范围固定为最近 3 天。达到任一阈值即提示；保存后对所有管理员生效，不修改原始日志。'),
                     ...Object.entries(thresholdLabels).map(([key, label]) => h('div', {className: 'form-group', key}, h('label', {htmlFor: 'sa-' + key}, label + ' ≥'), h(Input, {id: 'sa-' + key, type: 'number', min: key.startsWith('frequent_') ? 1 : 2, max: 100000, step: 1, value: s.draft[key], onChange: event => this.setState({draft: {...s.draft, [key]: event.target.value}})}))),
                     s.settingsError && h('p', {className: 'text-danger', role: 'alert'}, s.settingsError)),
-                h(Modal, {title: '高危提示规则', visible: s.rules, footer: null, onCancel: () => this.setState({rules: false})},
+                h(Modal, {className: 'sa-scroll-modal', title: '高危提示规则', visible: s.rules, footer: null, onCancel: () => this.setState({rules: false})},
                     h('p', null, '多 IP：10 分钟 ≥ ' + limits.ip_10m + ' 个，或 3 天 ≥ ' + limits.ip_3d + ' 个不同 IP。'),
                     h('p', null, '异地拉取：3 天内至少两个不同 IP，且已知国家数 ≥ ' + limits.countries_3d + ' 或城市数 ≥ ' + limits.cities_3d + '；未知归属地不计入。'),
                     h('p', null, '频繁拉取：2 分钟 ≥ ' + limits.frequent_2m + ' 次，或 5 分钟 ≥ ' + limits.frequent_5m + ' 次，或 1 小时 ≥ ' + limits.frequent_1h + ' 次。'),

@@ -44458,7 +44458,7 @@
                 ];
                 return React.createElement(React.Fragment, null,
                     React.cloneElement(this.props.children, {onClick: () => {this.setState({visible: true}); this.load(1, 10);}}),
-                    React.createElement(Modal, {title: "TA的订阅记录 · " + (this.props.email || this.props.userId), visible: this.state.visible, width: "95%", style: {maxWidth: 1350, top: 20}, footer: null, onCancel: () => this.close()},
+                    React.createElement(Modal, {className: this.props.modalClassName, title: "TA的订阅记录 · " + (this.props.email || this.props.userId), visible: this.state.visible, width: "95%", style: {maxWidth: 1350, top: 20}, footer: null, onCancel: () => this.close()},
                         this.state.error && React.createElement("div", {role: "alert", style: {marginBottom: 12}}, this.state.error, " ", React.createElement("button", {onClick: () => this.load(this.state.pagination.current, this.state.pagination.pageSize)}, "重试")),
                         React.createElement(Table, {rowKey: "id", loading: this.state.loading, columns: columns, dataSource: this.state.records, scroll: {x: 1310}, locale: {emptyText: this.state.error ? "加载失败" : "暂无订阅记录"}, pagination: Object.assign({}, this.state.pagination, {showSizeChanger: true, pageSizeOptions: ["10", "20", "50", "100"], showTotal: total => "共 " + total + " 条"}), onChange: page => this.load(page.pageSize !== this.state.pagination.pageSize ? 1 : page.current, page.pageSize)})));
             }
