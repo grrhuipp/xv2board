@@ -351,7 +351,7 @@ class StatController extends Controller
             'data' => [
                 'total_devices' => $total,
                 'window_days' => $days,
-                'geo_available' => is_readable(base_path('database/geo/ip2region_v4.xdb')) && is_readable(base_path('database/geo/ip2region_v6.xdb')),
+                'geo_available' => is_readable(rtrim(config('ip2region.database_path', storage_path('app/ip2region')), '/\\') . '/v4.xdb') && is_readable(rtrim(config('ip2region.database_path', storage_path('app/ip2region')), '/\\') . '/v6.xdb'),
                 'generated_at' => date('c'),
                 'dimensions' => [
                     'brands' => $this->topDimension($brandCnt, $limit),

@@ -41,8 +41,8 @@
 
 项目包含以下数据库（`storage/app/ip2region`）：
 
-- `ip2region-city-asn-org-v4.xdb`
-- `ip2region-city-asn-org-v6.xdb`
+- `v4.xdb`
+- `v6.xdb`
 
 这两个数据库的记录格式为 `国家|省|市|ASN|组织`，不是标准 ip2region ISP 数据格式。
 ASN 去掉 `AS` 前缀后用于黑白名单规则；组织名写入 AS 名称和订阅 ISP 字段。

@@ -71,7 +71,7 @@
 
         <div x-show="!data.geo_available" class="card" style="border-left:4px solid #f59e0b">
             <div class="text-sm text-yellow-700">
-                未检测到 IP 归属地库（storage/app/ip2region/ip2region_v4.xdb），
+                未检测到 IP 归属地库（storage/app/ip2region/v4.xdb、v6.xdb），
                 「真实IP归属地」和「运营商」维度将为空，其余维度正常。
             </div>
         </div>

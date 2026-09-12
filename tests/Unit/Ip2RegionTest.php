@@ -54,9 +54,9 @@ class Ip2RegionTest extends TestCase
     {
         $directory = sys_get_temp_dir() . '/ip2region-test-' . bin2hex(random_bytes(8));
         mkdir($directory);
-        $path = $directory . '/ip2region-city-asn-org-v4.xdb';
+        $path = $directory . '/v4.xdb';
         // Header from IPv6 in a file named IPv4 must never be searched.
-        $source = fopen(__DIR__ . '/../../storage/app/ip2region/ip2region-city-asn-org-v6.xdb', 'rb');
+        $source = fopen(__DIR__ . '/../../storage/app/ip2region/v6.xdb', 'rb');
         file_put_contents($path, fread($source, 256));
         fclose($source);
         try {

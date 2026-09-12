@@ -76,7 +76,7 @@ class Ip2Region
         if (isset($this->readers[$version])) {
             return $this->readers[$version];
         }
-        $file = $this->directory . '/ip2region-city-asn-org-v' . $version . '.xdb';
+        $file = $this->directory . '/v' . $version . '.xdb';
         if (!is_readable($file)) {
             throw new \RuntimeException('XDB file is not readable: ' . basename($file));
         }

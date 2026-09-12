@@ -6,7 +6,7 @@ require_once __DIR__ . '/../app/Services/Geo/Ip2Region.php';
 $directory = $argv[1] ?? __DIR__ . '/../storage/app/ip2region';
 $geo = new \App\Services\Geo\Ip2Region($directory);
 foreach ([4 => '223.5.5.5', 6 => '2400:3200::1'] as $version => $ip) {
-    $file = $directory . '/ip2region-city-asn-org-v' . $version . '.xdb';
+    $file = $directory . '/v' . $version . '.xdb';
     if (!is_readable($file)) {
         throw new RuntimeException('Missing XDB: ' . $file);
     }

@@ -1,4 +1,4 @@
 *
 !.gitignore
-!ip2region-city-asn-org-v4.xdb
-!ip2region-city-asn-org-v6.xdb
+!v4.xdb
+!v6.xdb
