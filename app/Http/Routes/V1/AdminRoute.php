@@ -163,6 +163,39 @@ class AdminRoute
             $router->get ('/theme/getThemes', 'V1\\Admin\\ThemeController@getThemes');
             $router->post('/theme/saveThemeConfig', 'V1\\Admin\\ThemeController@saveThemeConfig');
             $router->post('/theme/getThemeConfig', 'V1\\Admin\\ThemeController@getThemeConfig');
+            // SmartRoute
+            $router->get ('/smart-route/fetch', 'V1\\Admin\\SmartRouteController@fetch');
+            $router->post('/smart-route/save', 'V1\\Admin\\SmartRouteController@save');
+            $router->get ('/smart-route/overview', 'V1\\Admin\\SmartRouteController@overview');
+            $router->get ('/smart-route/device/list', 'V1\\Admin\\SmartRouteController@deviceList');
+            $router->get ('/smart-route/device/account-list', 'V1\\Admin\\SmartRouteController@deviceAccountList');
+            $router->get ('/smart-route/device/detail', 'V1\\Admin\\SmartRouteController@deviceDetail');
+            $router->post('/smart-route/device/adjust-trust', 'V1\\Admin\\SmartRouteController@adjustTrust');
+            $router->post('/smart-route/device/force-unbind', 'V1\\Admin\\SmartRouteController@forceUnbind');
+            $router->post('/smart-route/device/reset-account', 'V1\\Admin\\SmartRouteController@resetAccountDevices');
+            $router->post('/smart-route/device/purge-unbound', 'V1\\Admin\\SmartRouteController@purgeUnbound');
+            $router->post('/smart-route/device/bulk-purge', 'V1\\Admin\\SmartRouteController@bulkPurge');
+            $router->get ('/smart-route/blacklist', 'V1\\Admin\\SmartRouteController@blacklist');
+            $router->post('/smart-route/blacklist/remove', 'V1\\Admin\\SmartRouteController@unblacklist');
+            $router->get ('/smart-route/audit-logs', 'V1\\Admin\\SmartRouteController@auditLogs');
+            $router->post('/smart-route/audit-logs/purge', 'V1\\Admin\\SmartRouteController@purgeAuditLogs');
+            $router->get ('/smart-route/runtime/status', 'V1\\Admin\\SmartRouteController@runtimeStatus');
+            $router->post('/smart-route/horizon/grant', 'V1\\Admin\\SmartRouteController@grantHorizon');
+            // SmartRoute 入口映射
+            $router->get ('/smart-route/server/list', 'V1\\Admin\\SmartRouteController@serverList');
+            $router->get ('/smart-route/ingress/list', 'V1\\Admin\\SmartRouteController@ingressList');
+            $router->post('/smart-route/ingress/save', 'V1\\Admin\\SmartRouteController@ingressSave');
+            $router->post('/smart-route/ingress/delete', 'V1\\Admin\\SmartRouteController@ingressDelete');
+            $router->post('/smart-route/ingress/batch-save', 'V1\\Admin\\SmartRouteController@ingressBatchSave');
+            // SmartRoute 入口池
+            $router->get ('/smart-route/pool/list', 'V1\\Admin\\SmartRouteController@poolList');
+            $router->post('/smart-route/pool/save', 'V1\\Admin\\SmartRouteController@poolSave');
+            $router->post('/smart-route/pool/delete', 'V1\\Admin\\SmartRouteController@poolDelete');
+            // SmartRoute 自定义规则（Provider Package）
+            $router->get ('/smart-route/provider-package/list', 'V1\\Admin\\SmartRouteController@providerPackageList');
+            $router->post('/smart-route/provider-package/save', 'V1\\Admin\\SmartRouteController@providerPackageSave');
+            $router->post('/smart-route/provider-package/delete', 'V1\\Admin\\SmartRouteController@providerPackageDelete');
+            $router->get('/stat/getAppAudience', 'V1\\Admin\\StatController@getAppAudience');
         });
     }
 }

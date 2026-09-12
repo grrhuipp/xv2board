@@ -1,0 +1,9 @@
+{
+  "v2_order": {
+    "gift_days": "`gift_days` double DEFAULT NULL COMMENT '赠送天数'",
+    "invited_user_id": "`invited_user_id` int(11) DEFAULT NULL COMMENT '邀请奖励来源用户ID'"
+  },
+  "v2_coupon": {
+    "bind_email": "`bind_email` varchar(255) DEFAULT NULL COMMENT '自动绑定邀请人邮箱'"
+  }
+}

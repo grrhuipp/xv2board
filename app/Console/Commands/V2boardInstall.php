@@ -86,6 +86,9 @@ class V2boardInstall extends Command
                 } catch (\Exception $e) {
                 }
             }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_10_000001_install_app_smartroute.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
             $this->info('数据库导入完成');
             $email = '';
             while (!$email) {

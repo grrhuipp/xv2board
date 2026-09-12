@@ -14,6 +14,13 @@ class ConfigSave extends FormRequest
         ],
         // invite & commission
         'ticket_status' => 'in:0,1,2',
+        'complimentary_packages' => 'integer',
+        'complimentary_package_duration' => 'integer',
+        'is_Invitation_to_give' =>'in:0,1,2,3',
+        'invitee_gift_enable' => 'in:0,1',
+        'invitee_gift_plan_id' => 'integer',
+        'invitee_gift_days' => 'numeric',
+        'invitee_gift_ip_limit_enable' => 'in:0,1',
         'invite_force' => 'in:0,1',
         'invite_commission' => 'integer',
         'invite_gen_limit' => 'integer',

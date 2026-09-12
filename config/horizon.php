@@ -170,6 +170,16 @@ return [
 
     'environments' => [
         'local' => [
+            'SmartRouteTelemetry' => [
+                'connection' => 'redis',
+                'queue' => ['smart_route_telemetry'],
+                'balance' => 'simple',
+                'minProcesses' => 1,
+                'maxProcesses' => 4,
+                'balanceCooldown' => 3,
+                'tries' => 3,
+                'timeout' => 60,
+            ],
             'V2board' => [
                 'connection' => 'redis',
                 'queue' => [
@@ -188,6 +198,18 @@ return [
                 ),
                 'tries' => 1,
                 'balanceCooldown' => 3,
+            ],
+        ],
+        'production' => [
+            'SmartRouteTelemetry' => [
+                'connection' => 'redis',
+                'queue' => ['smart_route_telemetry'],
+                'balance' => 'simple',
+                'minProcesses' => 1,
+                'maxProcesses' => 4,
+                'balanceCooldown' => 3,
+                'tries' => 3,
+                'timeout' => 60,
             ],
         ],
     ],

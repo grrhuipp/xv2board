@@ -20,6 +20,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+use App\Models\SmartRoute\SrDeviceProfile;
+use App\Services\Geo\DeviceBrand;
+use App\Services\Geo\Ip2Region;
+
 class StatController extends Controller
 {
     public function getOverride(Request $request)
@@ -297,5 +301,82 @@ class StatController extends Controller
         ];
     }
 
-}
+    public function getAppAudience(Request $request)
+    {
+        $days = (int)$request->input('days', 0);
+        $limit = (int)$request->input('limit', 15);
+        if ($limit < 3) $limit = 3;
+        if ($limit > 100) $limit = 100;
 
+        $builder = SrDeviceProfile::where('status', 1);
+        if ($days > 0) {
+            $builder->where('last_active_at', '>=', time() - $days * 86400);
+        }
+
+        // 只取聚合所需列，避免把公钥/能力声明等大字段拉进内存。
+        $rows = $builder->get([
+            'platform', 'app_version', 'os_version', 'device_model',
+            'last_client_ip', 'last_ip', 'last_request_ip',
+        ]);
+
+        $total = $rows->count();
+        $geo = Ip2Region::instance();
+
+        $brandCnt = [];
+        $versionCnt = [];
+        $regionCnt = [];
+        $ispCnt = [];
+        $osCnt = [];
+        $osVerCnt = [];
+
+        $bump = function (array &$map, string $key): void {
+            if ($key === '') $key = '未知';
+            $map[$key] = ($map[$key] ?? 0) + 1;
+        };
+
+        foreach ($rows as $r) {
+            $bump($brandCnt, DeviceBrand::resolve($r->device_model));
+            $bump($versionCnt, trim((string)$r->app_version));
+            $bump($osCnt, trim((string)$r->platform));
+            $bump($osVerCnt, trim((string)$r->os_version));
+
+            // 归属地/运营商：优先客户端真实IP，退化到服务端看到的请求IP。
+            $ip = (string)($r->last_client_ip ?: $r->last_ip ?: $r->last_request_ip ?: '');
+            $region = $ip !== '' ? $geo->query($ip) : null;
+            $bump($regionCnt, $region ? implode(' / ', array_filter([$region['country'] ?? null, $region['province'] ?? null, $region['city'] ?? null])) : '');
+            $bump($ispCnt, $region ? (string)$region['isp'] : '');
+        }
+
+        return [
+            'data' => [
+                'total_devices' => $total,
+                'window_days' => $days,
+                'geo_available' => is_readable(base_path('database/geo/ip2region_v4.xdb')) && is_readable(base_path('database/geo/ip2region_v6.xdb')),
+                'generated_at' => date('c'),
+                'dimensions' => [
+                    'brands' => $this->topDimension($brandCnt, $limit),
+                    'versions' => $this->topDimension($versionCnt, $limit),
+                    'regions' => $this->topDimension($regionCnt, $limit),
+                    'isps' => $this->topDimension($ispCnt, $limit),
+                    'os_types' => $this->topDimension($osCnt, $limit),
+                    'os_versions' => $this->topDimension($osVerCnt, $limit),
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 把 {名称:计数} 映射按计数降序取 TOP N，格式化为 [{name,count}]。
+     */
+    private function topDimension(array $counts, int $limit): array
+    {
+        arsort($counts);
+        $out = [];
+        foreach ($counts as $name => $count) {
+            $out[] = ['name' => (string)$name, 'count' => $count];
+            if (count($out) >= $limit) break;
+        }
+        return $out;
+    }
+
+}

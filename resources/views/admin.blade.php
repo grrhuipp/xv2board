@@ -31,6 +31,60 @@
 <script src="/assets/admin/vendors.async.js?v={{$version}}"></script>
 <script src="/assets/admin/components.async.js?v={{$version}}"></script>
 <script src="/assets/admin/umi.js?v={{$version}}"></script>
+<script>
+(function(){
+    var sp = window.settings && window.settings.secure_path ? window.settings.secure_path : '';
+    var srUrl = '/' + sp + '/smart-route';
+    var injected = false;
+
+    function inject(){
+        if(injected) return;
+        var ul = document.querySelector('ul.nav-main');
+        if(!ul || !ul.children.length) return;
+        if(ul.querySelector('[data-sr-menu]')) return;
+        injected = true;
+
+        var li = document.createElement('li');
+        li.className = 'nav-main-item';
+        li.setAttribute('data-sr-menu', '1');
+        li.innerHTML = '<a class="nav-main-link" href="' + srUrl + '">'
+            + '<i class="nav-main-link-icon si si-globe"></i>'
+            + '<span class="nav-main-link-name">SmartRoute</span></a>';
+
+        li.querySelector('a').addEventListener('click', function(e){
+            e.preventDefault();
+            window.open(srUrl, '_blank');
+        });
+
+        // Find the last item (horizon/queue monitor) and insert before it
+        var allLi = ul.querySelectorAll(':scope > li');
+        var horizonLi = null;
+        for(var i = 0; i < allLi.length; i++){
+            var span = allLi[i].querySelector('.nav-main-link-name');
+            if(span && span.textContent.indexOf('\u961f\u5217') !== -1){
+                horizonLi = allLi[i]; break;
+            }
+        }
+        if(horizonLi){
+            ul.insertBefore(li, horizonLi);
+        } else {
+            ul.appendChild(li);
+        }
+    }
+
+    var t = setInterval(function(){
+        inject();
+        if(injected) clearInterval(t);
+    }, 500);
+
+    new MutationObserver(function(){
+        if(!document.querySelector('[data-sr-menu]')){
+            injected = false;
+            inject();
+        }
+    }).observe(document.body, { childList: true, subtree: true });
+})();
+</script>
 </body>
 
 </html>

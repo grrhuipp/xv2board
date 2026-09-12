@@ -41,6 +41,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('reset:log')->daily();
         // send
         $schedule->command('send:remindMail')->dailyAt('11:30');
+        $schedule->command('reset:smart-route-logs')->dailyAt('4:00');
+        $schedule->command('smartroute:re-evaluate')->hourly()->withoutOverlapping();
+        $schedule->command('smart-route:downgrade')->dailyAt('3:00');
         // horizon metrics
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
     }

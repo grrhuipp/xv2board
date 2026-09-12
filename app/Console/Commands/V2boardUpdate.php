@@ -65,6 +65,9 @@ class V2boardUpdate extends Command
             } catch (\Exception $e) {
             }
         }
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_10_000001_install_app_smartroute.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
         \Artisan::call('horizon:terminate');
         $this->info('更新完毕，队列服务已重启，你无需进行任何操作。');
     }

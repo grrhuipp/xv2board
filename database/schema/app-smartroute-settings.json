@@ -1,0 +1,447 @@
+[
+  {
+    "section": "global_ingress",
+    "key_name": "public_intl_host",
+    "value_json": "\"app-iepl-548c-88c0-c4893b3d3d4d.355cd.org\""
+  },
+  {
+    "section": "global_ingress",
+    "key_name": "public_intl_port",
+    "value_json": "0"
+  },
+  {
+    "section": "global_ingress",
+    "key_name": "domestic_limited_host",
+    "value_json": "\"app-iepl-548c-88c0-c4893b3d3d4d.355cd.org\""
+  },
+  {
+    "section": "global_ingress",
+    "key_name": "domestic_limited_port",
+    "value_json": "0"
+  },
+  {
+    "section": "global_ingress",
+    "key_name": "domestic_sensitive_host",
+    "value_json": "\"app-iepl-548c-88c0-c4893b3d3d4d.355cd.org\""
+  },
+  {
+    "section": "global_ingress",
+    "key_name": "domestic_sensitive_port",
+    "value_json": "0"
+  },
+  {
+    "section": "fast_check",
+    "key_name": "enabled",
+    "value_json": "0"
+  },
+  {
+    "section": "fast_check",
+    "key_name": "window_days",
+    "value_json": "3"
+  },
+  {
+    "section": "fast_check",
+    "key_name": "check_traffic",
+    "value_json": "1"
+  },
+  {
+    "section": "fast_check",
+    "key_name": "check_destinations",
+    "value_json": "0"
+  },
+  {
+    "section": "fast_check",
+    "key_name": "check_sessions",
+    "value_json": "0"
+  },
+  {
+    "section": "fast_check",
+    "key_name": "effective_bytes_mb",
+    "value_json": "30"
+  },
+  {
+    "section": "fast_check",
+    "key_name": "distinct_destinations",
+    "value_json": "15"
+  },
+  {
+    "section": "fast_check",
+    "key_name": "stable_sessions",
+    "value_json": "2"
+  },
+  {
+    "section": "upgrade_public_intl",
+    "key_name": "window_days",
+    "value_json": "1"
+  },
+  {
+    "section": "upgrade_public_intl",
+    "key_name": "min_conditions",
+    "value_json": "3"
+  },
+  {
+    "section": "upgrade_public_intl",
+    "key_name": "active_days",
+    "value_json": "1"
+  },
+  {
+    "section": "upgrade_public_intl",
+    "key_name": "stable_sessions",
+    "value_json": "1"
+  },
+  {
+    "section": "upgrade_public_intl",
+    "key_name": "stable_connected_minutes",
+    "value_json": "30"
+  },
+  {
+    "section": "upgrade_public_intl",
+    "key_name": "effective_bytes_mb",
+    "value_json": "0"
+  },
+  {
+    "section": "upgrade_public_intl",
+    "key_name": "distinct_destinations",
+    "value_json": "0"
+  },
+  {
+    "section": "upgrade_domestic_limited",
+    "key_name": "window_days",
+    "value_json": "5"
+  },
+  {
+    "section": "upgrade_domestic_limited",
+    "key_name": "active_days",
+    "value_json": "3"
+  },
+  {
+    "section": "upgrade_domestic_limited",
+    "key_name": "stable_sessions",
+    "value_json": "3"
+  },
+  {
+    "section": "upgrade_domestic_limited",
+    "key_name": "stable_connected_minutes",
+    "value_json": "50"
+  },
+  {
+    "section": "upgrade_domestic_limited",
+    "key_name": "effective_bytes_mb",
+    "value_json": "80"
+  },
+  {
+    "section": "upgrade_domestic_limited",
+    "key_name": "distinct_destinations",
+    "value_json": "0"
+  },
+  {
+    "section": "upgrade_domestic_limited",
+    "key_name": "probe_without_connect_ratio_max",
+    "value_json": "0.6"
+  },
+  {
+    "section": "upgrade_domestic_limited",
+    "key_name": "burstiness_ratio_max",
+    "value_json": "0.65"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "window_days",
+    "value_json": "10"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "require_cellular",
+    "value_json": "1"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "require_attestation",
+    "value_json": "1"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "active_days",
+    "value_json": "5"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "stable_sessions",
+    "value_json": "6"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "stable_connected_minutes",
+    "value_json": "120"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "effective_bytes_mb",
+    "value_json": "1024"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "distinct_destinations",
+    "value_json": "0"
+  },
+  {
+    "section": "upgrade_domestic_sensitive",
+    "key_name": "no_high_risk_days",
+    "value_json": "14"
+  },
+  {
+    "section": "downgrade",
+    "key_name": "inactive_days_threshold",
+    "value_json": "15"
+  },
+  {
+    "section": "downgrade",
+    "key_name": "cooldown_hours",
+    "value_json": "1"
+  },
+  {
+    "section": "downgrade",
+    "key_name": "signature_fail_threshold",
+    "value_json": "3"
+  },
+  {
+    "section": "downgrade",
+    "key_name": "probe_anomaly_threshold",
+    "value_json": "0.8"
+  },
+  {
+    "section": "downgrade",
+    "key_name": "auto_downgrade_enabled",
+    "value_json": "0"
+  },
+  {
+    "section": "environment",
+    "key_name": "desktop_default_tier",
+    "value_json": "\"intl_only\""
+  },
+  {
+    "section": "environment",
+    "key_name": "desktop_max_tier",
+    "value_json": "\"public_intl\""
+  },
+  {
+    "section": "environment",
+    "key_name": "android_wifi_default_tier",
+    "value_json": "\"intl_only\""
+  },
+  {
+    "section": "environment",
+    "key_name": "android_wifi_max_tier",
+    "value_json": "\"domestic_limited\""
+  },
+  {
+    "section": "environment",
+    "key_name": "ios_wifi_default_tier",
+    "value_json": "\"intl_only\""
+  },
+  {
+    "section": "environment",
+    "key_name": "ios_wifi_max_tier",
+    "value_json": "\"domestic_limited\""
+  },
+  {
+    "section": "environment",
+    "key_name": "mobile_cellular_default_tier",
+    "value_json": "\"domestic_sensitive\""
+  },
+  {
+    "section": "environment",
+    "key_name": "mobile_cellular_max_tier",
+    "value_json": "\"domestic_sensitive\""
+  },
+  {
+    "section": "evaluation",
+    "key_name": "data_scope",
+    "value_json": "\"device_history\""
+  },
+  {
+    "section": "telemetry",
+    "key_name": "batch_max_events",
+    "value_json": "50"
+  },
+  {
+    "section": "telemetry",
+    "key_name": "session_close_required",
+    "value_json": "1"
+  },
+  {
+    "section": "telemetry",
+    "key_name": "cross_validate_with_server",
+    "value_json": "1"
+  },
+  {
+    "section": "telemetry",
+    "key_name": "suspicious_deviation_threshold",
+    "value_json": "0.5"
+  },
+  {
+    "section": "telemetry",
+    "key_name": "queue_enabled",
+    "value_json": "1"
+  },
+  {
+    "section": "performance",
+    "key_name": "manifest_cache_enabled",
+    "value_json": "0"
+  },
+  {
+    "section": "performance",
+    "key_name": "manifest_ttl_seconds",
+    "value_json": "60"
+  },
+  {
+    "section": "performance",
+    "key_name": "device_touch_throttle_enabled",
+    "value_json": "0"
+  },
+  {
+    "section": "performance",
+    "key_name": "device_touch_ttl_seconds",
+    "value_json": "60"
+  },
+  {
+    "section": "cellular_bypass",
+    "key_name": "enabled",
+    "value_json": "1"
+  },
+  {
+    "section": "cellular_bypass",
+    "key_name": "bypass_tier",
+    "value_json": "\"domestic_sensitive\""
+  },
+  {
+    "section": "global_ingress",
+    "key_name": "intl_only_host",
+    "value_json": "\"app-iepl-548c-88c0-c4893b3d3d4d.355cd.org\""
+  },
+  {
+    "section": "global_ingress",
+    "key_name": "intl_only_port",
+    "value_json": "0"
+  },
+  {
+    "section": "global_ingress",
+    "key_name": "fallback_enabled",
+    "value_json": "0"
+  },
+  {
+    "section": "provider",
+    "key_name": "require_device_signature",
+    "value_json": "0"
+  },
+  {
+    "section": "provider",
+    "key_name": "grant_ttl_seconds",
+    "value_json": "300"
+  },
+  {
+    "section": "provider",
+    "key_name": "grant_max_fetch_count",
+    "value_json": "2"
+  },
+  {
+    "section": "provider",
+    "key_name": "grant_reuse_window_seconds",
+    "value_json": "0"
+  },
+  {
+    "section": "provider",
+    "key_name": "brokered_fetch_enabled",
+    "value_json": "1"
+  },
+  {
+    "section": "provider",
+    "key_name": "package_cache_ttl_seconds",
+    "value_json": "300"
+  },
+  {
+    "section": "provider",
+    "key_name": "signature_audit",
+    "value_json": "1"
+  },
+  {
+    "section": "provider",
+    "key_name": "payload_encoding",
+    "value_json": "\"gzip+base64\""
+  },
+  {
+    "section": "telemetry",
+    "key_name": "session_async_enabled",
+    "value_json": "1"
+  },
+  {
+    "section": "telemetry",
+    "key_name": "sync_fallback_max_events",
+    "value_json": "20"
+  },
+  {
+    "section": "telemetry",
+    "key_name": "queue_pending_alert",
+    "value_json": "1000"
+  },
+  {
+    "section": "device",
+    "key_name": "max_devices_per_user",
+    "value_json": "5"
+  },
+  {
+    "section": "device",
+    "key_name": "new_device_burst_threshold",
+    "value_json": "3"
+  },
+  {
+    "section": "device",
+    "key_name": "new_device_burst_window_hours",
+    "value_json": "2"
+  },
+  {
+    "section": "security",
+    "key_name": "nonce_ttl_seconds",
+    "value_json": "300"
+  },
+  {
+    "section": "security",
+    "key_name": "timestamp_tolerance_seconds",
+    "value_json": "60"
+  },
+  {
+    "section": "security",
+    "key_name": "replay_cache_driver",
+    "value_json": "\"redis\""
+  },
+  {
+    "section": "security",
+    "key_name": "rate_limit_manifest_per_minute",
+    "value_json": "30"
+  },
+  {
+    "section": "security",
+    "key_name": "rate_limit_provider_per_minute",
+    "value_json": "10"
+  },
+  {
+    "section": "security",
+    "key_name": "rate_limit_telemetry_per_minute",
+    "value_json": "20"
+  },
+  {
+    "section": "security",
+    "key_name": "jwt_algorithm",
+    "value_json": "\"ES256\""
+  },
+  {
+    "section": "security",
+    "key_name": "require_https",
+    "value_json": "1"
+  },
+  {
+    "section": "security",
+    "key_name": "ssl_pins",
+    "value_json": "[\"ywPINPvl18mzyycb44hquGWq1okyDRZl7Ds4EsQ2AG8=\"]"
+  }
+]

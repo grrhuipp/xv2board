@@ -14,6 +14,7 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middleware = [
+        \App\Http\Middleware\SmartRouteConfigBootstrap::class,
         \App\Http\Middleware\CORS::class,
         \App\Http\Middleware\UAfilter::class,
         \App\Http\Middleware\TrustProxies::class,
@@ -57,6 +58,8 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
+        'smart_route_guard' => \App\Http\Middleware\SmartRouteGuard::class,
+        'smart_route_auth' => \App\Http\Middleware\SmartRouteAuth::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,

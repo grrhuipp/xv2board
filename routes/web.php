@@ -2,6 +2,7 @@
 
 use App\Services\ThemeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,3 +55,66 @@ Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_pa
 if (!empty(config('v2board.subscribe_path'))) {
     Route::get(config('v2board.subscribe_path'), 'V1\\Client\\ClientController@subscribe')->middleware('client');
 }
+// SmartRoute 管理页面
+Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))) . '/smart-route', function (Request $request) {
+    $host = $request->header('x-forwarded-host', $request->server('HTTP_HOST'));
+    if ($wh = config('v2board.whitehost')) {
+        $whitelist = array_map('strtolower', explode(',', $wh));
+        if (!in_array(strtolower($host), $whitelist)) {
+            abort(403);
+        }
+    }
+    return view('admin.smart-route', [
+        'title' => config('v2board.app_name', 'V2Board'),
+        'logo' => config('v2board.logo'),
+        'secure_path' => config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key'))))
+    ]);
+});
+
+// 用户画像统计页面（APP 版本 / 设备品牌 / 真实IP归属地 / 运营商 / 系统分布）
+Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))) . '/app-audience', function (Request $request) {
+    $host = $request->header('x-forwarded-host', $request->server('HTTP_HOST'));
+    if ($wh = config('v2board.whitehost')) {
+        $whitelist = array_map('strtolower', explode(',', $wh));
+        if (!in_array(strtolower($host), $whitelist)) {
+            abort(403);
+        }
+    }
+    return view('admin.app-audience', [
+        'title' => config('v2board.app_name', 'V2Board'),
+        'logo' => config('v2board.logo'),
+        'secure_path' => config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key'))))
+    ]);
+});
+
+// SmartRoute → Horizon 监控跳板
+// 流程：Blade 前端用 admin auth_data 调 POST /api/v1/<secure_path>/smart-route/horizon/grant
+//       拿到 token 后浏览器跳转到这里，我们把 token 换成 HttpOnly cookie，再 302 到 /monitor
+
+Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))) . '/horizon-auth', function (Request $request) {
+    $token = (string) $request->query('token', '');
+    if ($token === '') {
+        abort(400, '缺少 token，请从后台重新进入');
+    }
+    $cacheKey = 'HORIZON_ADMIN_GRANT:' . hash('sha256', $token);
+    $grant = Cache::get($cacheKey);
+    if (empty($grant) || empty($grant['admin_id'])) {
+        abort(403, '凭证已过期或无效，请回后台重新登录后再进入队列监控');
+    }
+
+    $ttl = 6 * 3600;
+    $cookieValue = $token;
+    // HttpOnly + SameSite=Lax，随浏览器域名自动带上给 /monitor
+    return redirect('/monitor')
+        ->withCookie(cookie(
+            'horizon_admin',
+            $cookieValue,
+            $ttl / 60,        // minutes
+            '/',
+            null,
+            $request->isSecure(),
+            true,             // HttpOnly
+            false,
+            'Lax'
+        ));
+});

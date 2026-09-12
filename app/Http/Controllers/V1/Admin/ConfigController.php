@@ -76,6 +76,13 @@ class ConfigController extends Controller
                 'deposit_bounus' => config('v2board.deposit_bounus', [])
             ],
             'invite' => [
+                'complimentary_packages' => (int)config('v2board.complimentary_packages', 0),
+                'complimentary_package_duration' => (int)config('v2board.complimentary_package_duration', 0),
+                'is_Invitation_to_give' => (int)config('v2board.is_Invitation_to_give', 0),
+                'invitee_gift_enable' => (int)config('v2board.invitee_gift_enable', 0),
+                'invitee_gift_plan_id' => (int)config('v2board.invitee_gift_plan_id', 0),
+                'invitee_gift_days' => config('v2board.invitee_gift_days', 15),
+                'invitee_gift_ip_limit_enable' => (int)config('v2board.invitee_gift_ip_limit_enable', 1),
                 'invite_force' => (int)config('v2board.invite_force', 0),
                 'invite_commission' => config('v2board.invite_commission', 10),
                 'invite_gen_limit' => config('v2board.invite_gen_limit', 5),

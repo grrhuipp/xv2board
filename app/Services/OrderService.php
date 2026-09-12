@@ -223,19 +223,19 @@ class OrderService
             $orderAmountSum += $item['total_amount'] + $item['balance_amount'] + $item['surplus_amount'] - $item['refund_amount'];
         }
         if ($lastValidateAt === null) return;
-    
+
         $expiredAtByOrder = strtotime("+{$orderMonthSum} month", $lastValidateAt);
         $expiredAtByUser = $user->expired_at;
         if ($expiredAtByOrder < time() || $expiredAtByUser < time()) return;
         $orderSurplusSecond = $expiredAtByUser - time();
         $orderRangeSecond = $expiredAtByOrder - $lastValidateAt;
-    
+
         $totalTraffic = $user->transfer_enable;
         $usedTraffic = ($user->u + $user->d);
         if ($totalTraffic == 0) return;
-    
+
         $remainingTrafficRatio = ($totalTraffic - $usedTraffic) / $totalTraffic;
-    
+
         $avgPricePerSecond = $orderAmountSum / $orderRangeSecond;
         if ($orderRangeSecond <= 31 * 86400) {
             $remainingExpiredTimeRatio = $orderSurplusSecond / $orderRangeSecond;
@@ -249,7 +249,7 @@ class OrderService
             $orderSurplusAmount = $avgPricePerSecond * $monthSeconds * $surplusRatio +
                                   $avgPricePerSecond * $laterMonthsSeconds;
         }
-    
+
         $order->surplus_amount = max($orderSurplusAmount, 0);
         $order->surplus_order_ids = array_column($orders, 'id');
     }
@@ -330,7 +330,11 @@ class OrderService
 
         $this->user->plan_id = $plan->id;
         $this->user->group_id = $plan->group_id;
-        $this->user->expired_at = $this->getTime($order->period, $this->user->expired_at);
+        if (empty($order->period) && $order->gift_days > 0) {
+            $this->user->expired_at = max(time(), (int)$this->user->expired_at) + (int)round($order->gift_days * 86400);
+        } else {
+            $this->user->expired_at = $this->getTime($order->period, $this->user->expired_at);
+        }
     }
 
     private function buyByOneTime(Order $order, Plan $plan)
