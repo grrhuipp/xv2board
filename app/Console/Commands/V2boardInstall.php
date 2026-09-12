@@ -93,6 +93,9 @@ class V2boardInstall extends Command
             if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000001_add_subscription_analysis.php', '--force' => true]) !== 0) {
                 throw new \RuntimeException(\Artisan::output());
             }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000002_add_subscription_analysis_settings.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
             $email = '';
             while (!$email) {
                 $email = $this->ask('请输入管理员邮箱?');

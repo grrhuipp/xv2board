@@ -81253,13 +81253,7 @@
         }, {
             path: "/subscription/analysis",
             exact: !0,
-            component: function (props) {
-                return n("q1tI").createElement(n("Bl7J").a, Object.assign({}, props, {title: "订阅分析"}), n("q1tI").createElement("iframe", {
-                    src: "/" + window.settings.secure_path + "/subscription-analysis",
-                    title: "订阅分析",
-                    style: {display: "block", width: "100%", height: "calc(100vh - 120px)", border: 0}
-                }));
-            }
+            component: window.createSubscriptionAnalysisPage(n)
         }];
         window.g_routes = u;
         var h = n("PszG");

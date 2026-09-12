@@ -61,10 +61,7 @@ Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_pa
     if ($wh = config('v2board.whitehost')) {
         if (!in_array(strtolower($host), array_map('strtolower', explode(',', $wh)))) abort(403);
     }
-    return view('admin.subscription-analysis', [
-        'secure_path' => config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))),
-        'version' => config('app.version'),
-    ]);
+    return redirect('/' . config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))) . '#/subscription/analysis');
 });
 
 // SmartRoute 管理页面

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SubscriptionAnalysisService;
+use App\Services\SubscriptionAnalysisSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,11 +14,25 @@ class SubscriptionAnalysisController extends Controller
     public function fetch(Request $request)
     {
         $params = $request->validate([
-            'q' => 'nullable|string|max:100', 'event' => 'sometimes|in:all,attention,frequent,multi_ip',
+            'q' => 'nullable|string|max:100', 'event' => 'sometimes|in:all,attention,frequent,multi_ip,geo,multi_ua',
             'marked' => 'sometimes|boolean', 'page' => 'sometimes|integer|min:1', 'page_size' => 'sometimes|integer|min:1|max:50',
         ]);
         $params['q'] = trim($params['q'] ?? '');
         return response()->json((new SubscriptionAnalysisService())->fetch($params))->header('Cache-Control', 'private, no-store');
+    }
+
+    public function settings(Request $request)
+    {
+        $rules = [];
+        foreach (SubscriptionAnalysisSettings::DEFAULTS as $key => $default) {
+            $rules[$key] = 'required|integer|min:' . (strpos($key, 'frequent_') === 0 ? 1 : 2) . '|max:100000';
+        }
+        $values = array_map('intval', $request->validate($rules));
+        DB::table('v2_subscription_analysis_settings')->upsert([[
+            'id' => 1, 'thresholds' => json_encode($values),
+            'updated_by' => $request->input('user')['id'] ?? null, 'updated_at' => time(),
+        ]], ['id'], ['thresholds', 'updated_by', 'updated_at']);
+        return response()->json(['data' => $values]);
     }
 
     public function mark(Request $request)
