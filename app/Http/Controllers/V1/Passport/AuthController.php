@@ -22,6 +22,17 @@ class AuthController extends Controller
 {
     public function register(AuthRegister $request)
     {
+        $request->validate(['code' => 'nullable|string|max:255']);
+        if ($request->filled('code')) {
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+                return $this->registerAccount($request);
+            });
+        }
+        return $this->registerAccount($request);
+    }
+
+    private function registerAccount(AuthRegister $request)
+    {
         if ((int)config('v2board.register_limit_by_ip_enable', 0)) {
             $registerCountByIP = Cache::get(CacheKey::get('REGISTER_IP_RATE_LIMIT', $request->ip())) ?? 0;
             if ((int)$registerCountByIP >= (int)config('v2board.register_limit_count', 3)) {
@@ -99,7 +110,7 @@ class AuthController extends Controller
         }
 
         // try out
-        if ((int)config('v2board.try_out_plan_id', 0)) {
+        if (!$request->filled('code') && (int)config('v2board.try_out_plan_id', 0)) {
             $plan = Plan::find(config('v2board.try_out_plan_id'));
             if ($plan) {
                 $user->transfer_enable = $plan->transfer_enable * 1073741824;
@@ -113,6 +124,10 @@ class AuthController extends Controller
 
         if (!$user->save()) {
             abort(500, __('Register failed'));
+        }
+        if ($request->filled('code')) {
+            (new \App\Services\LegacyRedemptionService())->redeem((int) $user->id, $request->input('code'), true);
+            $user->refresh();
         }
         if ((int)config('v2board.email_verify', 0)) {
             Cache::forget(CacheKey::get('EMAIL_VERIFY_CODE', $cacheKeyEmail));

@@ -23,6 +23,13 @@ use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    public function redeemPlan(Request $request)
+    {
+        $params = $request->validate(['redeem_code' => 'required|string|max:255']);
+        (new \App\Services\LegacyRedemptionService())->redeem((int) $request->user['id'], $params['redeem_code']);
+        return response(['data' => ['state' => true, 'msg' => '兑换成功']]);
+    }
+
     public function getActiveSession(Request $request)
     {
         $user = User::find($request->user['id']);

@@ -10,6 +10,7 @@ class PassportRoute
         $router->group([
             'prefix' => 'passport'
         ], function ($router) {
+            $router->post('/redeem/register', 'V1\\Passport\\AuthController@register');
             // Auth
             $router->post('/auth/register', 'V1\\Passport\\AuthController@register');
             $router->post('/auth/login', 'V1\\Passport\\AuthController@login');
