@@ -59,6 +59,7 @@ class TicketController extends BaseAppClientController
 
     private function sendNotify(Ticket $ticket, string $message): void
     {
+        if (!(int) config('v2board.telegram_bot_ticket_notify', 1)) return;
         try {
             app(TelegramService::class)->sendMessageWithAdmin(
                 "📮工单提醒 #{$ticket->id}\n———————————————\n用户 ID：{$ticket->user_id}\n主题：\n`{$ticket->subject}`\n内容：\n {$message} ",

@@ -155,6 +155,8 @@ class ConfigController extends Controller
             ],
             'telegram' => [
                 'telegram_bot_enable' => config('v2board.telegram_bot_enable', 0),
+                'telegram_bot_ticket_notify' => config('v2board.telegram_bot_ticket_notify', 1),
+                'telegram_bot_order_notify' => config('v2board.telegram_bot_order_notify', 1),
                 'telegram_bot_token' => config('v2board.telegram_bot_token'),
                 'telegram_discuss_link' => config('v2board.telegram_discuss_link')
             ],

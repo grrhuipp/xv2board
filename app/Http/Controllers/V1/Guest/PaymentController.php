@@ -37,6 +37,7 @@ class PaymentController extends Controller
         if (!$orderService->paid($callbackNo)) {
             return false;
         }
+        if (!(int) config('v2board.telegram_bot_order_notify', 1)) return true;
         $telegramService = new TelegramService();
         $message = sprintf(
             "💰成功收款%s元\n———————————————\n订单号：%s",

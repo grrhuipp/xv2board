@@ -5904,6 +5904,18 @@
                     checked: parseInt(y.telegram_bot_enable),
                     onChange: e=>this.set("telegram", "telegram_bot_enable", e ? 1 : 0)
                 })), f.a.createElement(m, {
+                    title: "工单通知",
+                    description: "用户新建或回复工单时通知已绑定 Telegram 的管理员和客服，支持网页和 APP。需同时开启机器人通知。"
+                }, f.a.createElement(l["a"], {
+                    checked: 1 === parseInt(null == y.telegram_bot_ticket_notify ? 1 : y.telegram_bot_ticket_notify),
+                    onChange: e=>this.set("telegram", "telegram_bot_ticket_notify", e ? 1 : 0)
+                })), f.a.createElement(m, {
+                    title: "订单通知",
+                    description: "支付回调成功后通知已绑定 Telegram 的管理员。需同时开启机器人通知。"
+                }, f.a.createElement(l["a"], {
+                    checked: 1 === parseInt(null == y.telegram_bot_order_notify ? 1 : y.telegram_bot_order_notify),
+                    onChange: e=>this.set("telegram", "telegram_bot_order_notify", e ? 1 : 0)
+                })), f.a.createElement(m, {
                     title: "\u7fa4\u7ec4\u5730\u5740",
                     description: "\u586b\u5199\u540e\u5c06\u4f1a\u5728\u7528\u6237\u7aef\u5c55\u793a\uff0c\u6216\u8005\u88ab\u7528\u4e8e\u9700\u8981\u7684\u5730\u65b9\u3002"
                 }, f.a.createElement("input", {

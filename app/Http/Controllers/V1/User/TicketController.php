@@ -222,6 +222,7 @@ class TicketController extends Controller
 
     private function sendNotify(Ticket $ticket, string $message, $userid = null)
 	{
+		if (!(int) config('v2board.telegram_bot_ticket_notify', 1)) return;
 		$telegramService = new TelegramService();
 		if (!empty($userid)) {
 			$user = User::find($userid);
