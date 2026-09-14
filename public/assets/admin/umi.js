@@ -5903,13 +5903,13 @@
                 }, f.a.createElement(l["a"], {
                     checked: parseInt(y.telegram_bot_enable),
                     onChange: e=>this.set("telegram", "telegram_bot_enable", e ? 1 : 0)
-                })), f.a.createElement(m, {
+                })), 1 === parseInt(y.telegram_bot_enable) && f.a.createElement(m, {
                     title: "工单通知",
                     description: "用户新建或回复工单时通知已绑定 Telegram 的管理员和客服，支持网页和 APP。需同时开启机器人通知。"
                 }, f.a.createElement(l["a"], {
                     checked: 1 === parseInt(null == y.telegram_bot_ticket_notify ? 1 : y.telegram_bot_ticket_notify),
                     onChange: e=>this.set("telegram", "telegram_bot_ticket_notify", e ? 1 : 0)
-                })), f.a.createElement(m, {
+                })), 1 === parseInt(y.telegram_bot_enable) && f.a.createElement(m, {
                     title: "订单通知",
                     description: "支付回调成功后通知已绑定 Telegram 的管理员。需同时开启机器人通知。"
                 }, f.a.createElement(l["a"], {
