@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1\AppClient;
 
 use App\Http\Requests\User\TicketSave;
 use App\Services\TicketService;
+use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Ticket;
@@ -38,6 +39,7 @@ class TicketController extends BaseAppClientController
             $ticket = Ticket::create($ticketData);
             TicketMessage::create(['user_id' => $user->id, 'ticket_id' => $ticket->id, 'message' => $request->input('message')]);
             DB::commit();
+            $this->sendNotify($ticket, $request->input('message'));
             return response(['status' => 1, 'data' => true]);
         } catch (\Exception $e) { DB::rollBack(); return response()->json(['status' => 0, 'msg' => $e->getMessage()]); }
     }
@@ -51,7 +53,24 @@ class TicketController extends BaseAppClientController
         if ($ticket->status) return response()->json(['status' => 0, 'msg' => '工单已关闭']);
         $ticketService = new TicketService();
         if (!$ticketService->reply($ticket, $request->input('message'), $user->id)) return response()->json(['status' => 0, 'msg' => '回复失败']);
+        $this->sendNotify($ticket, $request->input('message'));
         return response(['status' => 1, 'data' => true]);
+    }
+
+    private function sendNotify(Ticket $ticket, string $message): void
+    {
+        try {
+            app(TelegramService::class)->sendMessageWithAdmin(
+                "📮工单提醒 #{$ticket->id}\n———————————————\n用户 ID：{$ticket->user_id}\n主题：\n`{$ticket->subject}`\n内容：\n {$message} ",
+                true
+            );
+        } catch (\Throwable $e) {
+            // The ticket/message is already committed; do not encourage duplicate submissions.
+            \Log::warning('App ticket Telegram notification dispatch failed', [
+                'ticket_id' => $ticket->id,
+                'exception' => get_class($e),
+            ]);
+        }
     }
 
     public function ticketClose(Request $request)
