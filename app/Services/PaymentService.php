@@ -45,9 +45,11 @@ class PaymentService
             $notifyUrl = $this->config['notify_domain'] . $parseUrl['path'];
         }
 
+        $returnUrl = $this->buildReturnUrl($order['origin'] ?? null, $order['trade_no']);
+
         return $this->payment->pay([
             'notify_url' => $notifyUrl,
-            'return_url' => url('/#/order/' . $order['trade_no']),
+            'return_url' => $returnUrl,
             'trade_no' => $order['trade_no'],
             'total_amount' => $order['total_amount'],
             'user_id' => $order['user_id'],
@@ -63,5 +65,35 @@ class PaymentService
             if (isset($this->config[$key])) $form[$key]['value'] = $this->config[$key];
         }
         return $form;
+    }
+
+    private function buildReturnUrl($origin, $tradeNo)
+    {
+        $origin = $this->normalizeOrigin($origin);
+        if ($origin === null) {
+            return url('/#/order/' . $tradeNo);
+        }
+
+        return $origin . '/#/order/' . rawurlencode($tradeNo);
+    }
+
+    private function normalizeOrigin($origin)
+    {
+        if (!is_string($origin)) return null;
+
+        $origin = trim($origin);
+        if ($origin === '' || strcasecmp($origin, 'null') === 0) return null;
+
+        $parsed = parse_url($origin);
+        if ($parsed === false || empty($parsed['scheme']) || empty($parsed['host'])) return null;
+        if (!in_array(strtolower($parsed['scheme']), ['http', 'https'], true)) return null;
+        foreach (['user', 'pass', 'path', 'query', 'fragment'] as $part) {
+            if (array_key_exists($part, $parsed) && $parsed[$part] !== null && $parsed[$part] !== '') return null;
+        }
+        if (isset($parsed['port']) && ($parsed['port'] < 1 || $parsed['port'] > 65535)) return null;
+
+        $normalized = strtolower($parsed['scheme']) . '://' . $parsed['host'];
+        if (isset($parsed['port'])) $normalized .= ':' . $parsed['port'];
+        return $normalized;
     }
 }

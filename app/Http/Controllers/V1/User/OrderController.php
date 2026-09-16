@@ -237,7 +237,8 @@ class OrderController extends Controller
             'trade_no' => $tradeNo,
             'total_amount' => isset($order->handling_amount) ? ($order->total_amount + $order->handling_amount) : $order->total_amount,
             'user_id' => $order->user_id,
-            'stripe_token' => $request->input('token')
+            'stripe_token' => $request->input('token'),
+            'origin' => $request->header('Origin')
         ]);
         return response([
             'type' => $result['type'],
