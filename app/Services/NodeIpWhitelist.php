@@ -102,7 +102,7 @@ class NodeIpWhitelist
             }
             $startSql = "'" . str_replace(["'", '\\'], '', $start) . "'";
             $endSql = "'" . str_replace(["'", '\\'], '', $end) . "'";
-            $parts[] = "(INET_ATON({$column}) BETWEEN INET_ATON({$startSql}) AND INET_ATON({$endSql}))";
+            $parts[] = "(INET_ATON({$column}) IS NOT NULL AND INET_ATON({$column}) BETWEEN INET_ATON({$startSql}) AND INET_ATON({$endSql}))";
         }
         if ($exact) {
             $parts[] = $column . ' IN (' . implode(',', $exact) . ')';

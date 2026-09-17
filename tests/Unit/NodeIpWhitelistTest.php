@@ -49,6 +49,7 @@ class NodeIpWhitelistTest extends TestCase
         $this->assertFalse(NodeIpWhitelist::contains('10.1.2.3'));
 
         $sql = NodeIpWhitelist::notInSql('ip');
+        $this->assertStringContainsString('INET_ATON(ip) IS NOT NULL', $sql);
         $this->assertStringContainsString("INET_ATON('38.180.226.0')", $sql);
         $this->assertStringContainsString("INET_ATON('38.180.226.255')", $sql);
         $this->assertStringNotContainsString('38.180.227.', $sql);

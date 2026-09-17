@@ -22,16 +22,17 @@ class SubscriptionAnalysisService
         $since = $now->copy()->subDays(3)->format('Y-m-d H:i:s');
         $notNodeIp = NodeIpWhitelist::notInSql('ip');
         $stats = DB::table('v2_subscribe_log')->whereBetween('created_at', [$since, $asOf])
+            ->whereRaw($notNodeIp)
             ->groupBy('user_id')->select('user_id')
             ->selectRaw('COUNT(*) AS count_3d, MIN(created_at) AS first_at, MAX(created_at) AS last_at')
             ->selectRaw('SUM(created_at >= ?) AS count_2m', [$now->copy()->subMinutes(2)->format('Y-m-d H:i:s')])
             ->selectRaw('SUM(created_at >= ?) AS count_5m', [$now->copy()->subMinutes(5)->format('Y-m-d H:i:s')])
             ->selectRaw('SUM(created_at >= ?) AS count_1h', [$now->copy()->subHour()->format('Y-m-d H:i:s')])
-            ->selectRaw("COUNT(DISTINCT CASE WHEN created_at >= ? AND {$notNodeIp} THEN NULLIF(ip, '') END) AS ips_10m", [$now->copy()->subMinutes(10)->format('Y-m-d H:i:s')])
-            ->selectRaw("COUNT(DISTINCT CASE WHEN {$notNodeIp} THEN NULLIF(ip, '') END) AS ips_3d")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN created_at >= ? THEN NULLIF(ip, '') END) AS ips_10m", [$now->copy()->subMinutes(10)->format('Y-m-d H:i:s')])
+            ->selectRaw("COUNT(DISTINCT NULLIF(ip, '')) AS ips_3d")
             ->selectRaw("COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) AS uas_3d")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN {$notNodeIp} AND LOWER(TRIM(country)) NOT IN ('', '0', '-', '未知', 'unknown') THEN TRIM(country) END) AS countries_3d")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN {$notNodeIp} AND LOWER(TRIM(city)) NOT IN ('', '0', '-', '未知', 'unknown') THEN CONCAT(COALESCE(TRIM(country), ''), '/', TRIM(city)) END) AS cities_3d");
+            ->selectRaw("COUNT(DISTINCT CASE WHEN LOWER(TRIM(country)) NOT IN ('', '0', '-', '未知', 'unknown') THEN TRIM(country) END) AS countries_3d")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN LOWER(TRIM(city)) NOT IN ('', '0', '-', '未知', 'unknown') THEN CONCAT(COALESCE(TRIM(country), ''), '/', TRIM(city)) END) AS cities_3d");
         $base = DB::query()->fromSub($stats, 's')->join('v2_user as u', 'u.id', '=', 's.user_id')
             ->leftJoin('v2_subscription_analysis_marks as m', 'm.user_id', '=', 's.user_id');
         $summary = (clone $base)->selectRaw('COUNT(*) AS users, COALESCE(SUM(s.count_3d), 0) AS requests')
@@ -50,6 +51,7 @@ class SubscriptionAnalysisService
                 $query->orWhereExists(function ($logs) use ($like, $since, $asOf) {
                     $logs->selectRaw('1')->from('v2_subscribe_log as search_log')
                         ->whereColumn('search_log.user_id', 'u.id')->whereBetween('search_log.created_at', [$since, $asOf])
+                        ->whereRaw(NodeIpWhitelist::notInSql('search_log.ip'))
                         ->where(function ($fields) use ($like) {
                             $fields->where('search_log.ip', 'like', $like)->orWhere('search_log.user_agent', 'like', $like);
                         });
@@ -72,6 +74,7 @@ class SubscriptionAnalysisService
         if ($page->count()) {
             // Timestamp first, then id: imported/out-of-order records must not replace the latest event.
             $latestIds = DB::table('v2_subscribe_log')->selectRaw('MAX(id) AS id')->groupBy('user_id')
+                ->whereRaw($notNodeIp)
                 ->where(function ($query) use ($page) {
                     foreach ($page->items() as $row) {
                         $query->orWhere(function ($pair) use ($row) {
@@ -100,7 +103,7 @@ class SubscriptionAnalysisService
             'meta' => [
                 'as_of' => $asOf, 'window_start' => $since, 'timezone' => config('app.timezone'),
                 'retained_from' => DB::table('v2_subscribe_log')->orderBy('created_at')->value('created_at'),
-                'scope' => '仅统计普通订阅，不包含APP订阅。展示最近3天有记录且仍存在的用户；次数为鉴权后的订阅请求，不代表下载成功。节点公网 IP 不计入多 IP / 地区。',
+                'scope' => '仅统计普通订阅，不包含APP订阅。展示最近3天有记录且仍存在的用户；次数为鉴权后的订阅请求，不代表下载成功。节点公网 IP 及其 IPv4 /24 不计入次数、多 IP、地区和最近一次记录。',
             ],
         ];
     }
