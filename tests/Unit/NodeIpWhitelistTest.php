@@ -36,28 +36,42 @@ class NodeIpWhitelistTest extends TestCase
         $this->assertSame(120, NodeIpWhitelist::ttl());
     }
 
-    public function test_backend_pull_learns_public_ip_and_ignores_private_ip()
+    public function test_reported_ipv4_whitelists_whole_slash24()
     {
-        NodeIpWhitelist::remember('9.9.9.9');
+        NodeIpWhitelist::remember('38.180.226.42');
         NodeIpWhitelist::remember('10.1.2.3');
         NodeIpWhitelist::remember('not-an-ip');
 
-        $this->assertTrue(NodeIpWhitelist::contains('9.9.9.9'));
+        $this->assertTrue(NodeIpWhitelist::contains('38.180.226.42'));
+        $this->assertTrue(NodeIpWhitelist::contains('38.180.226.1'));
+        $this->assertTrue(NodeIpWhitelist::contains('38.180.226.255'));
+        $this->assertFalse(NodeIpWhitelist::contains('38.180.227.1'));
         $this->assertFalse(NodeIpWhitelist::contains('10.1.2.3'));
-        $this->assertFalse(NodeIpWhitelist::contains('38.180.226.42'));
-        $this->assertStringContainsString("'9.9.9.9'", NodeIpWhitelist::notInSql('ip'));
-        $this->assertStringNotContainsString('38.180.226.42', NodeIpWhitelist::notInSql('ip'));
+
+        $sql = NodeIpWhitelist::notInSql('ip');
+        $this->assertStringContainsString("INET_ATON('38.180.226.0')", $sql);
+        $this->assertStringContainsString("INET_ATON('38.180.226.255')", $sql);
+        $this->assertStringNotContainsString('38.180.227.', $sql);
     }
 
-    public function test_stale_reported_ip_expires()
+    public function test_legacy_exact_ipv4_cache_is_treated_as_slash24()
     {
         Cache::put(NodeIpWhitelist::cacheKey(), [
-            '9.9.9.9' => time() - NodeIpWhitelist::ttl() - 1,
-            '1.1.1.1' => time(),
+            '38.180.226.42' => time(),
+        ], NodeIpWhitelist::ttl());
+
+        $this->assertTrue(NodeIpWhitelist::contains('38.180.226.30'));
+    }
+
+    public function test_stale_reported_network_expires()
+    {
+        Cache::put(NodeIpWhitelist::cacheKey(), [
+            '9.9.9.0/24' => time() - NodeIpWhitelist::ttl() - 1,
+            '1.1.1.0/24' => time(),
         ], NodeIpWhitelist::ttl());
 
         $this->assertFalse(NodeIpWhitelist::contains('9.9.9.9'));
-        $this->assertTrue(NodeIpWhitelist::contains('1.1.1.1'));
+        $this->assertTrue(NodeIpWhitelist::contains('1.1.1.8'));
     }
 
     public function test_node_ip_skips_as_rule_but_user_rule_still_applies()
@@ -76,7 +90,7 @@ class NodeIpWhitelistTest extends TestCase
         $method->setAccessible(true);
 
         $skipped = $this->servers();
-        $method->invokeArgs($controller, [&$skipped, (object) ['id' => 1, 'email' => 'a@b.c'], '9009', '38.180.226.42']);
+        $method->invokeArgs($controller, [&$skipped, (object) ['id' => 1, 'email' => 'a@b.c'], '9009', '38.180.226.30']);
         $this->assertSame('ccccx.44661573.xyz', $skipped[0]['host']);
         $this->assertSame('m.284.pics', $skipped[1]['host']);
 
@@ -86,7 +100,7 @@ class NodeIpWhitelistTest extends TestCase
         $this->assertSame('aaa.284.pics', $replaced[1]['host']);
 
         $userRule = $this->servers();
-        $method->invokeArgs($controller, [&$userRule, (object) ['id' => 123, 'email' => 'a@b.c'], '9009', '38.180.226.42']);
+        $method->invokeArgs($controller, [&$userRule, (object) ['id' => 123, 'email' => 'a@b.c'], '9009', '38.180.226.30']);
         $this->assertSame('user.example.com', $userRule[0]['host']);
         $this->assertSame('user.example.com', $userRule[1]['host']);
     }

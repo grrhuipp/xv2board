@@ -45,8 +45,13 @@ class NodeIpWhitelist
             return;
         }
 
+        $key = self::learnedKey($ip);
+        if ($key === null) {
+            return;
+        }
+
         $ips = self::learned();
-        $ips[$ip] = time();
+        $ips[$key] = time();
         Cache::put(self::cacheKey(), $ips, self::ttl());
     }
 
@@ -57,7 +62,12 @@ class NodeIpWhitelist
             return false;
         }
 
-        return isset(self::learned()[$ip]);
+        $key = self::learnedKey($ip);
+        if ($key === null) {
+            return false;
+        }
+
+        return isset(self::learned()[$key]);
     }
 
     /**
@@ -70,12 +80,38 @@ class NodeIpWhitelist
 
     public static function notInSql(string $column = 'ip'): string
     {
-        $ips = self::ipList();
-        if (!$ips) {
+        $keys = self::ipList();
+        if (!$keys) {
             return '1=1';
         }
 
-        return $column . ' NOT IN (' . self::quotedList($ips) . ')';
+        $parts = [];
+        $exact = [];
+        foreach ($keys as $key) {
+            if (preg_match('/^(\d{1,3}(?:\.\d{1,3}){3})\/24$/', $key, $m) !== 1) {
+                $normalized = self::normalize($key);
+                if ($normalized !== null) {
+                    $exact[] = "'" . str_replace(["'", '\\'], '', $normalized) . "'";
+                }
+                continue;
+            }
+            $start = $m[1];
+            $end = long2ip(ip2long($start) | 255);
+            if ($end === false) {
+                continue;
+            }
+            $startSql = "'" . str_replace(["'", '\\'], '', $start) . "'";
+            $endSql = "'" . str_replace(["'", '\\'], '', $end) . "'";
+            $parts[] = "(INET_ATON({$column}) BETWEEN INET_ATON({$startSql}) AND INET_ATON({$endSql}))";
+        }
+        if ($exact) {
+            $parts[] = $column . ' IN (' . implode(',', $exact) . ')';
+        }
+        if (!$parts) {
+            return '1=1';
+        }
+
+        return 'NOT (' . implode(' OR ', $parts) . ')';
     }
 
     /**
@@ -92,35 +128,58 @@ class NodeIpWhitelist
         $ttl = self::ttl();
         $fresh = [];
         foreach ($ips as $ip => $seenAt) {
-            $normalized = self::normalize((string) $ip);
-            if ($normalized === null) {
+            $key = self::coerceLearnedKey((string) $ip);
+            if ($key === null) {
                 continue;
             }
             $ts = is_numeric($seenAt) ? (int) $seenAt : 0;
             if ($ts <= 0 || ($now - $ts) > $ttl) {
                 continue;
             }
-            $fresh[$normalized] = $ts;
+            if (!isset($fresh[$key]) || $ts > $fresh[$key]) {
+                $fresh[$key] = $ts;
+            }
         }
 
         return $fresh;
     }
 
-    /**
-     * @param list<string> $ips
-     */
-    private static function quotedList(array $ips): string
+    private static function learnedKey(string $ip): ?string
     {
-        $quoted = [];
-        foreach ($ips as $ip) {
-            $normalized = self::normalize($ip);
-            if ($normalized === null) {
-                continue;
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $long = ip2long($ip);
+            if ($long === false) {
+                return null;
             }
-            $quoted[] = "'" . str_replace(["'", '\\'], '', $normalized) . "'";
+            $network = long2ip($long & 0xFFFFFF00);
+            if ($network === false) {
+                return null;
+            }
+
+            return $network . '/24';
         }
 
-        return implode(',', $quoted);
+        return $ip;
+    }
+
+    private static function coerceLearnedKey(string $key): ?string
+    {
+        $key = trim($key);
+        if (preg_match('/^(\d{1,3}(?:\.\d{1,3}){3})\/24$/', $key, $m) === 1) {
+            $ip = self::normalize($m[1]);
+            if ($ip === null) {
+                return null;
+            }
+
+            return self::learnedKey($ip);
+        }
+
+        $ip = self::normalize($key);
+        if ($ip === null) {
+            return null;
+        }
+
+        return self::learnedKey($ip);
     }
 
     private static function normalize(?string $ip): ?string
