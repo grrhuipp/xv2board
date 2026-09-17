@@ -5,6 +5,7 @@ namespace App\Http\Controllers\V1\Server;
 use App\Http\Controllers\Controller;
 use App\Models\ServerVmess;
 use App\Services\ServerService;
+use App\Services\NodeIpWhitelist;
 use App\Services\UserService;
 use App\Utils\CacheKey;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class DeepbworkController extends Controller
         if ($token !== config('v2board.server_token')) {
             abort(500, 'token is error');
         }
+        NodeIpWhitelist::rememberFromRequest($request);
     }
 
     // 后端获取用户

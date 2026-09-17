@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\V2UserConnectLog;
 use App\Services\Geo\Ip2Region;
+use App\Services\NodeIpWhitelist;
 use App\Services\ServerService;
 use App\Services\UserService;
 use App\Utils\CacheKey;
@@ -37,6 +38,7 @@ class UniProxyController extends Controller
         $this->serverService = new ServerService();
         $this->nodeInfo = $this->serverService->getServer($this->nodeId, $this->nodeType);
         if (!$this->nodeInfo) abort(500, 'server is not exist');
+        NodeIpWhitelist::rememberFromRequest($request);
     }
 
     // 后端获取用户

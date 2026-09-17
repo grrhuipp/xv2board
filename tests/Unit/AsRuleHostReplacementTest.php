@@ -40,17 +40,19 @@ class AsRuleHostReplacementTest extends TestCase
         $this->assertSame($this->servers(), $missing);
     }
 
-    public function test_legacy_three_field_rule_remains_supported()
+    public function test_legacy_three_field_as_rule_is_ignored()
     {
         config([
             'v2board.as_rule_asns' => null,
             'v2board.as_rule' => 'AS004134,*,legacy.example.com',
+            'v2board.as_rule_mode' => 'blacklist',
+            'v2board.as_rule_node_keyword' => '*',
+            'v2board.as_rule_host' => 'new.example.com',
         ]);
 
         $servers = $this->invokeAsRule('4134');
 
-        $this->assertSame('legacy.example.com', $servers[0]['host']);
-        $this->assertSame('legacy.example.com', $servers[1]['host']);
+        $this->assertSame($this->servers(), $servers);
     }
 
     public function test_user_rule_runs_after_as_rule_and_keeps_final_priority()

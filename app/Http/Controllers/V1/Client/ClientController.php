@@ -9,6 +9,7 @@ use App\Protocols\Singbox\SingboxOld;
 use App\Protocols\ClashMeta;
 use App\Services\ServerService;
 use App\Services\UserService;
+use App\Services\NodeIpWhitelist;
 use App\Services\Geo\Ip2Region;
 use App\Utils\Helper;
 use App\Models\SubscribeLog;
@@ -42,9 +43,7 @@ class ClientController extends Controller
         if ($userService->isAvailable($user)) {
             $serverService = new ServerService();
             $servers = $serverService->getAvailableServers($user);
-            $this->replaceServerHostByAsRule($servers, $location['as'] ?? null);
-            (new \App\Services\MarkedSubscriptionHostService())->apply($servers, (int) $user->id);
-            $this->replaceServerHostByUserRule($servers, $user);
+            $this->applySubscriptionHostRules($servers, $user, $location['as'] ?? null, $ip);
             if($flag) {
                 if (!strpos($flag, 'sing')) {
                     $this->setSubscribeInfoToServers($servers, $user);
@@ -141,6 +140,15 @@ class ClientController extends Controller
         ];
     }
 
+    private function applySubscriptionHostRules(array &$servers, $user, $asNumber, $ip): void
+    {
+        if (!NodeIpWhitelist::contains($ip)) {
+            $this->replaceServerHostByAsRule($servers, $asNumber);
+        }
+        (new \App\Services\MarkedSubscriptionHostService())->apply($servers, (int) $user->id);
+        $this->replaceServerHostByUserRule($servers, $user);
+    }
+
     private function replaceServerHostByAsRule(array &$servers, $asNumber)
     {
         $asNumber = $this->normalizeAsNumber($asNumber);
@@ -148,73 +156,43 @@ class ClientController extends Controller
             return;
         }
 
-        $asListConfig = config('v2board.as_rule_asns');
-        if ($asListConfig !== null) {
-            $asRuleMode = (string) config('v2board.as_rule_mode', 'blacklist');
-            if (!in_array($asRuleMode, ['blacklist', 'whitelist'], true)) {
-                $asRuleMode = 'blacklist';
-            }
+        $asRuleMode = (string) config('v2board.as_rule_mode', 'blacklist');
+        if (!in_array($asRuleMode, ['blacklist', 'whitelist'], true)) {
+            $asRuleMode = 'blacklist';
+        }
 
-            $asSet = [];
-            $asTokens = preg_split('/[\s,;]+/', (string) $asListConfig, -1, PREG_SPLIT_NO_EMPTY);
-            foreach ($asTokens as $token) {
-                $normalized = $this->normalizeAsNumber($token);
-                if ($normalized !== null) {
-                    $asSet[$normalized] = true;
-                }
+        $asSet = [];
+        $asTokens = preg_split('/[\s,;]+/', (string) config('v2board.as_rule_asns', ''), -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($asTokens as $token) {
+            $normalized = $this->normalizeAsNumber($token);
+            if ($normalized !== null) {
+                $asSet[$normalized] = true;
             }
-            if (!$asSet) {
-                return;
-            }
-
-            $isListed = isset($asSet[$asNumber]);
-            $shouldReplace = $asRuleMode === 'whitelist' ? !$isListed : $isListed;
-            if (!$shouldReplace) {
-                return;
-            }
-
-            $nameKeyword = trim((string) config('v2board.as_rule_node_keyword', '*'));
-            $newHost = trim((string) config('v2board.as_rule_host', ''));
-            if ($nameKeyword === '' || $newHost === '') {
-                return;
-            }
-
-            foreach ($servers as &$server) {
-                $matchesServer = $nameKeyword === '*'
-                    || (isset($server['name']) && stripos($server['name'], $nameKeyword) !== false);
-                if ($matchesServer && isset($server['host'])) {
-                    $server['host'] = $newHost;
-                }
-            }
-            unset($server);
+        }
+        if (!$asSet) {
             return;
         }
 
-        // Backward compatibility for existing ASN,node keyword,new host rules.
-        $asRules = (string) config('v2board.as_rule', '');
-        $asRuleLines = preg_split('/[;\r\n]+/', $asRules, -1, PREG_SPLIT_NO_EMPTY);
-        foreach ($asRuleLines as $line) {
-            $parts = array_map('trim', explode(',', $line));
-            if (count($parts) !== 3) {
-                continue;
-            }
-
-            [$ruleAsNumber, $nameKeyword, $newHost] = $parts;
-            $ruleAsNumber = $this->normalizeAsNumber($ruleAsNumber);
-            if ($ruleAsNumber === null || $ruleAsNumber !== $asNumber
-                || $nameKeyword === '' || $newHost === '') {
-                continue;
-            }
-
-            foreach ($servers as &$server) {
-                $matchesServer = $nameKeyword === '*'
-                    || (isset($server['name']) && stripos($server['name'], $nameKeyword) !== false);
-                if ($matchesServer && isset($server['host'])) {
-                    $server['host'] = $newHost;
-                }
-            }
-            unset($server);
+        $isListed = isset($asSet[$asNumber]);
+        $shouldReplace = $asRuleMode === 'whitelist' ? !$isListed : $isListed;
+        if (!$shouldReplace) {
+            return;
         }
+
+        $nameKeyword = trim((string) config('v2board.as_rule_node_keyword', '*'));
+        $newHost = trim((string) config('v2board.as_rule_host', ''));
+        if ($nameKeyword === '' || $newHost === '') {
+            return;
+        }
+
+        foreach ($servers as &$server) {
+            $matchesServer = $nameKeyword === '*'
+                || (isset($server['name']) && stripos($server['name'], $nameKeyword) !== false);
+            if ($matchesServer && isset($server['host'])) {
+                $server['host'] = $newHost;
+            }
+        }
+        unset($server);
     }
 
     private function normalizeAsNumber($value): ?string
