@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Jobs\OrderHandleJob;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\User;
+use App\Utils\Helper;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
@@ -258,13 +261,31 @@ class OrderService
     {
         $order = $this->order;
         if ($order->status !== 0) return true;
+        if ($order->coupon_id) {
+            $coupon = Coupon::find($order->coupon_id);
+            if ($coupon && !empty($coupon->bind_email)) {
+                $inviter = User::where('email', $coupon->bind_email)->first();
+                if ($inviter && $order->user_id && $inviter->id !== $order->user_id) {
+                    User::where('id', $order->user_id)
+                        ->whereNull('invite_user_id')
+                        ->update(['invite_user_id' => $inviter->id]);
+                    $order->invite_user_id = $inviter->id;
+                }
+            }
+        }
         $order->status = 1;
         $order->paid_at = time();
         $order->callback_no = $callbackNo;
         if (!$order->save()) return false;
         try {
             OrderHandleJob::dispatch($order->trade_no);
+            app(OrderNotifyService::class)->notify($order);
+            $this->handleFirstOrderReward($order);
         } catch (\Exception $e) {
+            Log::error('订单支付处理异常', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
             return false;
         }
         return true;
@@ -403,5 +424,107 @@ class OrderService
             }
         }
         return $add;
+    }
+
+    private function handleFirstOrderReward(Order $order)
+    {
+        $inviteGiveType = (int) config('v2board.is_Invitation_to_give', 0);
+        if (!in_array($inviteGiveType, [2, 3])) {
+            return;
+        }
+        if ($order->total_amount == 0) return;
+
+        $user = User::find($order->user_id);
+        if (!$user || !$user->invite_user_id) {
+            return;
+        }
+
+        $inviter = User::find($user->invite_user_id);
+        if (!$inviter) {
+            return;
+        }
+        $inviterCurrentPlan = Plan::find($inviter->plan_id);
+        if (!$inviterCurrentPlan || (int)config('v2board.try_out_plan_id') == $inviter->plan_id) {
+            return;
+        }
+        $hasOtherPaidOrders = Order::where('user_id', $user->id)
+            ->where('id', '!=', $order->id)
+            ->where('status', 3)
+            ->exists();
+        if ($hasOtherPaidOrders) {
+            return;
+        }
+        $rewardPlan = Plan::find((int) config('v2board.complimentary_packages'));
+        if (!$rewardPlan) {
+            return;
+        }
+        try {
+            DB::transaction(function () use ($rewardPlan, $inviterCurrentPlan, $inviter) {
+                $currentTime = time();
+                $rewardMonthlyValue = $this->getMonthlyValue($rewardPlan);
+                $inviterMonthlyValue = $this->getMonthlyValue($inviterCurrentPlan);
+                $priceRatio = $rewardMonthlyValue / $inviterMonthlyValue;
+                $configHours = (int) config('v2board.complimentary_package_duration', 0);
+                $adjustedHours = $configHours * $priceRatio;
+                $add_seconds = $adjustedHours * 3600;
+
+                if ($inviter->expired_at !== null) {
+                    if ($inviter->expired_at < $currentTime) {
+                        $inviter->expired_at = $currentTime;
+                    }
+                    $inviter->expired_at += $add_seconds;
+                }
+                $calculated_days = $add_seconds / 86400;
+                $formatted_days = number_format($calculated_days, 2, '.', '');
+                $order = new Order();
+                $orderService = new OrderService($order);
+                $order->user_id = $inviter->id;
+                $order->plan_id = $inviter->plan_id;
+                $order->period = '';
+                $order->trade_no = Helper::guid();
+                $order->total_amount = 0;
+                $order->status = 0;
+                $order->type = 6;
+                $order->gift_days = $formatted_days;
+                $orderService->paid('firstorder');
+            });
+        } catch (\Exception $e) {
+            Log::error('处理首单购买奖励失败', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+                'inviter_id' => $user->invite_user_id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    private function getMonthlyValue($plan)
+    {
+        $monthlyValues = [];
+        if ($plan->month_price > 0) {
+            $monthlyValues[] = $plan->month_price;
+        }
+        if ($plan->quarter_price > 0) {
+            $monthlyValues[] = $plan->quarter_price / 3;
+        }
+        if ($plan->half_year_price > 0) {
+            $monthlyValues[] = $plan->half_year_price / 6;
+        }
+        if ($plan->year_price > 0) {
+            $monthlyValues[] = $plan->year_price / 12;
+        }
+        if ($plan->two_year_price > 0) {
+            $monthlyValues[] = $plan->two_year_price / 24;
+        }
+        if ($plan->three_year_price > 0) {
+            $monthlyValues[] = $plan->three_year_price / 36;
+        }
+        if ($plan->onetime_price > 0) {
+            $monthlyValues[] = $plan->onetime_price / 12;
+        }
+        if (empty($monthlyValues)) {
+            return 1;
+        }
+        return max($monthlyValues);
     }
 }
