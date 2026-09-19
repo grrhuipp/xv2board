@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CouponGenerate;
 use App\Http\Requests\Admin\CouponSave;
 use App\Models\Coupon;
+use App\Models\User;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +56,7 @@ class CouponController extends Controller
         }
 
         $params = $request->validated();
+        $params['bind_email'] = $this->resolveBindEmail($request);
         if (!$request->input('id')) {
             if (!isset($params['code'])) {
                 $params['code'] = Helper::randomChar(8);
@@ -79,6 +81,7 @@ class CouponController extends Controller
     {
         $coupons = [];
         $coupon = $request->validated();
+        $coupon['bind_email'] = $this->resolveBindEmail($request);
         $coupon['created_at'] = $coupon['updated_at'] = time();
         $coupon['show'] = 1;
         unset($coupon['generate_count']);
@@ -101,7 +104,7 @@ class CouponController extends Controller
             abort(500, '生成失败');
         }
         DB::commit();
-        $data = "名称,类型,金额或比例,开始时间,结束时间,可用次数,可用于订阅,券码,生成时间\r\n";
+        $data = "名称,类型,金额或比例,开始时间,结束时间,可用次数,可用于订阅,券码,绑定邮箱,生成时间\r\n";
         foreach($coupons as $coupon) {
             $type = ['', '金额', '比例'][$coupon['type']];
             $value = ['', ($coupon['value'] / 100),$coupon['value']][$coupon['type']];
@@ -110,7 +113,8 @@ class CouponController extends Controller
             $limitUse = $coupon['limit_use'] ?? '不限制';
             $createTime = date('Y-m-d H:i:s', $coupon['created_at']);
             $limitPlanIds = isset($coupon['limit_plan_ids']) ? implode("/", $coupon['limit_plan_ids']) : '不限制';
-            $data .= "{$coupon['name']},{$type},{$value},{$startTime},{$endTime},{$limitUse},{$limitPlanIds},{$coupon['code']},{$createTime}\r\n";
+            $bindEmail = $coupon['bind_email'] ?? '';
+            $data .= "{$coupon['name']},{$type},{$value},{$startTime},{$endTime},{$limitUse},{$limitPlanIds},{$coupon['code']},{$bindEmail},{$createTime}\r\n";
         }
         echo $data;
     }
@@ -131,5 +135,17 @@ class CouponController extends Controller
         return response([
             'data' => true
         ]);
+    }
+
+    private function resolveBindEmail(CouponGenerate $request): ?string
+    {
+        $bindEmail = $request->input('bind_email') ?: null;
+        if (!empty($bindEmail)) {
+            $user = User::where('email', $bindEmail)->first();
+            if (!$user) {
+                abort(500, '绑定的邮箱用户不存在');
+            }
+        }
+        return $bindEmail;
     }
 }

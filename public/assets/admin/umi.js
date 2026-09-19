@@ -39194,6 +39194,13 @@
                         }, e)
                     }
                 }, {
+                    title: "\u7ed1\u5b9a\u90ae\u7bb1",
+                    dataIndex: "bind_email",
+                    key: "bind_email",
+                    render: e=>{
+                        return e || "-"
+                    }
+                }, {
                     title: "\u5269\u4f59\u6b21\u6570",
                     dataIndex: "limit_use",
                     key: "limit_use",
@@ -39396,6 +39403,20 @@
                         this.setState({
                             submit: v()({}, this.state.submit, {
                                 limit_use_with_user: e.target.value
+                            })
+                        })
+                    }
+                })), b.a.createElement("div", {
+                    className: "form-group"
+                }, b.a.createElement("label", {
+                    for: "example-text-input-alt"
+                }, "\u7ed1\u5b9a\u9080\u8bf7\u4eba\u90ae\u7bb1"), b.a.createElement(s["a"], {
+                    placeholder: "\u5151\u6362\u540e\u81ea\u52a8\u7ed1\u5b9a\u8be5\u90ae\u7bb1\u7528\u6237\u4e3a\u9080\u8bf7\u4eba(\u4e3a\u7a7a\u5219\u4e0d\u7ed1\u5b9a)",
+                    value: this.state.submit.bind_email,
+                    onChange: e=>{
+                        this.setState({
+                            submit: v()({}, this.state.submit, {
+                                bind_email: e.target.value
                             })
                         })
                     }
