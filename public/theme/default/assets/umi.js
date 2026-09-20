@@ -60210,8 +60210,8 @@
             return null !== e && e < (new Date).getTime() / 1e3
         }
         function b(e) {
-            var t, n;
-            return !(null === (t = e.plan) || void 0 === t || !t.renew) && (!(null === (n = e.plan) || void 0 === n || !n.show) || !g(e.expired_at))
+            var t;
+            return !(null === (t = e.plan) || void 0 === t || !t.renew)
         }
         function w() {
             var e = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "success"

@@ -145,7 +145,7 @@ class OrderController extends Controller
         }
 
 
-        if (!$plan->show && $plan->renew && !$userService->isAvailable($user)) {
+        if (!$plan->show && $plan->renew && $user->plan_id !== $plan->id) {
             abort(500, __('This subscription has expired, please change to another subscription'));
         }
 
