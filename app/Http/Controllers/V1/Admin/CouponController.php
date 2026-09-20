@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CouponController extends Controller
 {
@@ -20,6 +21,7 @@ class CouponController extends Controller
         $sortType = in_array($request->input('sort_type'), ['ASC', 'DESC']) ? $request->input('sort_type') : 'DESC';
         $sort = $request->input('sort') ? $request->input('sort') : 'id';
         $builder = Coupon::orderBy($sort, $sortType);
+        $this->applySearch($request, $builder);
         $total = $builder->count();
         $coupons = $builder->forPage($current, $pageSize)
             ->get();
@@ -27,6 +29,51 @@ class CouponController extends Controller
             'data' => $coupons,
             'total' => $total
         ]);
+    }
+
+    private function applySearch(Request $request, $builder): void
+    {
+        $search = trim((string) $request->input('search', ''));
+        if ($search === '') {
+            $search = trim((string) $request->input('keyword', ''));
+        }
+        if ($search !== '') {
+            $like = '%' . addcslashes($search, "%_\\") . '%';
+            $builder->where(function ($query) use ($search, $like) {
+                $query->where('code', 'like', $like)
+                    ->orWhere('name', 'like', $like);
+                if (ctype_digit($search)) {
+                    $query->orWhere('id', (int) $search);
+                }
+                if (Schema::hasColumn('v2_coupon', 'bind_email')) {
+                    $query->orWhere('bind_email', 'like', $like);
+                }
+            });
+        }
+
+        $filters = $request->input('filter');
+        if (!is_array($filters)) {
+            return;
+        }
+        $allowed = ['id', 'code', 'name', 'type', 'show'];
+        foreach ($filters as $filter) {
+            if (!is_array($filter) || empty($filter['key']) || !array_key_exists('value', $filter)) {
+                continue;
+            }
+            $key = $filter['key'];
+            if (!in_array($key, $allowed, true)) {
+                continue;
+            }
+            $condition = $filter['condition'] ?? 'like';
+            $value = $filter['value'];
+            if ($condition === '模糊' || $condition === 'like') {
+                $builder->where($key, 'like', '%' . addcslashes((string) $value, "%_\\") . '%');
+                continue;
+            }
+            if (in_array($condition, ['=', 'is'], true)) {
+                $builder->where($key, $value);
+            }
+        }
     }
 
     public function show(Request $request)

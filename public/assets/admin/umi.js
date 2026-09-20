@@ -39260,13 +39260,29 @@
                     className: "bg-white"
                 }, b.a.createElement("div", {
                     style: {
-                        padding: 15
+                        padding: 15,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: 12
                     }
                 }, b.a.createElement(c["a"], {
                     onClick: ()=>this.modalVisible()
                 }, b.a.createElement(u["a"], {
                     type: "plus"
-                }), " \u6dfb\u52a0\u4f18\u60e0\u5238")), b.a.createElement(l["a"], {
+                }), " \u6dfb\u52a0\u4f18\u60e0\u5238"), b.a.createElement(s["a"].Search, {
+                    allowClear: !0,
+                    enterButton: "\u641c\u7d22",
+                    placeholder: "\u641c\u7d22\u5238\u540d\u79f0\u6216\u5238\u7801",
+                    style: {
+                        width: 320
+                    },
+                    onSearch: e=>this.props.dispatch({
+                        type: "coupon/search",
+                        search: e
+                    })
+                })), b.a.createElement(l["a"], {
                     tableLayout: "auto",
                     dataSource: t,
                     columns: x,
@@ -73960,7 +73976,8 @@
                 pageSize: 10,
                 current: 1
             },
-            sort: {}
+            sort: {},
+            search: ""
         };
         t["default"] = {
             name: "coupon",
@@ -73994,7 +74011,9 @@
                                     });
                                 case 5:
                                     return e.next = 7,
-                                    Object(o["a"])("/" + window.settings.secure_path + "/coupon/fetch", i()({}, t.pagination, t.sort));
+                                    Object(o["a"])("/" + window.settings.secure_path + "/coupon/fetch", i()({}, t.pagination, t.sort, {
+                                        search: t.search || ""
+                                    }));
                                 case 7:
                                     return a = e.sent,
                                     e.next = 10,
@@ -74147,6 +74166,42 @@
                                 case 5:
                                     return e.next = 7,
                                     r({
+                                        type: "fetch"
+                                    });
+                                case 7:
+                                case "end":
+                                    return e.stop()
+                                }
+                        }, e)
+                    })()
+                },
+                search(e, t) {
+                    var n = e.search
+                      , r = t.select
+                      , o = t.put;
+                    return l().mark(function e() {
+                        var t;
+                        return l().wrap(function(e) {
+                            while (1)
+                                switch (e.prev = e.next) {
+                                case 0:
+                                    return e.next = 2,
+                                    r(e=>e.coupon);
+                                case 2:
+                                    return t = e.sent,
+                                    e.next = 5,
+                                    o({
+                                        type: "setState",
+                                        payload: {
+                                            search: n,
+                                            pagination: i()({}, t.pagination, {
+                                                current: 1
+                                            })
+                                        }
+                                    });
+                                case 5:
+                                    return e.next = 7,
+                                    o({
                                         type: "fetch"
                                     });
                                 case 7:
