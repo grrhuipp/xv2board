@@ -5563,6 +5563,39 @@
                     checked: parseInt(n.invite_force),
                     onChange: e=>this.set("invite", "invite_force", e ? 1 : 0)
                 })), f.a.createElement(m, {
+                        title: "\u9080\u8bf7\u7801\u6ce8\u518c\u8d60\u9001",
+                        description: "\u5f00\u542f\u540e\uff0c\u4f7f\u7528\u9080\u8bf7\u7801\u6ce8\u518c\u7684\u65b0\u7528\u6237\u76f4\u63a5\u83b7\u5f97\u4e0b\u65b9\u8bbe\u5b9a\u7684\u5957\u9910\u4e0e\u5929\u6570\uff08\u4e0d\u518d\u53d1\u653e\u8bd5\u7528\u5957\u9910\uff09\u3002"
+                    }, f.a.createElement(l["a"], {
+                        checked: parseInt(n.invitee_gift_enable),
+                        onChange: e=>this.set("invite", "invitee_gift_enable", e ? 1 : 0)
+                    })), f.a.createElement(m, {
+                        title: "\u9080\u8bf7\u7801\u6ce8\u518c\u8d60\u9001\u5957\u9910",
+                        description: "\u4f7f\u7528\u9080\u8bf7\u7801\u6ce8\u518c\u7684\u65b0\u7528\u6237\u83b7\u5f97\u7684\u5957\u9910\u3002"
+                    }, f.a.createElement("select", {
+                        onChange: e=>this.set("invite", "invitee_gift_plan_id", parseInt(e.target.value)),
+                        className: "form-control",
+                        value: n.invitee_gift_plan_id
+                    }, f.a.createElement("option", {
+                        value: 0
+                    }, "\u5173\u95ed"), E.map(e=>f.a.createElement("option", {
+                        key: Math.random(),
+                        value: e.id
+                    }, e.name)))), f.a.createElement(m, {
+                        title: "\u9080\u8bf7\u7801\u6ce8\u518c\u8d60\u9001\u5929\u6570",
+                        description: "\u4f7f\u7528\u9080\u8bf7\u7801\u6ce8\u518c\u7684\u65b0\u7528\u6237\u8d60\u9001\u7684\u5929\u6570\uff0c\u4f8b\u5982 15\u3002"
+                    }, f.a.createElement("input", {
+                        type: "text",
+                        className: "form-control",
+                        placeholder: "\u8bf7\u8f93\u5165",
+                        defaultValue: n.invitee_gift_days,
+                        onChange: e=>this.set("invite", "invitee_gift_days", e.target.value)
+                    })), f.a.createElement(m, {
+                        title: "\u9080\u8bf7\u7801\u6ce8\u518c\u8d60\u9001\u540cIP\u9650\u5236",
+                        description: "\u5f00\u542f\u540e\uff0c\u540c\u4e00IP 30 \u5929\u5185\u53ea\u80fd\u9886\u53d6\u4e00\u6b21\u9080\u8bf7\u6ce8\u518c\u8d60\u9001\uff0c\u9632\u6b62\u5237\u5355\u3002"
+                    }, f.a.createElement(l["a"], {
+                        checked: parseInt(n.invitee_gift_ip_limit_enable),
+                        onChange: e=>this.set("invite", "invitee_gift_ip_limit_enable", e ? 1 : 0)
+                    })), f.a.createElement(m, {
                     title: "\u9080\u8bf7\u4f63\u91d1\u767e\u5206\u6bd4",
                     description: "\u9ed8\u8ba4\u5168\u5c40\u7684\u4f63\u91d1\u5206\u914d\u6bd4\u4f8b\uff0c\u4f60\u53ef\u4ee5\u5728\u7528\u6237\u7ba1\u7406\u5355\u72ec\u914d\u7f6e\u5355\u4e2a\u6bd4\u4f8b\u3002"
                 }, f.a.createElement("input", {
