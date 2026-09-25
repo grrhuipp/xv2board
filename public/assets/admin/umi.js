@@ -5832,12 +5832,12 @@
                     onChange: e=>this.set("email", "email_username", e.target.value)
                 })), f.a.createElement(m, {
                     title: "SMTP\u5bc6\u7801",
-                    description: "\u7531\u90ae\u4ef6\u670d\u52a1\u5546\u63d0\u4f9b\u7684\u5bc6\u7801"
+                    description: v.email_has_password ? "密码已保存；留空保持不变" : "由邮件服务商提供的密码"
                 }, f.a.createElement("input", {
-                    type: "text",
+                    type: "password",
                     className: "form-control",
-                    placeholder: "\u8bf7\u8f93\u5165",
-                    defaultValue: v.email_password,
+                    placeholder: v.email_has_password ? "已保存（留空保持不变）" : "请输入密码",
+                    autoComplete: "new-password",
                     onChange: e=>this.set("email", "email_password", e.target.value)
                 })), f.a.createElement(m, {
                     title: "\u53d1\u4ef6\u5730\u5740",
@@ -5848,6 +5848,69 @@
                     placeholder: "\u8bf7\u8f93\u5165",
                     defaultValue: v.email_from_address,
                     onChange: e=>this.set("email", "email_from_address", e.target.value)
+                })), f.a.createElement("div", {
+                    className: "alert alert-info",
+                    role: "status",
+                    style: {
+                        margin: "16px 20px",
+                        fontWeight: "bold"
+                    }
+                }, "第二邮局 SMTP 设置（", v.email_secondary_enabled ? "已启用" : "未配置或不可用", "; 密码", v.email_secondary_has_password ? "已保存" : "未设置", "）"), f.a.createElement(m, {
+                    title: "第二邮局 SMTP 服务器地址",
+                    description: "备用邮件邮局的服务器地址"
+                }, f.a.createElement("input", {
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "请输入",
+                    defaultValue: v.email_secondary_host,
+                    onChange: e=>this.set("email", "email_secondary_host", e.target.value)
+                })), f.a.createElement(m, {
+                    title: "第二邮局 SMTP 端口",
+                    description: "常见端口为 25、465、587"
+                }, f.a.createElement("input", {
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "请输入",
+                    defaultValue: v.email_secondary_port,
+                    onChange: e=>this.set("email", "email_secondary_port", e.target.value)
+                })), f.a.createElement(m, {
+                    title: "第二邮局 SMTP 加密方式",
+                    description: "例如 ssl、tls；按邮局服务商要求填写"
+                }, f.a.createElement("input", {
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "请输入",
+                    defaultValue: v.email_secondary_encryption,
+                    onChange: e=>this.set("email", "email_secondary_encryption", e.target.value)
+                })), f.a.createElement(m, {
+                    title: "第二邮局 SMTP 账号",
+                    description: "由邮件服务商提供的账号"
+                }, f.a.createElement("input", {
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "请输入",
+                    defaultValue: v.email_secondary_username,
+                    onChange: e=>this.set("email", "email_secondary_username", e.target.value)
+                })), f.a.createElement(m, {
+                    title: "第二邮局 SMTP 密码",
+                    description: v.email_secondary_has_password ? "密码已保存；留空不修改原密码" : "请输入密码；留空不会覆盖已有值"
+                }, f.a.createElement("input", {
+                    type: "password",
+                    className: "form-control",
+                    placeholder: v.email_secondary_has_password ? "已保存（留空保持不变）" : "请输入密码",
+                    autoComplete: "new-password",
+                    onChange: e=>{
+                        if (e.target.value) this.set("email", "email_secondary_password", e.target.value)
+                    }
+                })), f.a.createElement(m, {
+                    title: "第二邮局发件地址",
+                    description: "由邮件服务商提供的发件地址"
+                }, f.a.createElement("input", {
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "请输入",
+                    defaultValue: v.email_secondary_from_address,
+                    onChange: e=>this.set("email", "email_secondary_from_address", e.target.value)
                 })), f.a.createElement(m, {
                     title: "\u90ae\u4ef6\u6a21\u677f",
                     description: "\u4f60\u53ef\u4ee5\u5728\u6587\u6863\u67e5\u770b\u5982\u4f55\u81ea\u5b9a\u4e49\u90ae\u4ef6\u6a21\u677f"
@@ -86635,7 +86698,10 @@
             send() {
                 this.props.dispatch({
                     type: "user/sendMail",
-                    params: this.state.submit,
+                    params: o()({}, this.state.submit, {
+                        mailer: this.state.submit.mailer || "primary",
+                        audience: this.state.submit.audience || "all"
+                    }),
                     callback: ()=>{
                         this.hide()
                     }
@@ -86664,6 +86730,52 @@
                     disabled: !0,
                     value: t.length ? "\u8fc7\u6ee4\u7528\u6237" : "\u5168\u90e8\u7528\u6237"
                 })), l.a.createElement("div", {
+                    className: "form-group"
+                }, l.a.createElement("label", {
+                    htmlFor: "mass-audience-select"
+                }, "\u8ba2\u9605\u5206\u6790\u53d7\u4f17"), l.a.createElement("select", {
+                    className: "form-control",
+                    id: "mass-audience-select",
+                    value: this.state.submit.audience || "all",
+                    onChange: e=>{
+                        this.setState({
+                            submit: o()({}, this.state.submit, {
+                                audience: e.target.value
+                            })
+                        })
+                    }
+                }, l.a.createElement("option", {
+                    value: "all"
+                }, "\u5168\u90e8\u7528\u6237"), l.a.createElement("option", {
+                    value: "marked"
+                }, "\u4ec5\u5df2\u6807\u8bb0"), l.a.createElement("option", {
+                    value: "attention"
+                }, "\u5f02\u5e38\u63d0\u793a"), l.a.createElement("option", {
+                    value: "priority"
+                }, "\u91cd\u70b9\u6392\u67e5")), l.a.createElement("small", {
+                    className: "form-text text-muted"
+                }, "\u82e5\u7528\u6237\u5217\u8868\u5df2\u6709\u7b5b\u9009\u6761\u4ef6\uff0c\u5c06\u5728\u5176\u4e2d\u53d6\u4ea4\u96c6\u3002")), l.a.createElement("div", {
+                    className: "form-group"
+                }, l.a.createElement("label", {
+                    htmlFor: "mass-mailer-select"
+                }, "\u53d1\u4ef6\u90ae\u5c40"), l.a.createElement("select", {
+                    className: "form-control",
+                    id: "mass-mailer-select",
+                    value: this.state.submit.mailer || "primary",
+                    onChange: e=>{
+                        this.setState({
+                            submit: o()({}, this.state.submit, {
+                                mailer: e.target.value
+                            })
+                        })
+                    }
+                }, l.a.createElement("option", {
+                    value: "primary"
+                }, "\u4e3b\u90ae\u5c40"), l.a.createElement("option", {
+                    value: "secondary"
+                }, "\u7b2c\u4e8c\u90ae\u5c40")), l.a.createElement("small", {
+                    className: "form-text text-muted"
+                }, "\u7b2c\u4e8c\u90ae\u5c40\u9700\u5148\u5728\u90ae\u4ef6\u8bbe\u7f6e\u914d\u7f6e\uff0c\u5426\u5219\u540e\u53f0\u62d2\u7edd\u53d1\u9001。")), l.a.createElement("div", {
                     className: "form-group"
                 }, l.a.createElement("label", {
                     htmlFor: "example-text-input-alt"

@@ -149,9 +149,16 @@ class ConfigController extends Controller
                 'email_host' => config('v2board.email_host'),
                 'email_port' => config('v2board.email_port'),
                 'email_username' => config('v2board.email_username'),
-                'email_password' => config('v2board.email_password'),
+                'email_has_password' => (bool) config('v2board.email_password'),
                 'email_encryption' => config('v2board.email_encryption'),
-                'email_from_address' => config('v2board.email_from_address')
+                'email_from_address' => config('v2board.email_from_address'),
+                'email_secondary_host' => config('v2board.email_secondary_host'),
+                'email_secondary_port' => config('v2board.email_secondary_port'),
+                'email_secondary_username' => config('v2board.email_secondary_username'),
+                'email_secondary_encryption' => config('v2board.email_secondary_encryption'),
+                'email_secondary_from_address' => config('v2board.email_secondary_from_address'),
+                'email_secondary_has_password' => (bool) config('v2board.email_secondary_password'),
+                'email_secondary_enabled' => \App\Services\MassEmailMailer::isSecondaryConfigured()
             ],
             'telegram' => [
                 'telegram_bot_enable' => config('v2board.telegram_bot_enable', 0),
@@ -202,6 +209,11 @@ class ConfigController extends Controller
     public function save(ConfigSave $request)
     {
         $data = $request->validated();
+        foreach (['email_password', 'email_secondary_password'] as $passwordKey) {
+            if (array_key_exists($passwordKey, $data) && ($data[$passwordKey] === '' || $data[$passwordKey] === null)) {
+                unset($data[$passwordKey]);
+            }
+        }
         $config = config('v2board');
         unset($config['as_rule']);
         foreach (ConfigSave::RULES as $k => $v) {

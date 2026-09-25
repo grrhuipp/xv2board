@@ -16,6 +16,8 @@ class UserSendMail extends FormRequest
         return [
             'subject' => 'required',
             'content' => 'required',
+            'mailer' => 'sometimes|in:primary,secondary',
+            'audience' => 'sometimes|in:all,marked,attention,priority',
         ];
     }
 

@@ -162,6 +162,21 @@ try {
     DB::table('v2_subscription_analysis_marks')->insert(['user_id' => $ids['geo_only'], 'note' => 'qa', 'updated_at' => time()]);
     checkAnalysis($service->fetch(['event' => 'attention', 'marked' => true])['total'] === 1 &&
         $service->fetch(['event' => 'priority', 'marked' => true])['total'] === 0, 'marked attention does not force priority');
+    $audiences = [
+        'marked' => [$ids['geo_only']],
+        'attention' => [$a->id, $ids['geo_only'], $ids['geo_ua'], $ids['ip_only'], $ids['frequent_only'], $ids['ua_only']],
+        'priority' => $priorityIds,
+    ];
+    foreach ($audiences as $audience => $expectedIds) {
+        $actualIds = $service->audienceUserIdsQuery($audience)->orderBy('s.user_id')->pluck('s.user_id')->map(fn ($id) => (int) $id)->all();
+        sort($expectedIds);
+        checkAnalysis($actualIds === $expectedIds, $audience . ' targeting uses exact analysis predicates and thresholds');
+    }
+    $intersection = App\Models\User::where('email', 'like', 'geo_%')->whereIn('id', $service->audienceUserIdsQuery('priority'))->pluck('id')->all();
+    checkAnalysis($intersection === [$ids['geo_ua']], 'audience query intersects regular filters in SQL');
+    checkAnalysis($service->audienceUserIdsQuery('all')->count() > count($audiences['priority']), 'all does not conflate attention and priority');
+    DB::table('v2_subscription_analysis_marks')->delete();
+    checkAnalysis($service->audienceUserIdsQuery('marked')->count() === 0, 'empty target query produces no recipients');
 } finally {
     DB::rollBack(); Carbon::setTestNow();
 }

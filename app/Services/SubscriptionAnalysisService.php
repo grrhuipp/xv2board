@@ -8,7 +8,25 @@ use Illuminate\Support\Facades\DB;
 
 class SubscriptionAnalysisService
 {
-    public function fetch(array $params): array
+    public function audienceUserIdsQuery(string $audience)
+    {
+        $analysis = $this->buildAnalysisQuery();
+        $query = $analysis['base']->select('s.user_id');
+        switch ($audience) {
+            case 'marked':
+                $query->whereNotNull('m.user_id');
+                break;
+            case 'attention':
+                $query->whereRaw($analysis['attention']);
+                break;
+            case 'priority':
+                $query->whereRaw($analysis['priority']);
+                break;
+        }
+        return $query;
+    }
+
+    private function buildAnalysisQuery(): array
     {
         $limits = SubscriptionAnalysisSettings::get();
         // All thresholds are validated and cast to bounded integers by Settings::get().
@@ -36,6 +54,13 @@ class SubscriptionAnalysisService
             ->selectRaw("COUNT(DISTINCT CASE WHEN LOWER(TRIM(city)) NOT IN ('', '0', '-', '未知', 'unknown') THEN CONCAT(COALESCE(TRIM(country), ''), '/', TRIM(city)) END) AS cities_3d");
         $base = DB::query()->fromSub($stats, 's')->join('v2_user as u', 'u.id', '=', 's.user_id')
             ->leftJoin('v2_subscription_analysis_marks as m', 'm.user_id', '=', 's.user_id');
+        return compact('base', 'frequent', 'multiIp', 'geo', 'multiUa', 'attention', 'priority', 'now', 'asOf', 'since', 'limits', 'notNodeIp');
+    }
+
+    public function fetch(array $params): array
+    {
+        $analysis = $this->buildAnalysisQuery();
+        extract($analysis);
         $summary = (clone $base)->selectRaw('COUNT(*) AS users, COALESCE(SUM(s.count_3d), 0) AS requests')
             ->selectRaw('COALESCE(SUM(' . $frequent . '), 0) AS frequent_users')
             ->selectRaw('COALESCE(SUM(' . $multiIp . '), 0) AS multi_ip_users')

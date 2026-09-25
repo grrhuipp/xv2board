@@ -7,7 +7,7 @@ use App\Http\Requests\Admin\UserFetch;
 use App\Http\Requests\Admin\UserGenerate;
 use App\Http\Requests\Admin\UserSendMail;
 use App\Http\Requests\Admin\UserUpdate;
-use App\Jobs\SendEmailJob;
+use App\Jobs\SendMassEmailJob;
 use App\Models\InviteCode;
 use App\Models\Ticket;
 use App\Models\Order;
@@ -299,21 +299,35 @@ class UserController extends Controller
 
     public function sendMail(UserSendMail $request)
     {
+        $queueDriver = config('queue.connections.' . config('queue.default') . '.driver', config('queue.default'));
+        if (in_array($queueDriver, ['sync', 'null'], true)) {
+            abort(503, '群发邮件需要配置异步队列（database、Redis 等），当前 sync 队列不安全。');
+        }
+        $mailer = $request->input('mailer', 'primary');
+        if ($mailer === 'secondary' && !\App\Services\MassEmailMailer::isSecondaryConfigured()) {
+            abort(422, '第二 SMTP 配置不完整，无法派发群发邮件。');
+        }
+
         $sortType = in_array($request->input('sort_type'), ['ASC', 'DESC']) ? $request->input('sort_type') : 'DESC';
         $sort = $request->input('sort') ? $request->input('sort') : 'created_at';
         $builder = User::orderBy($sort, $sortType);
         $this->filter($request, $builder);
+        $audience = $request->input('audience', 'all');
+        if ($audience !== 'all') {
+            $builder->whereIn('id', app(\App\Services\SubscriptionAnalysisService::class)->audienceUserIdsQuery($audience));
+        }
         foreach ($builder->cursor() as $user) {
-            SendEmailJob::dispatch([
+            SendMassEmailJob::dispatch([
                 'email' => $user->email,
                 'subject' => $request->input('subject'),
                 'template_name' => 'notify',
+                'mailer' => $mailer,
                 'template_value' => [
                     'name' => config('v2board.app_name', 'V2Board'),
                     'url' => config('v2board.app_url'),
                     'content' => $request->input('content')
                 ]
-            ], 'send_email_mass');
+            ]);
         }
 
         return response([
