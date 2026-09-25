@@ -17,6 +17,7 @@ class SubscriptionAnalysisService
         $geo = "(s.ips_3d >= 2 AND (s.countries_3d >= {$limits['countries_3d']} OR s.cities_3d >= {$limits['cities_3d']}))";
         $multiUa = "(s.uas_3d >= {$limits['ua_3d']})";
         $attention = "($frequent OR $multiIp OR $geo OR $multiUa)";
+        $priority = "($frequent OR $multiIp OR ($geo AND $multiUa))";
         $now = Carbon::now();
         $asOf = $now->format('Y-m-d H:i:s');
         $since = $now->copy()->subDays(3)->format('Y-m-d H:i:s');
@@ -41,6 +42,7 @@ class SubscriptionAnalysisService
             ->selectRaw('COALESCE(SUM(' . $geo . '), 0) AS geo_users')
             ->selectRaw('COALESCE(SUM(' . $multiUa . '), 0) AS multi_ua_users')
             ->selectRaw('COALESCE(SUM(' . $attention . '), 0) AS attention_users')
+            ->selectRaw('COALESCE(SUM(' . $priority . '), 0) AS priority_users')
             ->selectRaw('COUNT(m.user_id) AS marked_users')->first();
         if (($params['q'] ?? '') !== '') {
             $q = $params['q'];
@@ -65,9 +67,11 @@ class SubscriptionAnalysisService
             case 'geo': $base->whereRaw($geo); break;
             case 'multi_ua': $base->whereRaw($multiUa); break;
             case 'attention': $base->whereRaw($attention); break;
+            case 'priority': $base->whereRaw($priority); break;
         }
         $page = $base->select('s.*', 'u.email', 'u.created_at as registered_at', 'u.last_login_at', 'm.note', 'm.updated_at as marked_at')
             ->selectRaw('m.user_id IS NOT NULL AS is_marked')
+            ->selectRaw($priority . ' AS is_priority')
             ->orderByDesc('s.last_at')->orderByDesc('s.user_id')
             ->paginate($params['page_size'] ?? 20, ['*'], 'page', $params['page'] ?? 1);
         $latest = collect();
@@ -88,6 +92,7 @@ class SubscriptionAnalysisService
         foreach ($page->items() as $row) {
             foreach (['user_id', 'count_3d', 'count_2m', 'count_5m', 'count_1h', 'ips_10m', 'ips_3d', 'uas_3d', 'countries_3d', 'cities_3d'] as $field) $row->$field = (int) $row->$field;
             $row->is_marked = (bool) $row->is_marked;
+            $row->is_priority = (bool) $row->is_priority;
             $row->signals = [];
             if ($row->count_2m >= $limits['frequent_2m'] || $row->count_5m >= $limits['frequent_5m'] || $row->count_1h >= $limits['frequent_1h']) $row->signals[] = 'frequent';
             if ($row->ips_10m >= $limits['ip_10m'] || $row->ips_3d >= $limits['ip_3d']) $row->signals[] = 'multi_ip';

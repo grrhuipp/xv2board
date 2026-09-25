@@ -15,7 +15,7 @@ class SubscriptionAnalysisController extends Controller
     public function fetch(Request $request)
     {
         $params = $request->validate([
-            'q' => 'nullable|string|max:100', 'event' => 'sometimes|in:all,attention,frequent,multi_ip,geo,multi_ua',
+            'q' => 'nullable|string|max:100', 'event' => 'sometimes|in:all,attention,priority,frequent,multi_ip,geo,multi_ua',
             'marked' => 'sometimes|boolean', 'page' => 'sometimes|integer|min:1', 'page_size' => 'sometimes|integer|min:1|max:50',
         ]);
         $params['q'] = trim($params['q'] ?? '');

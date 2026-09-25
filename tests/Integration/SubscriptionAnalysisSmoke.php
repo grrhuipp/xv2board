@@ -99,6 +99,7 @@ try {
     checkAnalysis(App\Services\SubscriptionAnalysisSettings::get() === $limits, 'manual thresholds persist');
     $quiet = $service->fetch(['event' => 'attention']);
     checkAnalysis($quiet['total'] === 0 && (int) $quiet['summary']->attention_users === 0, 'custom thresholds apply consistently to filters and summary');
+    checkAnalysis($service->fetch(['event' => 'priority'])['total'] === 0 && (int) $quiet['summary']->priority_users === 0, 'custom thresholds also apply to priority');
     $all = $service->fetch([]);
     checkAnalysis(collect($all['data'])->every(fn ($row) => count($row->signals) === 0), 'custom thresholds apply to row signals');
     $invalid = $limits; $invalid['ua_3d'] = 0;
@@ -111,6 +112,56 @@ try {
         $controller->fetch(Request::create('/', 'GET', ['page_size' => 10000]));
         throw new RuntimeException('Pagination validation missing');
     } catch (Illuminate\Validation\ValidationException $e) { checkAnalysis(true, 'bounded pagination validation'); }
+
+    // Isolate each signal combination using the same three-day aggregation as the endpoint.
+    $cases = ['geo_only', 'geo_ua', 'ip_only', 'frequent_only', 'ua_only', 'quiet'];
+    $ids = [];
+    foreach ($cases as $case) {
+        $user = App\Models\User::create(['email' => $case . '@example.invalid', 'password' => 'unused', 'uuid' => $case, 'token' => 'qa-analysis-' . $case]);
+        $ids[$case] = $user->id;
+    }
+    $add = function ($case, $time, $ip, $ua, $country = null, $city = null) use ($ids) {
+        DB::table('v2_subscribe_log')->insert([
+            'user_id' => $ids[$case], 'email' => 'old@example.invalid', 'created_at' => '2026-09-13 ' . $time,
+            'ip' => $ip, 'user_agent' => $ua, 'country' => $country, 'city' => $city,
+        ]);
+    };
+    foreach (['geo_only' => '11:50:00', 'geo_ua' => '11:51:00'] as $case => $time) {
+        $add($case, $time, '203.0.113.1', 'UA-1', '中国', '上海');
+        $add($case, $time, '203.0.113.2', 'UA-1', '日本', '东京');
+    }
+    $add('geo_ua', '11:56:00', '203.0.113.2', 'UA-2', '日本', '东京');
+    $add('geo_ua', '11:56:00', '203.0.113.2', 'UA-3', '日本', '东京');
+    for ($i = 1; $i <= 5; $i++) $add('ip_only', '11:57:00', '203.0.113.' . (10 + $i), 'UA-1');
+    for ($i = 1; $i <= 5; $i++) $add('frequent_only', '11:58:00', '203.0.113.20', 'UA-1');
+    foreach (['UA-1', 'UA-2', 'UA-3'] as $ua) $add('ua_only', '11:54:00', '203.0.113.30', $ua);
+    $add('quiet', '11:53:00', '203.0.113.40', 'UA-1');
+
+    $all = $service->fetch([]);
+    $priorityIds = [$a->id, $ids['geo_ua'], $ids['ip_only'], $ids['frequent_only']];
+    checkAnalysis((int) $all['summary']->priority_users === 4 && (int) $all['summary']->attention_users === 6, 'priority excludes single geo/UA while attention retains them');
+    foreach ($all['data'] as $item) {
+        checkAnalysis($item->is_priority === in_array($item->user_id, $priorityIds, true), 'row priority agrees with aggregate predicate for user ' . $item->user_id);
+    }
+    $priority = $service->fetch(['event' => 'priority', 'page_size' => 1]);
+    checkAnalysis($priority['total'] === 4 && count($priority['data']) === 1 && (int) $priority['summary']->priority_users === 4, 'priority first page and unfiltered summary');
+    $response = $controller->fetch(Request::create('/', 'GET', ['event' => 'priority', 'page_size' => 1]));
+    checkAnalysis(json_decode($response->getContent(), true)['total'] === 4, 'controller accepts priority event');
+    $pagedIds = [];
+    for ($p = 1; $p <= 5; $p++) {
+        $part = $service->fetch(['event' => 'priority', 'page_size' => 1, 'page' => $p]);
+        checkAnalysis($part['total'] === 4, 'priority pagination total on page ' . $p);
+        foreach ($part['data'] as $item) $pagedIds[] = $item->user_id;
+    }
+    checkAnalysis($pagedIds === [$a->id, $ids['frequent_only'], $ids['ip_only'], $ids['geo_ua']], 'priority pagination keeps timestamp order without duplicates');
+    foreach (['attention' => 6, 'geo' => 3, 'multi_ua' => 3, 'multi_ip' => 2, 'frequent' => 2] as $event => $expected) {
+        checkAnalysis($service->fetch(['event' => $event])['total'] === $expected, $event . ' filter unchanged');
+    }
+    checkAnalysis($service->fetch(['event' => 'priority', 'q' => 'geo_only@'])['total'] === 0 &&
+        $service->fetch(['event' => 'priority', 'q' => 'geo_ua@'])['total'] === 1, 'priority combines with search');
+    DB::table('v2_subscription_analysis_marks')->insert(['user_id' => $ids['geo_only'], 'note' => 'qa', 'updated_at' => time()]);
+    checkAnalysis($service->fetch(['event' => 'attention', 'marked' => true])['total'] === 1 &&
+        $service->fetch(['event' => 'priority', 'marked' => true])['total'] === 0, 'marked attention does not force priority');
 } finally {
     DB::rollBack(); Carbon::setTestNow();
 }
