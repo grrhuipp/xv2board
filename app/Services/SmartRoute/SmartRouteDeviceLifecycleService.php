@@ -173,15 +173,7 @@ final class SmartRouteDeviceLifecycleService
         // 仅按「真实标识」定位 SmartRoute 设备档案：其自身的 device_id（dev_xxx）
         // 或客户端持久化并上报的 install_id 原值。
         //
-        // 【修复：卸载重装被误判“已解绑或失效”】此前还会把传入值合成成
-        // 'jx_' . sanitize($deviceId) 当作 install_id 去匹配。客户端在每次启动同步时
-        // （SmartRouteService._syncDeviceToLegacyBackend）会解绑历史遗留的「原始硬件
-        // GUID」旧条目，而该硬件 GUID 经 jx_+去特殊字符归一后，恰好等于「当前已激活
-        // SmartRoute 设备」的 install_id（install_id = 品牌前缀 + sanitize(硬件ID)）。
-        // 于是刚通过 install_id 重注册并置为 status=1 的同硬件设备，被这次例行清理立刻
-        // status=0 + 进入冷却，紧接着的 manifest/resolve 即按 status≠1 返回
-        // RESOURCE_DEVICE_UNBOUND/REVOKED「设备已解绑或失效，请重新注册」。
-        //
+        // 不从传入的设备标识合成其他 install_id：可能误解绑刚注册的设备。
         // 真正的设备解绑（设备管理页解绑 / 解绑全部）传入的是可见 device_id（dev_xxx），
         // 走 device_id 精确匹配，行为不变；换设备 / 设备数超限等场景同样不受影响。
         $device = SrDeviceProfile::where('user_id', $userId)

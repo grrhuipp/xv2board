@@ -105,6 +105,11 @@ class ConfigSave extends FormRequest
         'telegram_discuss_id' => '',
         'telegram_channel_id' => '',
         'telegram_discuss_link' => 'nullable|url',
+        // App 客户端（独立于站点名称和已移除的旧版下载字段）
+        'app_client_path' => 'sometimes|required|regex:/^[a-z][a-z0-9_-]{0,30}$/|not_in:admin,client,guest,server,user,staff,passport,shop',
+        'app_update_json' => 'nullable|json',
+        'app_client_aes_key' => 'nullable|string|regex:/^[\x21-\x7E]{16}$/',
+        'app_client_aes_iv' => 'nullable|string|regex:/^[\x21-\x7E]{16}$/',
         // safe
         'email_whitelist_enable' => 'in:0,1',
         'email_whitelist_suffix' => 'nullable|array',
@@ -142,6 +147,9 @@ class ConfigSave extends FormRequest
             'email_username',
             'email_encryption',
             'email_from_address',
+            'app_update_json',
+            'app_client_aes_key',
+            'app_client_aes_iv',
         ];
         $patch = [];
         foreach ($nullable as $key) {
@@ -182,6 +190,15 @@ class ConfigSave extends FormRequest
                 }
             }
         };
+        $rules['app_client_path'] = [
+            'sometimes', 'required', 'regex:/^[a-z][a-z0-9_-]{0,30}$/',
+            'not_in:admin,client,guest,server,user,staff,passport,shop',
+            function ($attribute, $value, $fail) {
+                if ($value === $this->input('secure_path', config('v2board.secure_path', config('v2board.frontend_admin_path')))) {
+                    $fail('App 接口前缀不能与后台路径相同');
+                }
+            },
+        ];
         return $rules;
     }
 

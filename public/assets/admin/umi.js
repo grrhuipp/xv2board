@@ -5094,6 +5094,7 @@
                 e.email)
                   , y = e.telegram
                   , b = e.setTelegramWebhookLoading
+                  , w = e.app
                   , x = e.testSendMailLoading
                   , _ = e.safe
                   , E = this.props.plan.plans;
@@ -6066,6 +6067,59 @@
                     placeholder: "https://t.me/xxxxxx",
                     defaultValue: y.telegram_discuss_link,
                     onChange: e=>this.set("telegram", "telegram_discuss_link", e.target.value)
+                })))), f.a.createElement(s["a"].TabPane, {
+                    tab: "APP",
+                    key: "app"
+                }, f.a.createElement("div", {
+                    className: ""
+                }, f.a.createElement(m, {
+                    title: "App 客户端接口前缀",
+                    description: "单段路径；例如 app 对应 /api/v1/app，SmartRoute 接口位于 /api/v1/app/smart-route。保存后客户端需同步修改地址。"
+                }, f.a.createElement("input", {
+                    type: "text",
+                    className: "form-control",
+                    placeholder: "app",
+                    defaultValue: w.app_client_path,
+                    onBlur: e=>this.set("app", "app_client_path", e.target.value)
+                })), f.a.createElement(m, {
+                    title: "App 更新配置 JSON",
+                    description: "按平台配置版本、下载地址；完成编辑后失焦保存。留空则不提供更新信息。"
+                }, f.a.createElement("textarea", {
+                    className: "form-control",
+                    rows: 8,
+                    placeholder: '{"android":{"universal":{"version":"1.0.0","download_url":"https://example.com/app.apk"}}}',
+                    defaultValue: w.app_update_json,
+                    onBlur: e=>this.set("app", "app_update_json", e.target.value)
+                })), f.a.createElement(m, {
+                    title: "AES-128-CBC 密钥（16 字节）",
+                    description: w.app_client_aes_key_configured ? "已配置，留空保持原密钥；变更后客户端必须同步。" : "尚未配置；也可通过 APPCLIENT_AES_KEY 环境变量提供。"
+                }, f.a.createElement("input", {
+                    type: "password",
+                    className: "form-control",
+                    autoComplete: "new-password",
+                    placeholder: "留空不修改",
+                    onBlur: e=>{
+                        var value = e.target.value;
+                        if (value) {
+                            this.set("app", "app_client_aes_key", value);
+                            e.target.value = ""
+                        }
+                    }
+                })), f.a.createElement(m, {
+                    title: "AES-128-CBC IV（16 字节）",
+                    description: w.app_client_aes_iv_configured ? "已配置，留空保持原 IV；变更后客户端必须同步。" : "尚未配置；也可通过 APPCLIENT_AES_IV 环境变量提供。"
+                }, f.a.createElement("input", {
+                    type: "password",
+                    className: "form-control",
+                    autoComplete: "new-password",
+                    placeholder: "留空不修改",
+                    onBlur: e=>{
+                        var value = e.target.value;
+                        if (value) {
+                            this.set("app", "app_client_aes_iv", value);
+                            e.target.value = ""
+                        }
+                    }
                 })))))))
             }
         }
@@ -16348,6 +16402,7 @@
             server: {},
             email: {},
             telegram: {},
+            app: {},
             safe: {},
             tabs: "site",
             fetchLoading: !1,

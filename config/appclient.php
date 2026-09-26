@@ -1,24 +1,15 @@
 <?php
 
 /*
- * APP 客户端加密配置。
- *
- * 【过渡-阶段一】为兼容已发布的 1.1.8 等旧版本，.env 未配置时回退到历史默认密钥，
- * 保证新旧客户端与后端互通。待全网 APP 升级到新版本后，进入【阶段二】：
- * 删除下方默认值，仅保留 env() 读取，缺失即由控制器返回明确配置错误。
+ * App 客户端的环境变量默认值。后台「系统配置 → APP」中的密钥优先于这里的环境变量。
+ * 不再内置历史客户端密钥；部署前需设置后台密钥或 APPCLIENT_AES_KEY/IV。
  */
 
 return [
     'encryption' => [
         'cipher' => env('APPCLIENT_AES_CIPHER', 'aes-128-cbc'),
-        'key' => env('APPCLIENT_AES_KEY', '8L82KzQZewO6OgLG'),
-        'iv' => env('APPCLIENT_AES_IV', 'LwTR6tTQCuhGSKhE'),
-    ],
-
-    'legacy_encryption' => [
-        'cipher' => env('APPS_CONNECT_AES_CIPHER', env('APPCLIENT_AES_CIPHER', 'aes-128-cbc')),
-        'key' => env('APPS_CONNECT_AES_KEY', 'apps_connect_key'),
-        'iv' => env('APPS_CONNECT_AES_IV', '8c97f304422a60e0'),
+        'key' => env('APPCLIENT_AES_KEY', ''),
+        'iv' => env('APPCLIENT_AES_IV', ''),
     ],
 
     /*

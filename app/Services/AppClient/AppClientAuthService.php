@@ -383,10 +383,8 @@ class AppClientAuthService
         $version = $request->input('version');
         $arch = $request->input('arch', 'x64');
         $appUpdateJson = config('v2board.app_update_json');
-        $appUpdate = null;
-        if (!empty($appUpdateJson)) {
-            try { $appUpdate = is_string($appUpdateJson) ? json_decode($appUpdateJson, true) : $appUpdateJson; } catch (\Exception $e) {}
-        }
+        $appUpdate = is_string($appUpdateJson) ? json_decode($appUpdateJson, true) : $appUpdateJson;
+        if (!is_array($appUpdate)) $appUpdate = null;
         $latestVersion = null; $downloadUrl = null; $changelog = null; $forceUpdate = false; $minVersion = null;
         if ($appUpdate && isset($appUpdate[$system])) {
             $platformData = $appUpdate[$system];
@@ -394,21 +392,15 @@ class AppClientAuthService
                 if (isset($platformData[$tryArch]) && !empty($platformData[$tryArch]['version']) && $platformData[$tryArch]['version'] !== '0.0.0') {
                     $latestVersion = $platformData[$tryArch]['version'];
                     $downloadUrl = $platformData[$tryArch]['download_url'] ?? null;
+                    $minVersion = $platformData[$tryArch]['min_version'] ?? null;
                     break;
                 }
             }
             $changelog = $appUpdate['release_notes'] ?? null;
             $forceUpdate = $appUpdate['force_update'] ?? false;
         }
-        if (empty($latestVersion)) {
-            $map = ['android' => 'android', 'ios' => 'ios', 'windows' => 'windows', 'macos' => 'macos', 'linux' => 'linux'];
-            if (!isset($map[$system])) return response()->json(['status' => 0, 'msg' => '不支持的平台', 'platform' => $system]);
-            $s = $map[$system];
-            $latestVersion = config('v2board.' . $s . '_version');
-            $downloadUrl = config('v2board.' . $s . '_download_url');
-            $changelog = config('v2board.' . $s . '_changelog');
-            $forceUpdate = (bool)config('v2board.' . $s . '_force_update', false);
-            $minVersion = config('v2board.' . $s . '_min_version');
+        if (!in_array($system, ['android', 'ios', 'windows', 'macos', 'linux'], true)) {
+            return response()->json(['status' => 0, 'msg' => '不支持的平台', 'platform' => $system]);
         }
         if (empty($latestVersion) || $latestVersion === '0.0.0') {
             return response()->json(['status' => 0, 'msg' => '已是最新版本', 'current_version' => $version, 'platform' => $system]);
