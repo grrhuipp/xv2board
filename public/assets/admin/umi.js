@@ -6092,9 +6092,9 @@
                     onBlur: e=>this.set("app", "app_update_json", e.target.value)
                 })), f.a.createElement(m, {
                     title: "AES-128-CBC 密钥（16 字节）",
-                    description: w.app_client_aes_key_configured ? "已配置；管理员可回显。变更后客户端必须同步。" : "尚未配置；也可通过 APPCLIENT_AES_KEY 环境变量提供。"
+                    description: w.app_client_aes_key_configured ? "已配置；仅管理员可查看。变更后客户端必须同步。" : "尚未配置；也可通过 APPCLIENT_AES_KEY 环境变量提供。"
                 }, f.a.createElement("input", {
-                    type: this.state && this.state.showAppAesKey ? "text" : "password",
+                    type: "text",
                     className: "form-control",
                     autoComplete: "off",
                     placeholder: "请输入 16 字节密钥",
@@ -6104,15 +6104,11 @@
                         if (value && value !== w.app_client_aes_key)
                             this.set("app", "app_client_aes_key", value)
                     }
-                }), f.a.createElement("button", {
-                    type: "button",
-                    className: "btn btn-sm btn-outline-secondary mt-2",
-                    onClick: ()=>this.setState({showAppAesKey: !(this.state && this.state.showAppAesKey)})
-                }, this.state && this.state.showAppAesKey ? "隐藏" : "显示")), f.a.createElement(m, {
+                })), f.a.createElement(m, {
                     title: "AES-128-CBC IV（16 字节）",
-                    description: w.app_client_aes_iv_configured ? "已配置；管理员可回显。变更后客户端必须同步。" : "尚未配置；也可通过 APPCLIENT_AES_IV 环境变量提供。"
+                    description: w.app_client_aes_iv_configured ? "已配置；仅管理员可查看。变更后客户端必须同步。" : "尚未配置；也可通过 APPCLIENT_AES_IV 环境变量提供。"
                 }, f.a.createElement("input", {
-                    type: this.state && this.state.showAppAesIv ? "text" : "password",
+                    type: "text",
                     className: "form-control",
                     autoComplete: "off",
                     placeholder: "请输入 16 字节 IV",
@@ -6122,11 +6118,7 @@
                         if (value && value !== w.app_client_aes_iv)
                             this.set("app", "app_client_aes_iv", value)
                     }
-                }), f.a.createElement("button", {
-                    type: "button",
-                    className: "btn btn-sm btn-outline-secondary mt-2",
-                    onClick: ()=>this.setState({showAppAesIv: !(this.state && this.state.showAppAesIv)})
-                }, this.state && this.state.showAppAesIv ? "隐藏" : "显示")))))))
+                })))))))
             }
         }
         t["default"] = Object(p["c"])(e=>{
