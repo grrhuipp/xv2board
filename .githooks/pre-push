@@ -1,0 +1,77 @@
+#!/bin/sh
+# 拦截推向原版上游仓库的操作。
+#
+# 本项目是 wyx2685/v2board 的 fork，改动量很大且不打算回流原版。
+# 日常开发推向本仓库 origin（grrhuipp/xv2board），不要误推原版上游。
+# 也拦截直接推主分支，改动应通过特性分支和 PR 合并。
+#
+# 启用方式（克隆后执行一次）：
+#   git config core.hooksPath .githooks
+#
+# 确有需要时临时绕过：
+#   ALLOW_PUSH_UPSTREAM=1 git push <远端> <分支>
+
+remote_name="$1"
+remote_url="$2"
+
+if [ "$ALLOW_PUSH_UPSTREAM" = "1" ]; then
+    echo "pre-push: 已设置 ALLOW_PUSH_UPSTREAM=1，跳过目标仓库检查。" >&2
+    exit 0
+fi
+
+# git 传入的 $2 可能已被 url.<base>.insteadOf 重写，单看它会漏判，
+# 因此把远端名对应的原始配置 URL 一并纳入检查。
+configured_url=""
+if [ -n "$remote_name" ]; then
+    configured_url=$(git config --get "remote.${remote_name}.pushurl" 2>/dev/null) || configured_url=""
+    if [ -z "$configured_url" ]; then
+        configured_url=$(git config --get "remote.${remote_name}.url" 2>/dev/null) || configured_url=""
+    fi
+fi
+
+# 统一成小写后做子串匹配，兼容 https / ssh / 带或不带 .git 后缀等写法
+normalized=$(printf '%s\n%s\n%s' "$remote_url" "$configured_url" "$remote_name" \
+    | tr '[:upper:]' '[:lower:]')
+
+case "$normalized" in
+    *wyx2685/v2board*|*wyx2685:v2board*)
+        cat >&2 <<'MSG'
+
+pre-push 已拒绝本次推送。
+
+目标是原版上游仓库 wyx2685/v2board，本项目的改动不回流原版。
+
+请改推到本仓库：
+  origin  ->  https://github.com/grrhuipp/xv2board.git
+
+例如：
+  git push -u origin <你的分支>
+
+确有必要推向原版时，临时绕过：
+  ALLOW_PUSH_UPSTREAM=1 git push <远端> <分支>
+
+MSG
+        exit 1
+        ;;
+esac
+
+# 同时挡住直接推 master / main，改动一律走分支加 PR
+protected_branches="refs/heads/master refs/heads/main"
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+    [ -z "$remote_ref" ] && continue
+    for protected in $protected_branches; do
+        if [ "$remote_ref" = "$protected" ]; then
+            echo "" >&2
+            echo "pre-push 已拒绝本次推送。" >&2
+            echo "" >&2
+            echo "目标是受保护分支 ${remote_ref}（远端 ${remote_name}）。" >&2
+            echo "请改用特性分支并开 PR：git push -u ${remote_name} <你的分支>" >&2
+            echo "" >&2
+            echo "确有必要时临时绕过：ALLOW_PUSH_UPSTREAM=1 git push ..." >&2
+            echo "" >&2
+            exit 1
+        fi
+    done
+done
+
+exit 0
