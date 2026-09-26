@@ -212,14 +212,6 @@ class ConfigController extends Controller
                 'telegram_bot_token' => config('v2board.telegram_bot_token'),
                 'telegram_discuss_link' => config('v2board.telegram_discuss_link')
             ],
-            'app' => [
-                'windows_version' => config('v2board.windows_version'),
-                'windows_download_url' => config('v2board.windows_download_url'),
-                'macos_version' => config('v2board.macos_version'),
-                'macos_download_url' => config('v2board.macos_download_url'),
-                'android_version' => config('v2board.android_version'),
-                'android_download_url' => config('v2board.android_download_url')
-            ],
             'safe' => [
                 'email_verify' => (int)config('v2board.email_verify', 0),
                 'safe_mode_enable' => (int)config('v2board.safe_mode_enable', 0),
@@ -260,7 +252,9 @@ class ConfigController extends Controller
             }
         }
         $config = config('v2board');
-        unset($config['as_rule']);
+        unset($config['as_rule'], $config['windows_version'], $config['windows_download_url'],
+            $config['macos_version'], $config['macos_download_url'],
+            $config['android_version'], $config['android_download_url']);
         foreach (ConfigSave::RULES as $k => $v) {
             if (!in_array($k, array_keys(ConfigSave::RULES))) {
                 unset($config[$k]);
