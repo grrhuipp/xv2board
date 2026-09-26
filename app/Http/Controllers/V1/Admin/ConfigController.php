@@ -263,14 +263,11 @@ class ConfigController extends Controller
             }
         }
         $config = config('v2board');
+        // 旧部署升级后首次保存时清除已停用的字段；不要重新开放后台表单。
         unset($config['as_rule'], $config['windows_version'], $config['windows_download_url'],
             $config['macos_version'], $config['macos_download_url'],
             $config['android_version'], $config['android_download_url']);
-        foreach (ConfigSave::RULES as $k => $v) {
-            if (!in_array($k, array_keys(ConfigSave::RULES))) {
-                unset($config[$k]);
-                continue;
-            }
+        foreach (array_keys(ConfigSave::RULES) as $k) {
             if (array_key_exists($k, $data)) {
                 $config[$k] = $data[$k];
             }
