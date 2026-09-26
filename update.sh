@@ -31,4 +31,11 @@ php artisan v2board:update
 
 if [ -f "/etc/init.d/bt" ]; then
   chown -R www $(pwd);
+elif [ -f "scripts/fix-permissions.sh" ]; then
+  # 非宝塔环境：git 拉取的新文件属主是执行者（常为 root），而 PHP-FPM
+  # 多以别的用户运行。config/ 与 storage/ 需要被 PHP 进程写入
+  # （后台保存配置会直接改写 config/v2board.php），属主不对会导致
+  # 保存配置报 file_put_contents ... Permission denied 且配置存不进去。
+  # 自动探测 PHP 运行用户并修正属主，省掉每次升级手工 chown。
+  bash scripts/fix-permissions.sh || true
 fi
