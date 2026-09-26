@@ -11,6 +11,7 @@ use App\Models\InviteCode;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\AuthService;
+use App\Services\InviteGiftService;
 use App\Utils\CacheKey;
 use App\Utils\Dict;
 use App\Utils\Helper;
@@ -109,8 +110,12 @@ class AuthController extends Controller
             }
         }
 
+        // 邀请码注册赠送：命中时跳过试用套餐，避免试用与赠送互相覆盖到期时间
+        $inviteGiftService = new InviteGiftService();
+        $willGiftInvitee = $inviteGiftService->willGift($user->invite_user_id, $request->ip());
+
         // try out
-        if (!$request->filled('code') && (int)config('v2board.try_out_plan_id', 0)) {
+        if (!$willGiftInvitee && !$request->filled('code') && (int)config('v2board.try_out_plan_id', 0)) {
             $plan = Plan::find(config('v2board.try_out_plan_id'));
             if ($plan) {
                 $user->transfer_enable = $plan->transfer_enable * 1073741824;
@@ -135,6 +140,12 @@ class AuthController extends Controller
 
         $user->last_login_at = time();
         $user->save();
+
+        // 被邀请人赠送：保存完成后再发放，失败不影响注册本身
+        if ($willGiftInvitee) {
+            $user->refresh();
+            $inviteGiftService->gift($user, $request->ip());
+        }
 
         if ((int)config('v2board.register_limit_by_ip_enable', 0)) {
             Cache::put(
