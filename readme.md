@@ -5,6 +5,22 @@
 ## 本分支支持的后端
  - [修改版V2bX](https://github.com/wyx2685/V2bX)
 
+## 开发约定：推送目标
+
+本仓库是 `wyx2685/v2board` 的 fork，改动不回流原版。克隆后可启用仓库内置的 pre-push 钩子：
+
+    git config core.hooksPath .githooks
+
+钩子会拒绝推向原版上游 `wyx2685/v2board`，以及直接推 `master` / `main`。本仓库 `origin` 是 `grrhuipp/xv2board`，原版 `upstream` 是 `wyx2685/v2board`。日常开发请推特性分支并向本仓库提交 PR：
+
+    git push -u origin <你的分支>
+
+在 GitHub 网页建 PR 时，请确认 base repository 是 `grrhuipp/xv2board`，不要误选原版。钩子仅拦截本地 `git push`，不能拦截网页 PR。
+
+确有必要绕过钩子时：
+
+    ALLOW_PUSH_UPSTREAM=1 git push <远端> <分支>
+
 ## AS 节点地址替换
 
 后台站点配置提供 AS 黑名单和白名单模式：
