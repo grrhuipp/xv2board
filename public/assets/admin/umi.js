@@ -5596,6 +5596,42 @@
                         checked: parseInt(n.invitee_gift_ip_limit_enable),
                         onChange: e=>this.set("invite", "invitee_gift_ip_limit_enable", e ? 1 : 0)
                     })), f.a.createElement(m, {
+                        title: "\u9080\u8bf7\u4eba\u5956\u52b1\u65b9\u5f0f",
+                        description: "\u88ab\u9080\u8bf7\u4eba\u6ce8\u518c\u6216\u9996\u6b21\u8d2d\u4e70\u65f6\u7ed9\u9080\u8bf7\u4eba\u5ef6\u957f\u5230\u671f\u65f6\u95f4\uff0c\u9700\u540c\u65f6\u8bbe\u7f6e\u4e0b\u65b9\u7684\u53c2\u7167\u5957\u9910\u4e0e\u65f6\u957f\u3002"
+                    }, f.a.createElement("select", {
+                        onChange: e=>this.set("invite", "is_Invitation_to_give", parseInt(e.target.value)),
+                        className: "form-control",
+                        value: n.is_Invitation_to_give
+                    }, f.a.createElement("option", {
+                        value: 0
+                    }, "\u5173\u95ed"), f.a.createElement("option", {
+                        value: 1
+                    }, "\u4ec5\u6ce8\u518c\u8d60\u9001"), f.a.createElement("option", {
+                        value: 2
+                    }, "\u4ec5\u9996\u5355\u8d2d\u4e70\u8d60\u9001"), f.a.createElement("option", {
+                        value: 3
+                    }, "\u6ce8\u518c\u4e0e\u9996\u5355\u8d2d\u4e70\u90fd\u8d60\u9001"))), f.a.createElement(m, {
+                        title: "\u9080\u8bf7\u4eba\u5956\u52b1\u53c2\u7167\u5957\u9910",
+                        description: "\u7528\u4e8e\u6298\u7b97\u5956\u52b1\u65f6\u957f\u7684\u4ef7\u683c\u53c2\u7167\u5957\u9910\uff0c\u5b9e\u9645\u65f6\u957f\u4f1a\u6309\u9080\u8bf7\u4eba\u5f53\u524d\u5957\u9910\u7684\u4ef7\u683c\u7b49\u6bd4\u7f29\u653e\u3002"
+                    }, f.a.createElement("select", {
+                        onChange: e=>this.set("invite", "complimentary_packages", parseInt(e.target.value)),
+                        className: "form-control",
+                        value: n.complimentary_packages
+                    }, f.a.createElement("option", {
+                        value: 0
+                    }, "\u5173\u95ed"), E.map(e=>f.a.createElement("option", {
+                        key: Math.random(),
+                        value: e.id
+                    }, e.name)))), f.a.createElement(m, {
+                        title: "\u9080\u8bf7\u4eba\u5956\u52b1\u65f6\u957f\uff08\u5c0f\u65f6\uff09",
+                        description: "\u6309\u53c2\u7167\u5957\u9910\u8ba1\u7684\u5956\u52b1\u5c0f\u65f6\u6570\uff0c\u4f8b\u5982 24\u3002\u7559\u7a7a\u6216\u4e3a 0 \u65f6\u4e0d\u53d1\u653e\u3002"
+                    }, f.a.createElement("input", {
+                        type: "text",
+                        className: "form-control",
+                        placeholder: "\u8bf7\u8f93\u5165",
+                        defaultValue: n.complimentary_package_duration,
+                        onChange: e=>this.set("invite", "complimentary_package_duration", e.target.value)
+                    })), f.a.createElement(m, {
                     title: "\u9080\u8bf7\u4f63\u91d1\u767e\u5206\u6bd4",
                     description: "\u9ed8\u8ba4\u5168\u5c40\u7684\u4f63\u91d1\u5206\u914d\u6bd4\u4f8b\uff0c\u4f60\u53ef\u4ee5\u5728\u7528\u6237\u7ba1\u7406\u5355\u72ec\u914d\u7f6e\u5355\u4e2a\u6bd4\u4f8b\u3002"
                 }, f.a.createElement("input", {
@@ -5856,7 +5892,7 @@
                     onChange: e=>this.set("email", "email_encryption", e.target.value)
                 })), f.a.createElement(m, {
                     title: "SMTP\u8d26\u53f7",
-                    description: "\u7531\u90ae\u4ef6\u670d\u52a1\u5546\u63d0\u4f9b\u7684\u8d26\u53f7"
+                    description: "\u7531\u90ae\u4ef6\u670d\u52a1\u5546\u63d0\u4f9b\u7684\u8d26\u53f7\uff1b\u65e0\u9700\u8ba4\u8bc1\u7684\u4e2d\u7ee7\u53ef\u7559\u7a7a"
                 }, f.a.createElement("input", {
                     type: "text",
                     className: "form-control",
@@ -5899,7 +5935,7 @@
                     onChange: e=>this.set("email", "email_secondary_host", e.target.value)
                 })), f.a.createElement(m, {
                     title: "第二邮局 SMTP 端口",
-                    description: "常见端口为 25、465、587"
+                    description: "\u5e38\u89c1\u7aef\u53e3\u4e3a 25\u3001465\u3001587\u30012525"
                 }, f.a.createElement("input", {
                     type: "text",
                     className: "form-control",
@@ -5908,7 +5944,7 @@
                     onChange: e=>this.set("email", "email_secondary_port", e.target.value)
                 })), f.a.createElement(m, {
                     title: "第二邮局 SMTP 加密方式",
-                    description: "例如 ssl、tls；按邮局服务商要求填写"
+                    description: "\u4f8b\u5982 ssl\u3001tls\uff1b\u65e0\u52a0\u5bc6\u53ef\u7559\u7a7a\uff0825\u30012525 \u7b49\u660e\u6587\u7aef\u53e3\uff09"
                 }, f.a.createElement("input", {
                     type: "text",
                     className: "form-control",

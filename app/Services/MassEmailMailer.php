@@ -8,10 +8,22 @@ class MassEmailMailer
 {
     public static function isSecondaryConfigured()
     {
-        foreach (['host', 'port', 'username', 'password', 'from_address'] as $field) {
+        // 真正必填的只有主机、端口、发件地址。
+        // username / password 不强制：内网中继、IP 白名单认证的 SMTP 本就无需账号，
+        // sendViaSmtp() 也已按"无账号则不调用 setUsername"处理。
+        // encryption 同样可空，对应 25 / 2525 这类明文端口。
+        foreach (['host', 'port', 'from_address'] as $field) {
             if (!is_scalar(config('v2board.email_secondary_' . $field)) || trim((string) config('v2board.email_secondary_' . $field)) === '') {
                 return false;
             }
+        }
+        // 只填密码不填账号属于配置失误，明确拦掉，避免以为在认证其实没认证
+        $username = config('v2board.email_secondary_username');
+        $password = config('v2board.email_secondary_password');
+        $hasUsername = is_scalar($username) && trim((string) $username) !== '';
+        $hasPassword = is_scalar($password) && trim((string) $password) !== '';
+        if ($hasPassword && !$hasUsername) {
+            return false;
         }
         $port = config('v2board.email_secondary_port');
         return filter_var(config('v2board.email_secondary_from_address'), FILTER_VALIDATE_EMAIL) !== false
@@ -49,10 +61,16 @@ class MassEmailMailer
     {
         // A fresh transport per send prevents a persistent queue worker from reusing
         // credentials or a cached connection belonging to another SMTP account.
-        $transport = new \Swift_SmtpTransport($settings['host'], (int) $settings['port'], $settings['encryption'] ?: null);
+        // encryption 留空时传 null，对应 25 / 2525 这类明文端口
+        $encryption = is_scalar($settings['encryption']) ? trim((string) $settings['encryption']) : '';
+        $transport = new \Swift_SmtpTransport($settings['host'], (int) $settings['port'], $encryption !== '' ? $encryption : null);
         try {
-            if ($settings['username'] !== null && $settings['username'] !== '') {
-                $transport->setUsername($settings['username'])->setPassword($settings['password']);
+            // 无账号则完全不认证；有账号无密码时传空串而非 null，
+            // 避免 Swift 在部分服务端上把 null 当作"未设置"而跳过 AUTH。
+            $username = is_scalar($settings['username']) ? trim((string) $settings['username']) : '';
+            if ($username !== '') {
+                $password = is_scalar($settings['password']) ? (string) $settings['password'] : '';
+                $transport->setUsername($username)->setPassword($password);
             }
             $swiftMailer = new \Swift_Mailer($transport);
             $mailerInstance = new \Illuminate\Mail\Mailer('mass-' . $mailer, app('view'), $swiftMailer, app('events'));

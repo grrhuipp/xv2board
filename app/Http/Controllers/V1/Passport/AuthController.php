@@ -12,6 +12,7 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Services\AuthService;
 use App\Services\InviteGiftService;
+use App\Services\InviteRewardService;
 use App\Utils\CacheKey;
 use App\Utils\Dict;
 use App\Utils\Helper;
@@ -145,6 +146,11 @@ class AuthController extends Controller
         if ($willGiftInvitee) {
             $user->refresh();
             $inviteGiftService->gift($user, $request->ip());
+        }
+
+        // 邀请人奖励（注册侧）：与 APP 注册共用 InviteRewardService，内部已有开关与异常兜底
+        if ($user->invite_user_id) {
+            (new InviteRewardService())->rewardOnRegister($user);
         }
 
         if ((int)config('v2board.register_limit_by_ip_enable', 0)) {
