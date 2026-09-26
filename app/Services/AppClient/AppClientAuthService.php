@@ -22,7 +22,7 @@ use App\Utils\CacheKey;
 use App\Jobs\SendEmailJob;
 
 /**
- * 旧巷 APP 认证与账户核心服务。
+ * App 认证与账户核心服务。
  *
  * 收编原 AuthController 各端点除鉴权（validateUser 仍留控制器）外的全部逻辑：
  * config/alert/notice/sendEmailVerify/register（含 handleInviteReward/getMonthlyValue）/
@@ -61,7 +61,7 @@ class AppClientAuthService
         $methods = config('v2board.commission_withdraw_method', Dict::WITHDRAW_METHOD_WHITELIST_DEFAULT);
         $withdrawArr = array_map(fn($v) => ['name' => $v, 'type' => $v], $methods);
         return response(['data' => [
-            'appName' => config('v2board.app_name', '旧巷'),
+            'appName' => config('v2board.app_name', 'V2Board'),
             'appUrl' => config('v2board.app_url'),
             'website' => config('v2board.app_url'),
             'tggroup' => config('v2board.telegram_discuss_link'),
@@ -104,10 +104,10 @@ class AppClientAuthService
             return response()->json(['status' => 0, 'msg' => '验证码已发送，请过一会再请求']);
         }
         $code = rand(100000, 999999);
-        $subject = config('v2board.app_name', '旧巷') . config('appclient.email_verify.subject_suffix', ' 邮箱验证码: ') . $code;
+        $subject = config('v2board.app_name', 'V2Board') . config('appclient.email_verify.subject_suffix', ' 邮箱验证码: ') . $code;
         SendEmailJob::dispatch(['email' => $email, 'subject' => $subject,
             'template_name' => config('appclient.email_verify.template_name', 'verify'), 'template_value' => [
-                'name' => config('v2board.app_name', '旧巷'), 'code' => $code, 'url' => config('v2board.app_url')
+                'name' => config('v2board.app_name', 'V2Board'), 'code' => $code, 'url' => config('v2board.app_url')
             ]]);
         Cache::put(CacheKey::get('EMAIL_VERIFY_CODE', $email), $code, (int) config('appclient.email_verify.code_ttl', 1800));
         PasswordResetGuard::resetCodeAttempts($email);

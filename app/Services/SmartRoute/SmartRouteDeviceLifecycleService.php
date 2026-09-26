@@ -165,7 +165,7 @@ final class SmartRouteDeviceLifecycleService
     /**
      * APP 设备解绑时失效对应的 SmartRoute 设备档案并清理其遥测数据。
      *
-     * @param int    $userId   旧巷用户 id
+     * @param int    $userId   App 用户 id
      * @param string $deviceId APP 侧上报的设备标识（可能为 device_id 或 install_id）
      */
     public function invalidateDevice(int $userId, string $deviceId): void

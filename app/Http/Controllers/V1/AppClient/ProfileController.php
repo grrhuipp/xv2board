@@ -19,7 +19,7 @@ use App\Utils\Helper;
 use App\Utils\Dict;
 
 /**
- * 旧巷 APP 个人中心：邀请、佣金、知识库、流量统计。
+ * App 个人中心：邀请、佣金、知识库、流量统计。
  */
 class ProfileController extends BaseAppClientController
 {

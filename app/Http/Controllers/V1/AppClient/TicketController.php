@@ -11,7 +11,7 @@ use App\Models\Ticket;
 use App\Models\TicketMessage;
 
 /**
- * 旧巷 APP 工单系统接口。
+ * App 工单系统接口。
  */
 class TicketController extends BaseAppClientController
 {

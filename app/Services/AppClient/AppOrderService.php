@@ -16,7 +16,7 @@ use App\Models\Plan;
 use App\Utils\Helper;
 
 /**
- * 旧巷 APP 订单、优惠券、兑换码与礼品卡服务。
+ * App 订单、优惠券、兑换码与礼品卡服务。
  *
  * 收编原 OrderController 各端点除鉴权（validateUser 仍留控制器）外的全部业务逻辑：
  * 订单查询/详情/创建/支付/取消、续费事务、优惠券校验、兑换码与礼品卡兑换。

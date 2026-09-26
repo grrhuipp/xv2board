@@ -77,7 +77,7 @@ class RouteServiceProvider extends ServiceProvider
             }
         });
 
-        // 旧巷站点：V2 管理端统计接口
+        // V2 管理端统计接口
         Route::group([
             'prefix' => '/api/v2',
             'middleware' => 'api',

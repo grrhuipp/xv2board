@@ -5,9 +5,9 @@ namespace App\Http\Routes\V1;
 use Illuminate\Contracts\Routing\Registrar;
 
 /**
- * 旧巷 APP 专用路由
+ * App 客户端路由
  *
- * API 前缀: /api/v1/jiuxiang
+ * API 前缀（现有客户端兼容）: /api/v1/jiuxiang
  *
  * APP 加密参数从 config/appclient.php 读取。
  *
@@ -30,7 +30,7 @@ class AppClientRoute
     public function map(Registrar $router)
     {
         // =========================================
-        // 旧巷 APP 路由
+        // App 客户端路由
         // =========================================
         $router->group([
             'prefix' => 'jiuxiang'

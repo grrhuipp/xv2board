@@ -9,7 +9,7 @@ use App\Models\Plan;
 use App\Models\User;
 
 /**
- * 旧巷 APP 商店与支付方式接口。
+ * App 商店与支付方式接口。
  */
 class ShopController extends BaseAppClientController
 {

@@ -11,7 +11,7 @@ use App\Models\InviteCode;
 use App\Utils\Helper;
 
 /**
- * 旧巷 APP 用户响应聚合与加密适配器。
+ * App 用户响应聚合与加密适配器。
  *
  * 收编原 BaseAppClientController 的 encrypt / buildUserResponse 及
  * formatBytes / getDaysDifference 工具方法。

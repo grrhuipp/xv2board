@@ -6,7 +6,7 @@ use App\Models\Plan;
 use App\Models\UserDevice;
 
 /**
- * 旧巷 APP 账户状态判定服务。
+ * App 账户状态判定服务。
  *
  * 收编原 BaseAppClientController::checkAccountStatus 及 ACCOUNT_STATUS_* 常量。
  * 方法体逐字搬移，行为零变化。
