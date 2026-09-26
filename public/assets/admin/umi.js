@@ -5863,7 +5863,14 @@
                     className: "mb-0"
                 }, "\u5982\u679c\u4f60\u66f4\u6539\u4e86\u672c\u9875\u914d\u7f6e\uff0c\u9700\u8981\u5bf9\u961f\u5217\u670d\u52a1\u8fdb\u884c\u91cd\u542f\u3002\u53e6\u5916\u672c\u9875\u914d\u7f6e\u4f18\u5148\u7ea7\u9ad8\u4e8e.env\u4e2d\u90ae\u4ef6\u914d\u7f6e\u3002"))))), f.a.createElement("div", {
                     className: ""
-                }, f.a.createElement(m, {
+                }, f.a.createElement("div", {
+                    className: "alert alert-info",
+                    role: "status",
+                    style: {
+                        margin: "16px 20px",
+                        fontWeight: "bold"
+                    }
+                }, "第一邮局 SMTP 设置"), f.a.createElement(m, {
                     title: "SMTP\u670d\u52a1\u5668\u5730\u5740",
                     description: "\u7531\u90ae\u4ef6\u670d\u52a1\u5546\u63d0\u4f9b\u7684\u670d\u52a1\u5730\u5740"
                 }, f.a.createElement("input", {
@@ -5917,7 +5924,16 @@
                     placeholder: "\u8bf7\u8f93\u5165",
                     defaultValue: v.email_from_address,
                     onChange: e=>this.set("email", "email_from_address", e.target.value)
-                })), f.a.createElement("div", {
+                })), f.a.createElement(m, {
+                    title: "发送测试邮件",
+                    description: "邮件将会发送到当前登陆用户邮箱"
+                }, f.a.createElement(o["a"], {
+                    loading: x,
+                    type: "primary",
+                    onClick: ()=>this.props.dispatch({
+                        type: "config/testSendMail"
+                    })
+                }, "发送测试邮件")), f.a.createElement("div", {
                     className: "alert alert-info",
                     role: "status",
                     style: {
@@ -5994,15 +6010,6 @@
                     }, e)
                 }
                 ))), f.a.createElement(m, {
-                    title: "\u53d1\u9001\u6d4b\u8bd5\u90ae\u4ef6",
-                    description: "\u90ae\u4ef6\u5c06\u4f1a\u53d1\u9001\u5230\u5f53\u524d\u767b\u9646\u7528\u6237\u90ae\u7bb1"
-                }, f.a.createElement(o["a"], {
-                    loading: x,
-                    type: "primary",
-                    onClick: ()=>this.props.dispatch({
-                        type: "config/testSendMail"
-                    })
-                }, "\u53d1\u9001\u6d4b\u8bd5\u90ae\u4ef6")), f.a.createElement(m, {
                         title: "\u53d1\u9001\u7b2c\u4e8c\u90ae\u5c40\u6d4b\u8bd5\u90ae\u4ef6",
                         description: "\u4f7f\u7528\u7b2c\u4e8c\u90ae\u5c40\u914d\u7f6e\u53d1\u9001\uff0c\u90ae\u4ef6\u5c06\u4f1a\u53d1\u9001\u5230\u5f53\u524d\u767b\u9646\u7528\u6237\u90ae\u7bb1\u3002\u9700\u5148\u586b\u5199\u5b8c\u6574\u5e76\u4fdd\u5b58\u7b2c\u4e8c\u90ae\u5c40\u914d\u7f6e\u3002"
                     }, f.a.createElement(o["a"], {
