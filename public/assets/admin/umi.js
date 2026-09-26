@@ -86700,7 +86700,7 @@
                     type: "user/sendMail",
                     params: o()({}, this.state.submit, {
                         mailer: this.state.submit.mailer || "primary",
-                        audience: this.state.submit.audience || "all"
+                        audience: this.state.submit.audience || []
                     }),
                     callback: ()=>{
                         this.hide()
@@ -86736,25 +86736,25 @@
                 }, "\u8ba2\u9605\u5206\u6790\u53d7\u4f17"), l.a.createElement("select", {
                     className: "form-control",
                     id: "mass-audience-select",
-                    value: this.state.submit.audience || "all",
+                    multiple: !0,
+                    size: 3,
+                    value: this.state.submit.audience || [],
                     onChange: e=>{
                         this.setState({
                             submit: o()({}, this.state.submit, {
-                                audience: e.target.value
+                                audience: Array.from(e.target.selectedOptions, e=>e.value)
                             })
                         })
                     }
                 }, l.a.createElement("option", {
-                    value: "all"
-                }, "\u5168\u90e8\u7528\u6237"), l.a.createElement("option", {
                     value: "marked"
-                }, "\u4ec5\u5df2\u6807\u8bb0"), l.a.createElement("option", {
+                }, "\u5df2\u6807\u8bb0"), l.a.createElement("option", {
                     value: "attention"
                 }, "\u5f02\u5e38\u63d0\u793a"), l.a.createElement("option", {
                     value: "priority"
                 }, "\u91cd\u70b9\u6392\u67e5")), l.a.createElement("small", {
                     className: "form-text text-muted"
-                }, "\u82e5\u7528\u6237\u5217\u8868\u5df2\u6709\u7b5b\u9009\u6761\u4ef6\uff0c\u5c06\u5728\u5176\u4e2d\u53d6\u4ea4\u96c6\u3002")), l.a.createElement("div", {
+                }, "\u53ef\u591a\u9009\uff08Ctrl/Cmd + \u70b9\u51fb\uff09\uff1b\u9009\u4e2d\u7684\u53d7\u4f17\u5c06\u4ece\u5f53\u524d\u6536\u4ef6\u4eba\u4e2d\u6392\u9664\uff0c\u4e0d\u4f1a\u53d1\u9001\u7ed9\u4ed6\u4eec\u3002\u4e0d\u9009\u5219\u4e0d\u6392\u9664\u3002")), l.a.createElement("div", {
                     className: "form-group"
                 }, l.a.createElement("label", {
                     htmlFor: "mass-mailer-select"

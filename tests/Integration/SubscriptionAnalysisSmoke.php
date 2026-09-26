@@ -172,6 +172,17 @@ try {
         sort($expectedIds);
         checkAnalysis($actualIds === $expectedIds, $audience . ' targeting uses exact analysis predicates and thresholds');
     }
+    $recipients = App\Models\User::where('email', 'like', 'geo_%');
+    $service->excludeAudiences($recipients, ['marked', 'priority']);
+    $remaining = $recipients->pluck('id')->map(fn ($id) => (int) $id)->all();
+    checkAnalysis(!in_array($ids['geo_only'], $remaining, true) && !in_array($ids['geo_ua'], $remaining, true), 'multiple selected audiences exclude their union');
+    $recipients = App\Models\User::where('id', $ids['geo_only']);
+    $service->excludeAudiences($recipients, []);
+    checkAnalysis($recipients->exists(), 'no exclusion keeps existing recipient selection');
+    DB::table('v2_subscription_analysis_marks')->insert(['user_id' => $empty->id, 'note' => 'inactive', 'updated_at' => time()]);
+    $recipients = App\Models\User::where('id', $empty->id);
+    $service->excludeAudiences($recipients, ['marked']);
+    checkAnalysis(!$recipients->exists(), 'marked users without recent logs are also excluded');
     $intersection = App\Models\User::where('email', 'like', 'geo_%')->whereIn('id', $service->audienceUserIdsQuery('priority'))->pluck('id')->all();
     checkAnalysis($intersection === [$ids['geo_ua']], 'audience query intersects regular filters in SQL');
     checkAnalysis($service->audienceUserIdsQuery('all')->count() > count($audiences['priority']), 'all does not conflate attention and priority');

@@ -8,23 +8,24 @@ use Tests\TestCase;
 
 class UserSendMailAudienceValidationTest extends TestCase
 {
-    public function test_audience_accepts_supported_values_and_defaults_to_all()
+    public function test_audience_accepts_multiple_exclusions_or_none()
     {
         $request = new UserSendMail();
-        foreach (['all', 'marked', 'attention', 'priority'] as $audience) {
+        foreach ([[], ['marked'], ['marked', 'attention', 'priority']] as $audience) {
             $validator = Validator::make(['subject' => 's', 'content' => 'c', 'audience' => $audience], $request->rules());
-            $this->assertTrue($validator->passes(), $audience);
+            $this->assertTrue($validator->passes(), json_encode($audience));
         }
-        $validator = Validator::make(['subject' => 's', 'content' => 'c'], $request->rules());
-        $this->assertTrue($validator->passes());
-        $this->assertSame('all', $request->input('audience', 'all'));
+        $this->assertTrue(Validator::make(['subject' => 's', 'content' => 'c'], $request->rules())->passes());
+        $this->assertSame([], $request->input('audience', []));
     }
 
-    public function test_audience_rejects_unknown_values()
+    public function test_audience_rejects_scalar_unknown_and_duplicate_values()
     {
         $request = new UserSendMail();
-        $validator = Validator::make(['subject' => 's', 'content' => 'c', 'audience' => 'some'], $request->rules());
-        $this->assertFalse($validator->passes());
-        $this->assertArrayHasKey('audience', $validator->errors()->toArray());
+        foreach (['all', 'marked', ['some'], ['marked', 'marked'], ['marked', 'attention', 'priority', 'some']] as $audience) {
+            $validator = Validator::make(['subject' => 's', 'content' => 'c', 'audience' => $audience], $request->rules());
+            $this->assertFalse($validator->passes(), json_encode($audience));
+            $this->assertNotEmpty($validator->errors()->toArray());
+        }
     }
 }

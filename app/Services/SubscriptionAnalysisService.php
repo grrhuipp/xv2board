@@ -26,6 +26,24 @@ class SubscriptionAnalysisService
         return $query;
     }
 
+    /** Exclude the union of selected groups from an existing recipient query. */
+    public function excludeAudiences($builder, array $audiences): void
+    {
+        if (in_array('marked', $audiences, true)) {
+            // Marks persist even when a user has no recent subscription logs.
+            $builder->whereNotIn('id', DB::table('v2_subscription_analysis_marks')->select('user_id'));
+        }
+        if (array_intersect($audiences, ['attention', 'priority'])) {
+            $analysis = $this->buildAnalysisQuery();
+            $query = $analysis['base']->select('s.user_id');
+            $query->where(function ($query) use ($analysis, $audiences) {
+                if (in_array('attention', $audiences, true)) $query->orWhereRaw($analysis['attention']);
+                if (in_array('priority', $audiences, true)) $query->orWhereRaw($analysis['priority']);
+            });
+            $builder->whereNotIn('id', $query);
+        }
+    }
+
     private function buildAnalysisQuery(): array
     {
         $limits = SubscriptionAnalysisSettings::get();

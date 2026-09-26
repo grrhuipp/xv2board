@@ -99,10 +99,7 @@ class UserController extends Controller
         $sort = $request->input('sort') ? $request->input('sort') : 'created_at';
         $builder = User::orderBy($sort, $sortType);
         $this->filter($request, $builder);
-        $audience = $request->input('audience', 'all');
-        if ($audience !== 'all') {
-            $builder->whereIn('id', app(\App\Services\SubscriptionAnalysisService::class)->audienceUserIdsQuery($audience));
-        }
+        app(\App\Services\SubscriptionAnalysisService::class)->excludeAudiences($builder, $request->input('audience', []));
         foreach ($builder->cursor() as $user) {
             SendMassEmailJob::dispatch([
                 'email' => $user->email,

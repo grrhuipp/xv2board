@@ -5,6 +5,7 @@
 - `GET /subscription-analysis/fetch`：`q`（邮箱、UID、IP、UA、备注）、`event`（all/attention/frequent/multi_ip/geo/multi_ua）、`marked`、`page`、`page_size`（默认20，最大50）。
 - `POST /subscription-analysis/mark`：`user_id`、`marked`（布尔）、`note`（最多500字）。取消标记删除该用户的标记记录。
 - 历史弹窗复用 `GET /user/fetchSubscribeLogs`，按用户分页展示所有现存普通订阅记录。
+- 群发邮件的“订阅分析受众”是**多选排除**：`POST /user/sendMail` 的 `audience` 为可选数组（`marked`、`attention`、`priority`）。选中的任一类别均不发送；空数组或省略表示不额外排除，仍遵守用户列表已有筛选。已标记用户即使最近三天没有订阅记录也排除；异常提示和重点排查依据最近三天的分析阈值。管理员和员工群发均适用。
 
 - `POST /subscription-analysis/settings`：保存全局阈值。字段：`frequent_2m`、`frequent_5m`、`frequent_1h`、`ip_10m`、`ip_3d`、`ua_3d`、`countries_3d`、`cities_3d`。频率最小1，其余最小2，最大100000，均为整数。
 - 阈值保存在 `v2_subscription_analysis_settings`，返回在 fetch 的 `thresholds` 中；保存后立即影响汇总、筛选和行提示。
