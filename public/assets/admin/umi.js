@@ -5926,7 +5926,7 @@
                     onChange: e=>this.set("email", "email_from_address", e.target.value)
                 })), f.a.createElement(m, {
                     title: "发送测试邮件",
-                    description: "邮件将会发送到当前登陆用户邮箱"
+                    description: "测试邮件将发送至当前登录用户邮箱"
                 }, f.a.createElement(o["a"], {
                     loading: x,
                     type: "primary",
@@ -6011,7 +6011,7 @@
                 }
                 ))), f.a.createElement(m, {
                         title: "\u53d1\u9001\u7b2c\u4e8c\u90ae\u5c40\u6d4b\u8bd5\u90ae\u4ef6",
-                        description: "\u4f7f\u7528\u7b2c\u4e8c\u90ae\u5c40\u914d\u7f6e\u53d1\u9001\uff0c\u90ae\u4ef6\u5c06\u4f1a\u53d1\u9001\u5230\u5f53\u524d\u767b\u9646\u7528\u6237\u90ae\u7bb1\u3002\u9700\u5148\u586b\u5199\u5b8c\u6574\u5e76\u4fdd\u5b58\u7b2c\u4e8c\u90ae\u5c40\u914d\u7f6e\u3002"
+                        description: "测试邮件将通过第二邮局发送至当前登录用户邮箱。请先保存服务器、端口和发件地址；账号、密码及加密方式可留空。"
                     }, f.a.createElement(o["a"], {
                         loading: e.secondaryTestSendMailLoading,
                         disabled: !v.email_secondary_enabled,
