@@ -4,6 +4,7 @@ namespace App\Services\AppClient;
 
 use App\Services\AuthService;
 use App\Services\InviteGiftService;
+use App\Services\InviteRewardService;
 use App\Services\PasswordResetGuard;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
@@ -204,92 +205,17 @@ class AppClientAuthService
         }
         return response()->json(['status' => 1, 'msg' => '注册成功', 'data' => true]);
     }
+    /**
+     * 实现已抽到 InviteRewardService，网页注册与 APP 注册共用同一套逻辑。
+     * 保留此方法名以兼容既有调用点。
+     */
     public function handleInviteReward(User $user)
     {
-        try {
-            $inviter = User::find($user->invite_user_id);
-            if (!$inviter || (int)config('v2board.try_out_plan_id') == $inviter->plan_id) {
-                return;
-            }
-            $rewardPlan = Plan::find((int)config('v2board.complimentary_packages'));
-            if (!$rewardPlan) {
-                return;
-            }
-            $inviterCurrentPlan = Plan::find($inviter->plan_id);
-            if (!$inviterCurrentPlan) {
-                return;
-            }
-            $rewardHasValidPrice = $rewardPlan->month_price > 0 || $rewardPlan->quarter_price > 0 ||
-                $rewardPlan->half_year_price > 0 || $rewardPlan->year_price > 0 ||
-                $rewardPlan->two_year_price > 0 || $rewardPlan->three_year_price > 0 ||
-                $rewardPlan->onetime_price > 0;
-            $inviterHasValidPrice = $inviterCurrentPlan->month_price > 0 || $inviterCurrentPlan->quarter_price > 0 ||
-                $inviterCurrentPlan->half_year_price > 0 || $inviterCurrentPlan->year_price > 0 ||
-                $inviterCurrentPlan->two_year_price > 0 || $inviterCurrentPlan->three_year_price > 0 ||
-                $inviterCurrentPlan->onetime_price > 0;
-            if (!$inviterHasValidPrice || !$rewardHasValidPrice) {
-                \Log::warning('套餐价格异常，无法计算奖励', [
-                    'inviter_id' => $inviter->id,
-                    'reward_plan_id' => $rewardPlan->id,
-                    'current_plan_id' => $inviter->plan_id
-                ]);
-                return;
-            }
-            DB::transaction(function () use ($user, $rewardPlan, $inviterCurrentPlan, $inviter) {
-                $currentTime = time();
-                if ($inviter->expired_at === null || $inviter->expired_at < $currentTime) {
-                    $inviter->expired_at = $currentTime;
-                }
-                $rewardMonthlyValue = $this->getMonthlyValue($rewardPlan);
-                $inviterMonthlyValue = $this->getMonthlyValue($inviterCurrentPlan);
-                $priceRatio = $rewardMonthlyValue / $inviterMonthlyValue;
-                $configHours = (int)config('v2board.complimentary_package_duration', 0);
-                $adjustedHours = $configHours * $priceRatio;
-                $add_seconds = $adjustedHours * 3600;
-                $inviter->expired_at = $inviter->expired_at + $add_seconds;
-                $calculated_days = $add_seconds / 86400;
-                $formatted_days = number_format($calculated_days, 2, '.', '');
-                $order = new Order();
-                $orderService = new OrderService($order);
-                $order->user_id = $inviter->id;
-                $order->plan_id = $inviter->plan_id;
-                $order->period = '';
-                $order->trade_no = Helper::guid();
-                $order->total_amount = 0;
-                $order->status = 0;
-                $order->type = 6;
-                $order->gift_days = $formatted_days;
-                $orderService->paid('invite');
-                \Log::info('注册邀请奖励发放成功', [
-                    'user_id' => $user->id,
-                    'inviter_id' => $inviter->id,
-                    'order_id' => $order->id,
-                    'gift_days' => $formatted_days
-                ]);
-            });
-        } catch (\Exception $e) {
-            \Log::error('处理邀请奖励失败', [
-                'error' => $e->getMessage(),
-                'user_id' => $user->id,
-                'inviter_id' => $user->invite_user_id,
-                'trace' => $e->getTraceAsString()
-            ]);
-        }
+        (new InviteRewardService())->rewardOnRegister($user);
     }
     private function getMonthlyValue($plan)
     {
-        $monthlyValues = [];
-        if ($plan->month_price > 0) $monthlyValues[] = $plan->month_price;
-        if ($plan->quarter_price > 0) $monthlyValues[] = $plan->quarter_price / 3;
-        if ($plan->half_year_price > 0) $monthlyValues[] = $plan->half_year_price / 6;
-        if ($plan->year_price > 0) $monthlyValues[] = $plan->year_price / 12;
-        if ($plan->two_year_price > 0) $monthlyValues[] = $plan->two_year_price / 24;
-        if ($plan->three_year_price > 0) $monthlyValues[] = $plan->three_year_price / 36;
-        if ($plan->onetime_price > 0) $monthlyValues[] = $plan->onetime_price / 12;
-        if (empty($monthlyValues)) {
-            return 1;
-        }
-        return max($monthlyValues);
+        return (new InviteRewardService())->getMonthlyValue($plan);
     }
     public function forget(Request $request)
     {
