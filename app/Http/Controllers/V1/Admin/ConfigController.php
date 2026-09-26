@@ -217,6 +217,9 @@ class ConfigController extends Controller
                 'app_update_json' => is_array(config('v2board.app_update_json'))
                     ? json_encode(config('v2board.app_update_json'), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
                     : (config('v2board.app_update_json') ?? ''),
+                // 仅管理员配置接口返回有效密钥，用于后台表单回填；响应禁止缓存。
+                'app_client_aes_key' => config('v2board.app_client_aes_key') ?: config('appclient.encryption.key', ''),
+                'app_client_aes_iv' => config('v2board.app_client_aes_iv') ?: config('appclient.encryption.iv', ''),
                 'app_client_aes_key_configured' => (bool)(config('v2board.app_client_aes_key') ?: config('appclient.encryption.key')),
                 'app_client_aes_iv_configured' => (bool)(config('v2board.app_client_aes_iv') ?: config('appclient.encryption.iv')),
             ],
@@ -243,12 +246,12 @@ class ConfigController extends Controller
                 'data' => [
                     $key => $data[$key]
                 ]
-            ]);
+            ])->header('Cache-Control', 'private, no-store')->header('Pragma', 'no-cache');
         };
         // TODO: default should be in Dict
         return response([
             'data' => $data
-        ]);
+        ])->header('Cache-Control', 'private, no-store')->header('Pragma', 'no-cache');
     }
 
     public function save(ConfigSave $request)
