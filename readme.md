@@ -34,6 +34,18 @@
 - 旧版 `ASN,节点关键词,新host` 三字段文本（配置项 `as_rule`）已移除，不再兼容。
 - 仅白名单最近向面板上报过的节点公网 IP；IPv4 按所在 `/24` 整段拉白，过期时间跟随 `server_pull_interval`（10 个上报周期未再上报则过期，也可用 `node_ip_ttl` 覆盖）。这些网段拉取订阅时不走 AS host 替换；订阅分析的次数、最近记录、多 IP / 地区也不计入，UA 仍按全部请求计算。
 
+## 旧巷站点集成
+
+`/api/v1/shop/*` 提供下单即注册；`/api/v2/<后台安全路径>/stat/*` 提供 V2 统计接口。
+定时任务包含试用用户流量限制、每日支付方式收款统计和探活日志清理。
+Telegram 新增签到、优惠码查询、管理员查邮箱及收入统计命令。
+
+部署入口池探活前先执行 `php artisan migrate --force`，确认 Redis 连接可用，并在
+`v2_sr_ingress_pool` 中按需将具体入口的 `enabled` 设为 1；该字段默认关闭。
+配置 `SMARTROUTE_INGRESS_PROBE_ENABLED=true`，刷新配置缓存后，通过 supervisor/systemd
+单实例常驻运行 `php artisan smartroute:ingress-probe`。探活默认关闭，不会自动启动。
+探活健康快照及日志分别存入 `v2_sr_ingress_ip`、`v2_sr_ingress_probe_log`。
+
 ## 原版迁移步骤
 
 按以下步骤进行面板代码文件迁移：

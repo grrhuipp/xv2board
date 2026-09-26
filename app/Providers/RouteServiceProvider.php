@@ -77,6 +77,15 @@ class RouteServiceProvider extends ServiceProvider
             }
         });
 
-
+        // 旧巷站点：V2 管理端统计接口
+        Route::group([
+            'prefix' => '/api/v2',
+            'middleware' => 'api',
+            'namespace' => $this->namespace
+        ], function ($router) {
+            foreach (glob(app_path('Http/Routes/V2') . '/*.php') as $file) {
+                $this->app->make('App\\Http\\Routes\\V2\\' . basename($file, '.php'))->map($router);
+            }
+        });
     }
 }
