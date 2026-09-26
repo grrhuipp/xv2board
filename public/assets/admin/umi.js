@@ -5856,7 +5856,7 @@
                     onChange: e=>this.set("email", "email_encryption", e.target.value)
                 })), f.a.createElement(m, {
                     title: "SMTP\u8d26\u53f7",
-                    description: "\u7531\u90ae\u4ef6\u670d\u52a1\u5546\u63d0\u4f9b\u7684\u8d26\u53f7"
+                    description: "\u7531\u90ae\u4ef6\u670d\u52a1\u5546\u63d0\u4f9b\u7684\u8d26\u53f7\uff1b\u65e0\u9700\u8ba4\u8bc1\u7684\u4e2d\u7ee7\u53ef\u7559\u7a7a"
                 }, f.a.createElement("input", {
                     type: "text",
                     className: "form-control",
@@ -5899,7 +5899,7 @@
                     onChange: e=>this.set("email", "email_secondary_host", e.target.value)
                 })), f.a.createElement(m, {
                     title: "第二邮局 SMTP 端口",
-                    description: "常见端口为 25、465、587"
+                    description: "\u5e38\u89c1\u7aef\u53e3\u4e3a 25\u3001465\u3001587\u30012525"
                 }, f.a.createElement("input", {
                     type: "text",
                     className: "form-control",
@@ -5908,7 +5908,7 @@
                     onChange: e=>this.set("email", "email_secondary_port", e.target.value)
                 })), f.a.createElement(m, {
                     title: "第二邮局 SMTP 加密方式",
-                    description: "例如 ssl、tls；按邮局服务商要求填写"
+                    description: "\u4f8b\u5982 ssl\u3001tls\uff1b\u65e0\u52a0\u5bc6\u53ef\u7559\u7a7a\uff0825\u30012525 \u7b49\u660e\u6587\u7aef\u53e3\uff09"
                 }, f.a.createElement("input", {
                     type: "text",
                     className: "form-control",

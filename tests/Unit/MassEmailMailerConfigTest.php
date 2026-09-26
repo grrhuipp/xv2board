@@ -54,7 +54,34 @@ class MassEmailMailerConfigTest extends TestCase
         ]);
         $this->assertTrue(MassEmailMailer::isSecondaryConfigured());
 
-        config(['v2board.email_secondary_password' => '']);
+        // 只填密码不填账号属于配置失误，明确拦掉
+        config(['v2board.email_secondary_username' => '']);
+        $this->assertFalse(MassEmailMailer::isSecondaryConfigured());
+
+        // 无需认证的中继：账号密码都留空应当可用
+        config([
+            'v2board.email_secondary_username' => '',
+            'v2board.email_secondary_password' => '',
+        ]);
+        $this->assertTrue(MassEmailMailer::isSecondaryConfigured());
+    }
+
+    public function test_secondary_allows_relay_without_credentials_or_encryption()
+    {
+        config([
+            'v2board.email_secondary_host' => 'mail.6548.help',
+            'v2board.email_secondary_port' => 2525,
+            'v2board.email_secondary_username' => null,
+            'v2board.email_secondary_password' => null,
+            'v2board.email_secondary_encryption' => null,
+            'v2board.email_secondary_from_address' => 'sender@example.com',
+        ]);
+        $this->assertTrue(MassEmailMailer::isSecondaryConfigured());
+
+        // 缺少主机 / 端口 / 发件地址仍应判为未配置
+        config(['v2board.email_secondary_host' => '']);
+        $this->assertFalse(MassEmailMailer::isSecondaryConfigured());
+        config(['v2board.email_secondary_host' => 'mail.6548.help', 'v2board.email_secondary_from_address' => 'not-an-email']);
         $this->assertFalse(MassEmailMailer::isSecondaryConfigured());
     }
 }

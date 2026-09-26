@@ -60,7 +60,7 @@ class ConfigController extends Controller
         // 改用 MassEmailMailer，与群发走同一条发送路径，测出来的才是真实结果。
         if ($mailer === 'secondary') {
             if (!MassEmailMailer::isSecondaryConfigured()) {
-                abort(500, '第二邮局未配置完整，请先填写主机、端口、用户名、密码与发件地址并保存');
+                abort(500, '第二邮局未配置完整，请先填写主机、端口与发件地址并保存（账号、密码、加密方式可留空；但填了密码就必须填账号）');
             }
             $template = 'mail.' . config('v2board.email_template', 'default') . '.notify';
             try {
