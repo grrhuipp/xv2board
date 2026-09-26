@@ -94,7 +94,9 @@ class ConfigSave extends FormRequest
         'email_secondary_username' => 'nullable|string',
         'email_secondary_password' => 'nullable|string',
         'email_secondary_encryption' => 'nullable|string',
+        // 后台表单清空后提交的是 ""，nullable 只放过 null，会被 email/integer 规则拒掉
         'email_secondary_from_address' => 'nullable|email',
+        'email_secondary_test_recipient' => 'nullable|email',
         // telegram
         'telegram_bot_enable' => 'in:0,1',
         'telegram_bot_ticket_notify' => 'in:0,1',
@@ -127,6 +129,38 @@ class ConfigSave extends FormRequest
         'password_limit_count' => 'integer',
         'password_limit_expire' => 'integer',
     ];
+    /**
+     * 后台表单把未填写的输入框提交为空字符串，而 nullable 只放过 null，
+     * 空字符串会继续走 email / integer 规则并报 422。这里先归一成 null，
+     * 让"留空 = 不配置"能正常保存。
+     */
+    protected function prepareForValidation()
+    {
+        $nullable = [
+            'email_secondary_host',
+            'email_secondary_port',
+            'email_secondary_username',
+            'email_secondary_password',
+            'email_secondary_encryption',
+            'email_secondary_from_address',
+            'email_secondary_test_recipient',
+            'email_host',
+            'email_port',
+            'email_username',
+            'email_encryption',
+            'email_from_address',
+        ];
+        $patch = [];
+        foreach ($nullable as $key) {
+            if ($this->has($key) && is_string($this->input($key)) && trim($this->input($key)) === '') {
+                $patch[$key] = null;
+            }
+        }
+        if ($patch) {
+            $this->merge($patch);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
