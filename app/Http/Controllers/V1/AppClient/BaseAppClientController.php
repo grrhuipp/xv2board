@@ -9,7 +9,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 
 /**
- * 旧巷 APP 客户端控制器基类
+ * App 客户端控制器基类
  *
  * 6.2 服务层下沉后，基类仅保留纯 HTTP 鉴权辅助（getUser / validateUser）。
  * 业务逻辑（账户状态、设备绑定、Clash 配置、用户响应聚合、订单事务、认证核心）

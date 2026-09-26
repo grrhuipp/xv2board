@@ -46,7 +46,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('smart-route:downgrade')->dailyAt('3:00');
         // horizon metrics
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
-        // 旧巷站点专用
+        // 扩展定时任务
         $schedule->command('customFunction:GetStatPaymentMethodMoney')->dailyAt('0:00');
         $schedule->command('v2board:check-trial-traffic')->hourly();
         // 入口池探活诊断日志清理（按 log_retention_hours 清理过期日志）

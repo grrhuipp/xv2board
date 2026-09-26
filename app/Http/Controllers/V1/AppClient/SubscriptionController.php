@@ -6,7 +6,7 @@ use App\Services\AppClient\SubscriptionConfigService;
 use Illuminate\Http\Request;
 
 /**
- * 旧巷 APP 订阅配置接口（加密下发 Clash 配置）。
+ * App 订阅配置接口（加密下发 Clash 配置）。
  *
  * 6.2 瘦身后仅负责鉴权与委派，订阅配置组装下沉至 SubscriptionConfigService。
  */

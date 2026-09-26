@@ -9,7 +9,7 @@ use App\Utils\Helper;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * 旧巷 APP Clash 配置生成服务。
+ * App Clash 配置生成服务。
  *
  * 收编原 BaseAppClientController 的 buildClashConfig / buildNodesData /
  * applySmartRouteIngress / resolveSmartRouteGlobalIngress 及 7 个协议构建器
@@ -91,7 +91,7 @@ class ClashConfigBuilder
         }
         $config['proxy-groups'] = array_values(array_filter($config['proxy-groups'], fn($g) => !empty($g['proxies'])));
         $yaml = Yaml::dump($config, 2, 4, Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE);
-        return str_replace('$app_name', config('v2board.app_name', '旧巷VPN'), $yaml);
+        return str_replace('$app_name', config('v2board.app_name', 'V2Board'), $yaml);
     }
     public function buildClashShadowsocks($password, $server)
     {
@@ -363,7 +363,7 @@ class ClashConfigBuilder
     /**
      * 从当前请求的 User-Agent 解析客户端版本号。
      *
-     * 客户端 UA 格式为 "{prefix}/{version}"（如 "旧巷VPN/1.2.0"）。
+     * 客户端 UA 格式为 "{prefix}/{version}"（如 "V2Board/1.2.0"）。
      * 解析取第一个形如 x.y 或 x.y.z 的版本串；无请求上下文 / 无匹配返回 null。
      */
     private function currentClientVersion(): ?string

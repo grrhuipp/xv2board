@@ -5,21 +5,13 @@
 ## 本分支支持的后端
  - [修改版V2bX](https://github.com/wyx2685/V2bX)
 
-## 开发约定：推送目标
+## 开发约定
 
-本仓库是 `wyx2685/v2board` 的 fork，改动不回流原版。克隆后可启用仓库内置的 pre-push 钩子：
-
-    git config core.hooksPath .githooks
-
-钩子会拒绝推向原版上游 `wyx2685/v2board`，以及直接推 `master` / `main`。本仓库 `origin` 是 `grrhuipp/xv2board`，原版 `upstream` 是 `wyx2685/v2board`。日常开发请推特性分支并向本仓库提交 PR：
+本仓库的推送远端为 `origin`（`grrhuipp/xv2board`）。建议通过特性分支和 PR 合并到 `master`：
 
     git push -u origin <你的分支>
 
-在 GitHub 网页建 PR 时，请确认 base repository 是 `grrhuipp/xv2board`，不要误选原版。钩子仅拦截本地 `git push`，不能拦截网页 PR。
-
-确有必要绕过钩子时：
-
-    ALLOW_PUSH_UPSTREAM=1 git push <远端> <分支>
+克隆后可执行 `git config core.hooksPath .githooks` 启用本地推送保护；钩子会阻止误推到原版仓库及直接推送 `master` / `main`。GitHub 网页创建 PR 时也应核对目标仓库。
 
 ## AS 节点地址替换
 
@@ -34,7 +26,7 @@
 - 旧版 `ASN,节点关键词,新host` 三字段文本（配置项 `as_rule`）已移除，不再兼容。
 - 仅白名单最近向面板上报过的节点公网 IP；IPv4 按所在 `/24` 整段拉白，过期时间跟随 `server_pull_interval`（10 个上报周期未再上报则过期，也可用 `node_ip_ttl` 覆盖）。这些网段拉取订阅时不走 AS host 替换；订阅分析的次数、最近记录、多 IP / 地区也不计入，UA 仍按全部请求计算。
 
-## 旧巷站点集成
+## App 与 SmartRoute 扩展
 
 `/api/v1/shop/*` 提供下单即注册；`/api/v2/<后台安全路径>/stat/*` 提供 V2 统计接口。
 定时任务包含试用用户流量限制、每日支付方式收款统计和探活日志清理。
@@ -46,23 +38,15 @@ Telegram 新增签到、优惠码查询、管理员查邮箱及收入统计命�
 单实例常驻运行 `php artisan smartroute:ingress-probe`。探活默认关闭，不会自动启动。
 探活健康快照及日志分别存入 `v2_sr_ingress_ip`、`v2_sr_ingress_probe_log`。
 
-## 原版迁移步骤
+## 部署提示
 
-按以下步骤进行面板代码文件迁移：
+按部署环境设置 Redis 缓存驱动后，刷新 Laravel 配置缓存并重启队列进程：
 
-    git remote set-url origin https://github.com/wyx2685/v2board  
-    git checkout master  
-    ./update.sh  
-
-
-按以下步骤配置缓存驱动为redis，然后刷新设置缓存，重启队列:
-
-    sed -i 's/^CACHE_DRIVER=.*/CACHE_DRIVER=redis/' .env
     php artisan config:clear
     php artisan config:cache
     php artisan horizon:terminate
 
-最后进入后台重新保存主题： 主题配置-选择default主题-主题设置-确定保存
+App/SmartRoute 的数据库迁移与兼容接口详见 [部署说明](docs/app-smartroute-migration.md)。
 
 ## ip2region 离线 IP 归属地
 
@@ -87,7 +71,7 @@ PHP-FPM 和常驻队列进程。若修改路径配置，需刷新 Laravel 配置
 
 # **V2Board**
 
-- PHP7.3+
+- PHP 8.0+
 - Composer
 - MySQL5.5+
 - Redis

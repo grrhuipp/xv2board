@@ -10,7 +10,7 @@ use App\Services\AppClient\AppClientAuthService;
 use Illuminate\Http\Request;
 
 /**
- * 旧巷 APP 认证与账户接口：注册、登录、同步、状态检查、版本更新、注销。
+ * App 认证与账户接口：注册、登录、同步、状态检查、版本更新、注销。
  *
  * 6.2 瘦身后仅负责鉴权（含 FormRequest 入参校验）与委派，认证核心逻辑下沉至 AppClientAuthService。
  */

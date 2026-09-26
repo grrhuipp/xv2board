@@ -7,7 +7,7 @@ use App\Models\UserDevice;
 use Illuminate\Http\Request;
 
 /**
- * 旧巷 APP 订阅配置组装服务。
+ * App 订阅配置组装服务。
  *
  * 收编原 SubscriptionController::subscribe 中除鉴权（validateUser 仍留控制器）
  * 外的全部逻辑：可用性校验、设备授权校验、Clash 配置生成与加密下发（含响应头）。

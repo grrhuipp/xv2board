@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 旧巷 APP 设备绑定 / 解绑生命周期服务。
+ * App 设备绑定 / 解绑生命周期服务。
  *
  * 收编原 BaseAppClientController::handleDeviceBind / invalidateSmartRouteDevice。
  * 方法体逐字搬移，行为零变化。

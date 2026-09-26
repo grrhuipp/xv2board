@@ -3,19 +3,13 @@
 declare(strict_types=1);
 
 /**
- * AppClient 旧接口文案语言包（整改清单 2.5 预留框架）。
- *
- * 现状与边界（重要）：
- * - 旧 APP 在线依赖 AppClient 响应里的 msg 文字与 status 数字码，本批次「不」改动任何
- *   AppClient 控制器，以保证旧版零影响（见 2.4 决策）。
- * - 本文件先把已稳定的账户状态文案登记下来，作为后续「待旧 APP 用户基本升级后」
- *   把 JiuxiangController 硬编码文案迁移到语言包的目标基线；当前控制器仍用硬编码，
- *   尚未引用本文件，故迁移时务必逐字比对，确保 msg 文字不变。
- * - key 与 JiuxiangController::ACCOUNT_STATUS_* 常量含义一一对应。
+ * AppClient 账户状态文案语言包。
+ * 现有客户端依赖响应中的 msg 文本与 status 数字码；修改文案前须核对客户端兼容性。
+ * 若控制器仍使用硬编码，请保持两处文案一致。
  */
 return [
     // 响应外层 status 字段语义：1=成功 / 0=失败 / -1=特殊业务成功（订单购买/取消继续支付）
-    // 账户状态数字码（JiuxiangController::ACCOUNT_STATUS_*）对应文案，逐字取自现有控制器：
+    // 账户状态数字码对应文案：
     'account_status' => [
         // 0 OK
         'ok'             => '账户状态正常',
