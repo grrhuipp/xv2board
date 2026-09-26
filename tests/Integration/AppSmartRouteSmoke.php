@@ -14,10 +14,11 @@ if (!app()->environment('testing') || strpos(DB::connection()->getDatabaseName()
 }
 set_exception_handler(function ($e) { fwrite(STDERR, get_class($e).': '.$e->getMessage()."\n".$e->getTraceAsString()."\n"); exit(1); });
 function check($value, $message) { if (!$value) throw new RuntimeException($message); echo "PASS $message\n"; }
-config(['v2board.secure_path' => 'qa-admin', 'v2board.app_name' => 'QA', 'v2board.show_info_to_server_enable' => 0]);
+config(['v2board.secure_path' => 'qa-admin', 'v2board.app_name' => 'QA', 'v2board.show_info_to_server_enable' => 0,
+    'v2board.app_client_aes_key' => 'qa-key-123456789', 'v2board.app_client_aes_iv' => 'qa-iv-1234567890']);
 $routes = app('router')->getRoutes(); $count = 0;
 foreach ($routes as $route) {
-    if (strpos($route->uri(), 'jiuxiang') === false && strpos($route->uri(), 'smart-route') === false && strpos($route->uri(), 'getAppAudience') === false) continue;
+    if (strpos($route->uri(), \App\Services\AppClient\AppClientSettings::path()) === false && strpos($route->uri(), 'smart-route') === false && strpos($route->uri(), 'getAppAudience') === false) continue;
     $action = $route->getActionName();
     if (strpos($action, '@') !== false) { [$class, $method] = explode('@', $action); if (!class_exists($class) || !method_exists($class, $method)) throw new RuntimeException('Missing route action: '.$route->uri()); }
     $count++;
@@ -48,11 +49,11 @@ try {
     $mapping=App\Models\SmartRoute\SrIngressMap::where('server_id',9001)->first();
     $mapping->ingress_host='fallback.example.invalid'; $mapping->ingress_port=8443; $mapping->save();
     check($resolver->resolveIngress('anytls',9001,'intl_only')===['host'=>'fallback.example.invalid','port'=>8443],'explicit address survives disabled pool');
-    check(!class_exists(App\Console\Commands\IngressProbe::class),'active probe command removed');
+    check(class_exists(App\Console\Commands\IngressProbe::class),'probe command is available but opt-in');
     $plan = Plan::create(['name'=>'QA','group_id'=>1,'transfer_enable'=>10,'month_price'=>1000,'show'=>1,'renew'=>1,'device_limit'=>2]);
     $user = User::create(['email'=>'app-smoke@example.invalid','password'=>password_hash('qa-password-only', PASSWORD_DEFAULT),'token'=>'qa-subscription-token','uuid'=>'11111111-1111-4111-8111-111111111111','plan_id'=>$plan->id,'group_id'=>1,'transfer_enable'=>10737418240,'u'=>0,'d'=>0,'expired_at'=>time()+86400,'device_limit'=>2,'banned'=>0]);
     $other = User::create(['email'=>'other-smoke@example.invalid','password'=>'unused','token'=>'qa-other-token','uuid'=>'22222222-2222-4222-8222-222222222222','device_limit'=>2,'banned'=>0]);
-    $request = Request::create('/api/v1/jiuxiang/smart-route/device/register', 'POST', ['install_id'=>'qa-install','platform'=>'android','app_version'=>'1.2.0','network_type'=>'wifi']);
+    $request = Request::create('/api/v1/' . \App\Services\AppClient\AppClientSettings::path() . '/smart-route/device/register', 'POST', ['install_id'=>'qa-install','platform'=>'android','app_version'=>'1.2.0','network_type'=>'wifi']);
     $action = new App\Actions\SmartRoute\RegisterDeviceAction();
     $response = $action->execute($user, $request);
     check($response->getStatusCode() === 200, 'SmartRoute device registration');
@@ -69,12 +70,12 @@ try {
     check($status['status_ok'], 'App account status');
     $cipher = new App\Services\AppClient\AppClientResponseAdapter();
     $encrypted = $cipher->encrypt(['smoke'=>'ok']);
-    $decoded = openssl_decrypt($encrypted,config('appclient.encryption.cipher'),config('appclient.encryption.key'),0,config('appclient.encryption.iv'));
+    $decoded = openssl_decrypt($encrypted,config('appclient.encryption.cipher'),(config('v2board.app_client_aes_key') ?: config('appclient.encryption.key')),0,(config('v2board.app_client_aes_iv') ?: config('appclient.encryption.iv')));
     check(json_decode($decoded,true)===['smoke'=>'ok'], 'source App encryption configuration round trip');
     $builder = new App\Services\AppClient\ClashConfigBuilder();
     check(is_string($builder->buildClashConfig($user,$id)), 'App subscription configuration');
 
-    $loginRequest = Request::create('/api/v1/jiuxiang/login','POST',['email'=>$user->email,'password'=>'qa-password-only','device_id'=>$id,'install_id'=>'qa-install','app_version'=>'1.2.0','os_type'=>'android']);
+    $loginRequest = Request::create('/api/v1/' . \App\Services\AppClient\AppClientSettings::path() . '/login','POST',['email'=>$user->email,'password'=>'qa-password-only','device_id'=>$id,'install_id'=>'qa-install','app_version'=>'1.2.0','os_type'=>'android']);
     $login=(new App\Services\AppClient\AppClientAuthService())->login($loginRequest);
     check((json_decode($login->getContent(), true)['status'] ?? 0)===1,'App login with current device');
     $sync=(new App\Services\AppClient\AppClientAuthService())->sync($user,$loginRequest);
@@ -95,7 +96,7 @@ try {
     check(App\Models\SmartRoute\SrTelemetryEvent::where('user_id',$user->id)->where('event_type','qa_smoke')->exists(),'telemetry queue job writes events');
     $guard = new App\Http\Middleware\SmartRouteGuard();
     $body='{}'; $nonce='qa-nonce-'.bin2hex(random_bytes(8));
-    $guardRequest=Request::create('/api/v1/jiuxiang/smart-route/device/register','POST',[],[],[],['HTTP_X_TIMESTAMP'=>(string)time(),'HTTP_X_NONCE'=>$nonce,'HTTP_X_BODY_SHA256'=>hash('sha256',$body)],$body);
+    $guardRequest=Request::create('/api/v1/' . \App\Services\AppClient\AppClientSettings::path() . '/smart-route/device/register','POST',[],[],[],['HTTP_X_TIMESTAMP'=>(string)time(),'HTTP_X_NONCE'=>$nonce,'HTTP_X_BODY_SHA256'=>hash('sha256',$body)],$body);
     $next=fn()=>response()->json(['ok'=>true]);
     check($guard->handle($guardRequest,$next)->getStatusCode()===200,'valid signed-envelope headers');
     check($guard->handle($guardRequest,$next)->getStatusCode()!==200,'nonce replay rejection');

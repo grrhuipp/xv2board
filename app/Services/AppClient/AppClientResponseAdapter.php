@@ -38,11 +38,12 @@ class AppClientResponseAdapter
         if (is_array($data)) $data = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         $cipher = (string) config('appclient.encryption.cipher', 'aes-128-cbc');
-        $key = (string) config('appclient.encryption.key', '');
-        $iv = (string) config('appclient.encryption.iv', '');
+        $key = (string)(config('v2board.app_client_aes_key') ?: config('appclient.encryption.key', ''));
+        $iv = (string)(config('v2board.app_client_aes_iv') ?: config('appclient.encryption.iv', ''));
 
         $requiredIvLength = openssl_cipher_iv_length($cipher);
-        if ($key === '' || $iv === '' || $requiredIvLength === false || strlen($iv) !== $requiredIvLength) {
+        if ($key === '' || $iv === '' || $requiredIvLength === false
+            || strlen($iv) !== $requiredIvLength || ($cipher === 'aes-128-cbc' && strlen($key) !== 16)) {
             abort(500, 'APP 加密配置缺失或不合法');
         }
 

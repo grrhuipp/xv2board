@@ -212,6 +212,14 @@ class ConfigController extends Controller
                 'telegram_bot_token' => config('v2board.telegram_bot_token'),
                 'telegram_discuss_link' => config('v2board.telegram_discuss_link')
             ],
+            'app' => [
+                'app_client_path' => \App\Services\AppClient\AppClientSettings::path(),
+                'app_update_json' => is_array(config('v2board.app_update_json'))
+                    ? json_encode(config('v2board.app_update_json'), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+                    : (config('v2board.app_update_json') ?? ''),
+                'app_client_aes_key_configured' => (bool)(config('v2board.app_client_aes_key') ?: config('appclient.encryption.key')),
+                'app_client_aes_iv_configured' => (bool)(config('v2board.app_client_aes_iv') ?: config('appclient.encryption.iv')),
+            ],
             'safe' => [
                 'email_verify' => (int)config('v2board.email_verify', 0),
                 'safe_mode_enable' => (int)config('v2board.safe_mode_enable', 0),
@@ -246,7 +254,7 @@ class ConfigController extends Controller
     public function save(ConfigSave $request)
     {
         $data = $request->validated();
-        foreach (['email_password', 'email_secondary_password'] as $passwordKey) {
+        foreach (['email_password', 'email_secondary_password', 'app_client_aes_key', 'app_client_aes_iv'] as $passwordKey) {
             if (array_key_exists($passwordKey, $data) && ($data[$passwordKey] === '' || $data[$passwordKey] === null)) {
                 unset($data[$passwordKey]);
             }

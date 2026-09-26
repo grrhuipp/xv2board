@@ -725,11 +725,9 @@ class SmartRouteController extends Controller
         ]);
 
         $requestDeviceId = $request->input('device_id');
-        $normalizedInstallId = 'jx_' . preg_replace('/[^a-zA-Z0-9]/', '', $requestDeviceId);
-        $device = SrDeviceProfile::where(function ($query) use ($requestDeviceId, $normalizedInstallId) {
+        $device = SrDeviceProfile::where(function ($query) use ($requestDeviceId) {
             $query->where('device_id', $requestDeviceId)
-                ->orWhere('install_id', $requestDeviceId)
-                ->orWhere('install_id', $normalizedInstallId);
+                ->orWhere('install_id', $requestDeviceId);
         })->first();
         if (!$device) return ApiResponse::adminError('设备不存在', 404);
 

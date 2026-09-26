@@ -14,4 +14,11 @@ class LegacyAppSettingsRemovalTest extends TestCase
             $this->assertArrayNotHasKey($key, ConfigSave::RULES);
         }
     }
+
+    public function test_app_client_settings_replace_legacy_version_fields(): void
+    {
+        foreach (['app_client_path', 'app_update_json', 'app_client_aes_key', 'app_client_aes_iv'] as $key) {
+            $this->assertArrayHasKey($key, ConfigSave::RULES);
+        }
+    }
 }

@@ -2,14 +2,15 @@
 
 namespace App\Http\Routes\V1;
 
+use App\Services\AppClient\AppClientSettings;
 use Illuminate\Contracts\Routing\Registrar;
 
 /**
  * App 客户端路由
  *
- * API 前缀（现有客户端兼容）: /api/v1/jiuxiang
+ * API 前缀：/api/v1/{系统配置 APP 中设置的路径}
  *
- * APP 加密参数从 config/appclient.php 读取。
+ * 加密参数优先读取系统配置，未设置时读取环境变量。
  *
  * 6.5 路由分组整理（纯结构性，行为零变化）：
  *   - 端点按 public（无需 token）/ private（需 token）维度用嵌套 group 归类，
@@ -33,7 +34,7 @@ class AppClientRoute
         // App 客户端路由
         // =========================================
         $router->group([
-            'prefix' => 'jiuxiang'
+            'prefix' => AppClientSettings::path()
         ], function ($router) {
 
             // =====================================================

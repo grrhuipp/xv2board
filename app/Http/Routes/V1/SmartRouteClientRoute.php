@@ -2,6 +2,7 @@
 
 namespace App\Http\Routes\V1;
 
+use App\Services\AppClient\AppClientSettings;
 use Illuminate\Contracts\Routing\Registrar;
 
 class SmartRouteClientRoute
@@ -9,9 +10,9 @@ class SmartRouteClientRoute
     public function map(Registrar $router)
     {
         // 公开接口（无需鉴权）
-        // 注意：挂在 jiuxiang 前缀下，避免 nginx 把 /api/v1/client/* 分发给其他应用
+        // 与 App 客户端共用可配置前缀，避免 /api/v1/client/* 被其他应用接管。
         $router->group([
-            'prefix' => 'jiuxiang/smart-route',
+            'prefix' => AppClientSettings::path() . '/smart-route',
         ], function ($router) {
             // SSL pins 动态下发
             $router->get('/security/pins', 'V1\\SmartRoute\\SmartRouteClientController@securityPins');
@@ -20,7 +21,7 @@ class SmartRouteClientRoute
         // SmartRoute Client API
         // 所有接口都需要 user 鉴权 + smart_route_guard 安全校验
         $router->group([
-            'prefix' => 'jiuxiang/smart-route',
+            'prefix' => AppClientSettings::path() . '/smart-route',
             'middleware' => ['smart_route_auth', 'smart_route_guard'],
         ], function ($router) {
             // 设备注册

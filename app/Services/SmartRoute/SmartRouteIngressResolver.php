@@ -31,7 +31,7 @@ final class SmartRouteIngressResolver
      * 解析用户当前活跃的 SmartRoute 设备档案（status=1）。
      *
      * 逐字搬移自 ClashConfigBuilder::applySmartRouteIngress 的设备查询段：
-     * 优先按 device_id / install_id / 规范化 install_id 命中请求设备，
+     * 优先按 device_id / install_id 命中请求设备，
      * 命中失败则回退到该用户最近活跃的设备。
      */
     public function resolveActiveDevice(int $userId, ?string $deviceId = null): ?SrDeviceProfile
@@ -43,8 +43,7 @@ final class SmartRouteIngressResolver
             $device = (clone $deviceQuery)
                 ->where(function ($query) use ($deviceId) {
                     $query->where('device_id', $deviceId)
-                        ->orWhere('install_id', $deviceId)
-                        ->orWhere('install_id', 'jx_' . preg_replace('/[^a-zA-Z0-9]/', '', $deviceId));
+                        ->orWhere('install_id', $deviceId);
                 })
                 ->orderByDesc('last_active_at')
                 ->first();
