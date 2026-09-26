@@ -27,6 +27,21 @@ return array_merge(
             // 允许下发入口映射（新入口）的最低 App 版本，含本版本。低于此版本只给 AWS 高防。
             'min_app_version' => (string)env('SMARTROUTE_INGRESS_MIN_VERSION', '1.2.0'),
         ],
+        // 探活是独立常驻命令，迁移完成并配置 supervisor 后再显式开启。
+        'ingress_probe' => [
+            'enabled' => (bool)env('SMARTROUTE_INGRESS_PROBE_ENABLED', false),
+            'tick_seconds' => 1,
+            'lock_ttl_sec' => 300,
+            'heartbeat_alert_sec' => 60,
+            'default_port' => 443,
+            'default_timeout_ms' => 1000,
+            'filter_private_ip' => true,
+            'doh_upstreams' => ['https://cloudflare-dns.com/dns-query', 'https://dns.google/resolve'],
+            'doh_timeout_ms' => 3000,
+            'log_enabled' => true,
+            'log_snapshot_interval_sec' => 60,
+            'log_retention_hours' => 24,
+        ],
     ],
     \App\Services\SmartRoute\SmartRouteSchema::configDefaults()
 );
