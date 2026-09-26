@@ -86676,7 +86676,8 @@
         n("5rEg"))
           , s = n("q1tI")
           , l = n.n(s)
-          , c = n("/MKj");
+          , c = n("/MKj")
+          , d = (n("OaEy"), n("2fM7"));
         class u extends l.a.Component {
             constructor(e) {
                 super(e),
@@ -86733,45 +86734,45 @@
                     className: "form-group"
                 }, l.a.createElement("label", {
                     htmlFor: "mass-audience-select"
-                }, "\u8ba2\u9605\u5206\u6790\u53d7\u4f17"), l.a.createElement("select", {
-                    className: "form-control",
+                }, "\u8ba2\u9605\u5206\u6790\u53d7\u4f17"), l.a.createElement(d["a"], {
                     id: "mass-audience-select",
-                    multiple: !0,
-                    size: 3,
+                    mode: "multiple",
+                    style: {width: "100%"},
+                    placeholder: "\u4e0d\u9009\u5219\u4e0d\u6392\u9664",
                     value: this.state.submit.audience || [],
                     onChange: e=>{
                         this.setState({
                             submit: o()({}, this.state.submit, {
-                                audience: Array.from(e.target.selectedOptions, e=>e.value)
+                                audience: e
                             })
                         })
                     }
-                }, l.a.createElement("option", {
+                }, l.a.createElement(d["a"].Option, {
                     value: "marked"
-                }, "\u5df2\u6807\u8bb0"), l.a.createElement("option", {
+                }, "\u5df2\u6807\u8bb0"), l.a.createElement(d["a"].Option, {
                     value: "attention"
-                }, "\u5f02\u5e38\u63d0\u793a"), l.a.createElement("option", {
+                }, "\u5f02\u5e38\u63d0\u793a"), l.a.createElement(d["a"].Option, {
                     value: "priority"
                 }, "\u91cd\u70b9\u6392\u67e5")), l.a.createElement("small", {
                     className: "form-text text-muted"
-                }, "\u53ef\u591a\u9009\uff08Ctrl/Cmd + \u70b9\u51fb\uff09\uff1b\u9009\u4e2d\u7684\u53d7\u4f17\u5c06\u4ece\u5f53\u524d\u6536\u4ef6\u4eba\u4e2d\u6392\u9664\uff0c\u4e0d\u4f1a\u53d1\u9001\u7ed9\u4ed6\u4eec\u3002\u4e0d\u9009\u5219\u4e0d\u6392\u9664\u3002")), l.a.createElement("div", {
+                }, "\u9009\u4e2d\u7684\u53d7\u4f17\u5c06\u4ece\u5f53\u524d\u6536\u4ef6\u4eba\u4e2d\u6392\u9664\uff0c\u4e0d\u4f1a\u53d1\u9001\u7ed9\u4ed6\u4eec\u3002\u4e0d\u9009\u5219\u4e0d\u6392\u9664\u3002")), l.a.createElement("div", {
                     className: "form-group"
                 }, l.a.createElement("label", {
                     htmlFor: "mass-mailer-select"
-                }, "\u53d1\u4ef6\u90ae\u5c40"), l.a.createElement("select", {
-                    className: "form-control",
+                }, "\u53d1\u4ef6\u90ae\u5c40"), l.a.createElement(d["a"], {
                     id: "mass-mailer-select",
+                    style: {width: "100%"},
                     value: this.state.submit.mailer || "primary",
                     onChange: e=>{
                         this.setState({
                             submit: o()({}, this.state.submit, {
-                                mailer: e.target.value
+                                mailer: e
                             })
                         })
                     }
-                }, l.a.createElement("option", {
+                }, l.a.createElement(d["a"].Option, {
                     value: "primary"
-                }, "\u4e3b\u90ae\u5c40"), l.a.createElement("option", {
+                }, "\u4e3b\u90ae\u5c40"), l.a.createElement(d["a"].Option, {
                     value: "secondary"
                 }, "\u7b2c\u4e8c\u90ae\u5c40")), l.a.createElement("small", {
                     className: "form-text text-muted"
