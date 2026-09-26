@@ -5,6 +5,7 @@ namespace App\Http\Controllers\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ConfigSave;
 use App\Jobs\SendEmailJob;
+use App\Services\MassEmailMailer;
 use App\Services\TelegramService;
 use App\Utils\Dict;
 use Illuminate\Http\Request;
@@ -38,15 +39,59 @@ class ConfigController extends Controller
 
     public function testSendMail(Request $request)
     {
+        $request->validate([
+            'mailer' => 'nullable|in:primary,secondary',
+            'recipient' => 'nullable|email'
+        ]);
+        $mailer = $request->input('mailer', 'primary');
+        // 收件人默认仍是当前管理员，允许指定以便验证第二邮局的实际投递
+        $recipient = $request->input('recipient') ?: $request->user['email'];
+
+        $subject = $mailer === 'secondary'
+            ? 'This is v2board secondary SMTP test email'
+            : 'This is v2board test email';
+        $templateValue = [
+            'name' => config('v2board.app_name', 'V2Board'),
+            'content' => $subject,
+            'url' => config('v2board.app_url')
+        ];
+
+        // 第二邮局不走 SendEmailJob（它只读 v2board.email_* 主邮局配置），
+        // 改用 MassEmailMailer，与群发走同一条发送路径，测出来的才是真实结果。
+        if ($mailer === 'secondary') {
+            if (!MassEmailMailer::isSecondaryConfigured()) {
+                abort(500, '第二邮局未配置完整，请先填写主机、端口、用户名、密码与发件地址并保存');
+            }
+            $template = 'mail.' . config('v2board.email_template', 'default') . '.notify';
+            try {
+                (new MassEmailMailer())->send('secondary', $recipient, $subject, $template, $templateValue);
+            } catch (\Throwable $e) {
+                abort(500, '第二邮局发送失败：' . $e->getMessage());
+            }
+            return response([
+                'data' => true,
+                'log' => [
+                    'mailer' => 'secondary',
+                    'email' => $recipient,
+                    'subject' => $subject,
+                    'template_name' => $template,
+                    'error' => null,
+                    'config' => [
+                        'host' => config('v2board.email_secondary_host'),
+                        'port' => config('v2board.email_secondary_port'),
+                        'encryption' => config('v2board.email_secondary_encryption'),
+                        'username' => config('v2board.email_secondary_username'),
+                        'from' => config('v2board.email_secondary_from_address')
+                    ]
+                ]
+            ]);
+        }
+
         $obj = new SendEmailJob([
-            'email' => $request->user['email'],
-            'subject' => 'This is v2board test email',
+            'email' => $recipient,
+            'subject' => $subject,
             'template_name' => 'notify',
-            'template_value' => [
-                'name' => config('v2board.app_name', 'V2Board'),
-                'content' => 'This is v2board test email',
-                'url' => config('v2board.app_url')
-            ]
+            'template_value' => $templateValue
         ]);
         return response([
             'data' => true,
@@ -234,16 +279,34 @@ class ConfigController extends Controller
                 abort(500, '缓存清除失败，请卸载或检查opcache配置状态');
             }
         }
-        Artisan::call('config:cache');
+        // 配置文件此时已写入成功。config:cache 只是刷新缓存，
+        // bootstrap/cache 属主不是 PHP 运行用户时会抛 Permission denied，
+        // 若放任异常冒泡会返回 500，前端提示"请求失败"，让人误以为没保存上。
+        // 这里降级为清除缓存文件并回传告警，保存结果照常返回成功。
+        $cacheWarning = null;
+        try {
+            Artisan::call('config:cache');
+        } catch (\Throwable $e) {
+            $cacheWarning = '配置已保存，但刷新配置缓存失败：' . $e->getMessage()
+                . '。请检查 bootstrap/cache 目录权限，或手动执行 php artisan config:cache。';
+            // 缓存文件写不动时，至少把过期的缓存删掉，避免一直读到旧配置。
+            try {
+                File::delete(base_path('bootstrap/cache/config.php'));
+            } catch (\Throwable $ignored) {
+                // 连删除都没权限，只能靠上面的告警提示人工处理
+            }
+        }
         if(Cache::has('WEBMANPID')) {
             $pid = Cache::get('WEBMANPID');
             Cache::forget('WEBMANPID');
-            return response([
-                'data' => posix_kill($pid, 15)
-            ]);
+            return response(array_filter([
+                'data' => posix_kill($pid, 15),
+                'message' => $cacheWarning
+            ], function ($v) { return $v !== null; }));
         }
-        return response([
-            'data' => true
-        ]);
+        return response(array_filter([
+            'data' => true,
+            'message' => $cacheWarning
+        ], function ($v) { return $v !== null; }));
     }
 }

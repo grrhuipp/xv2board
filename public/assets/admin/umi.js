@@ -5933,8 +5933,19 @@
                     onClick: ()=>this.props.dispatch({
                         type: "config/testSendMail"
                     })
-                }, "\u53d1\u9001\u6d4b\u8bd5\u90ae\u4ef6")))), f.a.createElement(s["a"].TabPane, {
-                    tab: "Telegram",
+                }, "\u53d1\u9001\u6d4b\u8bd5\u90ae\u4ef6")), f.a.createElement(m, {
+                        title: "\u53d1\u9001\u7b2c\u4e8c\u90ae\u5c40\u6d4b\u8bd5\u90ae\u4ef6",
+                        description: "\u4f7f\u7528\u7b2c\u4e8c\u90ae\u5c40\u914d\u7f6e\u53d1\u9001\uff0c\u90ae\u4ef6\u5c06\u4f1a\u53d1\u9001\u5230\u5f53\u524d\u767b\u9646\u7528\u6237\u90ae\u7bb1\u3002\u9700\u5148\u586b\u5199\u5b8c\u6574\u5e76\u4fdd\u5b58\u7b2c\u4e8c\u90ae\u5c40\u914d\u7f6e\u3002"
+                    }, f.a.createElement(o["a"], {
+                        loading: e.secondaryTestSendMailLoading,
+                        disabled: !v.email_secondary_enabled,
+                        type: "primary",
+                        onClick: ()=>this.props.dispatch({
+                            type: "config/testSendMail",
+                            mailer: "secondary"
+                        })
+                    }, "\u53d1\u9001\u7b2c\u4e8c\u90ae\u5c40\u6d4b\u8bd5\u90ae\u4ef6")))), f.a.createElement(s["a"].TabPane, {
+                        tab: "Telegram",
                     key: "telegram"
                 }, f.a.createElement("div", {
                     className: ""
@@ -16547,7 +16558,10 @@
                     })()
                 },
                 testSendMail(e, t) {
-                    var n = t.put;
+                    var _mailer = (e && e.mailer) || "primary"
+                      , _recipient = (e && e.recipient) || null
+                      , _loadingKey = "secondary" === _mailer ? "secondaryTestSendMailLoading" : "testSendMailLoading"
+                      , n = t.put;
                     return u().mark(function e() {
                         var t, i, o, a, s, h, f, d, p, m;
                         return u().wrap(function(e) {
@@ -16558,19 +16572,22 @@
                                     n({
                                         type: "setState",
                                         payload: {
-                                            testSendMailLoading: !0
+                                            [_loadingKey]: !0
                                         }
                                     });
                                 case 2:
                                     return e.next = 4,
-                                    Object(c["b"])("/" + window.settings.secure_path + "/config/testSendMail");
+                                    Object(c["b"])("/" + window.settings.secure_path + "/config/testSendMail", {
+                                        mailer: _mailer,
+                                        recipient: _recipient
+                                    });
                                 case 4:
                                     return m = e.sent,
                                     e.next = 7,
                                     n({
                                         type: "setState",
                                         payload: {
-                                            testSendMailLoading: !1
+                                            [_loadingKey]: !1
                                         }
                                     });
                                 case 7:
