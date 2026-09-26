@@ -291,6 +291,11 @@ class ConfigController extends Controller
         $cacheWarning = null;
         try {
             Artisan::call('config:cache');
+            // 缓存包含 APP 密钥等敏感配置，避免默认 0644 被本机其他用户读取。
+            $cachePath = base_path('bootstrap/cache/config.php');
+            if (File::exists($cachePath) && !@chmod($cachePath, 0640)) {
+                $cacheWarning = '配置已保存，但无法收紧配置缓存文件权限，请检查 bootstrap/cache 目录权限。';
+            }
         } catch (\Throwable $e) {
             $cacheWarning = '配置已保存，但刷新配置缓存失败：' . $e->getMessage()
                 . '。请检查 bootstrap/cache 目录权限，或手动执行 php artisan config:cache。';
