@@ -4,6 +4,7 @@ namespace App\Services\AppClient;
 
 use App\Models\User;
 use App\Models\UserDevice;
+use App\Services\PasswordResetGuard;
 use App\Utils\CacheKey;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
@@ -25,27 +26,24 @@ class DeviceSelfServiceService
     /** 会话有效期（秒）：够用户看完列表并解绑，又不长期留一个可管设备的凭据。 */
     const SESSION_TTL = 900;
 
-    /** 同一邮箱验证码连续输错的上限，超过后要求重新发码。 */
-    const MAX_CODE_ATTEMPTS = 5;
-
-    /** 错误次数计数的保留时长（秒），与验证码有效期同量级。 */
-    const ATTEMPT_WINDOW = 1800;
-
     /**
      * 会话签发判定。抽成纯函数便于覆盖「不存在的邮箱与错误验证码返回同一结果」
      * 这条防账号枚举的约束。
      *
+     * $codeResult 由 PasswordResetGuard::checkCode() 给出，与发码端
+     * resetCodeAttempts() 共用同一个失败计数 key，保证重新发码能解锁。
+     *
+     * @param string $codeResult locked|invalid_code|ok
      * @return string locked|invalid_code|banned|ok
      */
     public static function sessionDecision(
-        int $failedAttempts,
-        string $cachedCode,
-        string $submittedCode,
+        string $codeResult,
         bool $userExists,
         bool $banned
     ): string {
-        if ($failedAttempts >= self::MAX_CODE_ATTEMPTS) return 'locked';
-        if ($cachedCode === '' || $cachedCode !== $submittedCode || !$userExists) return 'invalid_code';
+        if ($codeResult === 'locked') return 'locked';
+        // 邮箱不存在与验证码错误返回同一结果，避免此公开接口成为账号枚举入口
+        if ($codeResult !== 'ok' || !$userExists) return 'invalid_code';
         if ($banned) return 'banned';
         return 'ok';
     }
@@ -64,19 +62,20 @@ class DeviceSelfServiceService
      */
     public function createSession(Request $request)
     {
-        // 必须与 sendEmailVerify 用完全相同的原始输入推导缓存 key：那里不做 trim/
-        // 大小写归一，此处若归一化就会取不到刚发出的验证码。
+        // 必须与 sendEmailVerify 用完全相同的原始输入推导 EMAIL_VERIFY_CODE 的 key：
+        // 那里不做 trim/大小写归一，此处若归一化就会取不到刚发出的验证码。
+        // 失败计数交给 PasswordResetGuard，它内部按 sha256(lower(trim())) 归一，
+        // 与发码端 resetCodeAttempts() 同一个 key，重新发码即可解锁。
         $email = (string) $request->input('email');
         $code = (string) $request->input('email_code');
-        $attemptKey = CacheKey::get('DEVICE_SELF_SERVICE_CODE_ERROR', $email);
-        $failedAttempts = (int) Cache::get($attemptKey, 0);
-        $cachedCode = (string) Cache::get(CacheKey::get('EMAIL_VERIFY_CODE', $email));
         $user = User::where('email', $email)->first();
 
+        // checkCode 命中即消费验证码，所以放在用户查询之后：
+        // 避免"邮箱不存在"时白白作废一个刚发出的有效验证码。
+        $codeResult = PasswordResetGuard::checkCode($email, $code);
+
         $decision = self::sessionDecision(
-            $failedAttempts,
-            $cachedCode,
-            $code,
+            $codeResult,
             (bool) $user,
             $user ? (bool) $user->banned : false
         );
@@ -84,16 +83,11 @@ class DeviceSelfServiceService
             return response()->json(['status' => 0, 'msg' => '验证码错误次数过多，请重新获取验证码']);
         }
         if ($decision === 'invalid_code') {
-            Cache::put($attemptKey, $failedAttempts + 1, self::ATTEMPT_WINDOW);
             return response()->json(['status' => 0, 'msg' => '邮箱验证码有误']);
         }
         if ($decision === 'banned') {
             return response()->json(['status' => 0, 'msg' => '此账号已被停用']);
         }
-
-        // 一次性消费：票据签发后验证码立即失效，同一码不能反复换票据。
-        Cache::forget(CacheKey::get('EMAIL_VERIFY_CODE', $email));
-        Cache::forget($attemptKey);
 
         $sessionToken = Helper::guid();
         Cache::put(

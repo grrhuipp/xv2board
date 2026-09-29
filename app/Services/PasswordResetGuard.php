@@ -40,6 +40,58 @@ final class PasswordResetGuard
         Cache::forget(self::failureKey($email));
     }
 
+    /**
+     * 与 verifyCode 共用同一把锁、同一个失败计数 key，但把结果细分，
+     * 供需要区分「锁定」与「验证码错误」提示的调用方使用。
+     *
+     * 返回 locked 时验证码已被作废，用户必须重新发码；
+     * 这一点靠 sendEmailVerify 调 resetCodeAttempts() 清同一个 key 来保证。
+     *
+     * @return string locked|invalid_code|ok
+     */
+    public static function checkCode(string $email, string $submittedCode): string
+    {
+        $emailHash = self::emailHash($email);
+        $lock = Cache::lock(
+            'password-reset:verify-lock:' . $emailHash,
+            self::VERIFY_LOCK_SECONDS
+        );
+
+        $result = $lock->get(function () use ($email, $submittedCode) {
+            $codeKey = CacheKey::get('EMAIL_VERIFY_CODE', $email);
+            $failureKey = self::failureKey($email);
+            $cachedCode = Cache::get($codeKey);
+
+            // 没有待验证的码：可能从未发码，也可能已过期/被消费
+            if ($cachedCode === null) {
+                Cache::forget($failureKey);
+                return 'invalid_code';
+            }
+
+            $failures = (int)Cache::get($failureKey, 0);
+            if ($failures >= self::MAX_CODE_FAILURES) {
+                self::invalidateCode($codeKey, $failureKey);
+                return 'locked';
+            }
+
+            if (!hash_equals((string)$cachedCode, $submittedCode)) {
+                $failures++;
+                if ($failures >= self::MAX_CODE_FAILURES) {
+                    self::invalidateCode($codeKey, $failureKey);
+                    return 'locked';
+                }
+                Cache::put($failureKey, $failures, self::CODE_FAILURE_TTL_SECONDS);
+                return 'invalid_code';
+            }
+
+            self::invalidateCode($codeKey, $failureKey);
+            return 'ok';
+        });
+
+        // 抢不到锁（并发验证）按验证码错误处理，不泄露状态也不放行
+        return is_string($result) ? $result : 'invalid_code';
+    }
+
     public static function verifyCode(string $email, string $submittedCode): bool
     {
         $emailHash = self::emailHash($email);

@@ -36,7 +36,9 @@ class CacheKey
         'PASSWORD_ERROR_LIMIT' => '密码错误次数限制',
         'USER_SESSIONS' => '用户session',
         'FORGET_REQUEST_LIMIT' => '找回密码次数限制',
-        'DEVICE_SELF_SERVICE_CODE_ERROR' => '设备自助解绑验证码错误次数',
+        // 已弃用：失败计数统一由 PasswordResetGuard 管理，与发码端共用同一 key。
+        // 保留登记项以便线上残留的旧缓存仍可被识别与清理。
+        'DEVICE_SELF_SERVICE_CODE_ERROR' => '设备自助解绑验证码错误次数（已弃用）',
         'DEVICE_SELF_SERVICE_SESSION' => '设备自助解绑会话'
     ];
 
