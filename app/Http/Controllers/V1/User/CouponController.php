@@ -11,7 +11,7 @@ class CouponController extends Controller
     public function check(Request $request)
     {
         if (empty($request->input('code'))) {
-            abort(500, __('Coupon cannot be empty'));
+            abort(422, __('Coupon cannot be empty'));
         }
         $couponService = new CouponService($request->input('code'));
         $couponService->setPlanId($request->input('plan_id'));

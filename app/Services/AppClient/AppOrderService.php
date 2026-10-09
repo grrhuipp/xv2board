@@ -240,7 +240,14 @@ class AppOrderService
         $couponService = new CouponService($request->input('code'));
         $couponService->setPlanId($request->input('plan_id'));
         $couponService->setUserId($user->id);
-        $couponService->check();
+        try {
+            $couponService->check();
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            if ($e->getStatusCode() !== 422) {
+                throw $e;
+            }
+            return response()->json(['status' => 0, 'msg' => $e->getMessage()]);
+        }
         return response(['status' => 1, 'data' => $couponService->getCoupon()]);
     }
     public function redeemPlan($user, Request $request)

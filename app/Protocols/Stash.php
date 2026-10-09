@@ -399,13 +399,12 @@ class Stash
             'port' => $server['port'],
             'password' => $password,
         ];
-        if ($server['tls']) {
-            $array['tls'] = true;
-            $tlsSettings = $server['tls_settings'] ?? [];
-            $array['client-fingerprint'] = !empty($tlsSettings['fingerprint']) ? $tlsSettings['fingerprint'] : 'chrome';
-            $array['sni'] = $server['server_name'] ?? ($tlsSettings['server_name'] ?? '');
-            $array['skip-cert-verify'] = ($server['insecure'] ?? ($tlsSettings['allow_insecure'] ?? 0)) == 1 ? true : false;
-        }
+        // AnyTLS always uses TLS, including records without a legacy tls field.
+        $array['tls'] = true;
+        $tlsSettings = $server['tls_settings'] ?? [];
+        $array['client-fingerprint'] = !empty($tlsSettings['fingerprint']) ? $tlsSettings['fingerprint'] : 'chrome';
+        $array['sni'] = $server['server_name'] ?? ($tlsSettings['server_name'] ?? '');
+        $array['skip-cert-verify'] = ($server['insecure'] ?? ($tlsSettings['allow_insecure'] ?? 0)) == 1 ? true : false;
         return $array; 
     }
 
