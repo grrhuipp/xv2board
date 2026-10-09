@@ -19,6 +19,32 @@ class SrIngressMap extends Model
     ];
 
     /**
+     * Return the current node name for an ingress mapping.
+     *
+     * The mapping table intentionally keeps a name snapshot so it remains
+     * understandable when it is opened directly in a database client.
+     */
+    public static function resolveServerName(string $serverType, int $serverId): string
+    {
+        $models = [
+            'vmess' => \App\Models\ServerVmess::class,
+            'trojan' => \App\Models\ServerTrojan::class,
+            'shadowsocks' => \App\Models\ServerShadowsocks::class,
+            'vless' => \App\Models\ServerVless::class,
+            'hysteria' => \App\Models\ServerHysteria::class,
+            'tuic' => \App\Models\ServerTuic::class,
+            'anytls' => \App\Models\ServerAnytls::class,
+        ];
+
+        $model = $models[$serverType] ?? null;
+        if ($model === null || !class_exists($model)) {
+            return '';
+        }
+
+        return (string) ($model::whereKey($serverId)->value('name') ?? '');
+    }
+
+    /**
      * 获取某个节点在指定暴露层的入口地址
      * 如果没有配置，返回 null（使用原始地址）
      */

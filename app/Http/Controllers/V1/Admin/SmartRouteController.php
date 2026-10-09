@@ -1720,6 +1720,7 @@ class SmartRouteController extends Controller
             'id' => $m->id,
             'server_type' => $m->server_type,
             'server_id' => $m->server_id,
+            'server_name' => $m->server_name,
             'exposure_tier' => $m->exposure_tier,
             'ingress_host' => $m->ingress_host,
             'ingress_port' => $m->ingress_port,
@@ -1746,6 +1747,8 @@ class SmartRouteController extends Controller
 
         $poolId = $request->input('pool_id') ?: null;
         $ingressHost = $request->input('ingress_host');
+        $serverType = $request->input('server_type');
+        $serverId = (int) $request->input('server_id');
         // pool_id 与 ingress_host 至少其一：关联入口池（使用配置地址）或单值 host
         if (empty($poolId) && empty($ingressHost)) {
             return ApiResponse::adminError('请选择入口池或填写入口 host', 422);
@@ -1753,12 +1756,13 @@ class SmartRouteController extends Controller
 
         SrIngressMap::updateOrCreate(
             [
-                'server_type' => $request->input('server_type'),
-                'server_id' => $request->input('server_id'),
+                'server_type' => $serverType,
+                'server_id' => $serverId,
                 'exposure_tier' => $request->input('exposure_tier'),
             ],
             [
                 'ingress_host' => $ingressHost ?? '',
+                'server_name' => SrIngressMap::resolveServerName($serverType, $serverId),
                 'ingress_port' => $request->input('ingress_port'),
                 'pool_id' => $poolId,
                 'status' => 1,
@@ -1787,7 +1791,8 @@ class SmartRouteController extends Controller
         ]);
 
         $serverType = $request->input('server_type');
-        $serverId = $request->input('server_id');
+        $serverId = (int) $request->input('server_id');
+        $serverName = SrIngressMap::resolveServerName($serverType, $serverId);
 
         $changed = false;
         foreach ($request->input('mappings') as $mapping) {
@@ -1811,6 +1816,7 @@ class SmartRouteController extends Controller
                 ],
                 [
                     'ingress_host' => $ingressHost ?? '',
+                    'server_name' => $serverName,
                     'ingress_port' => $mapping['ingress_port'] ?? null,
                     'pool_id' => $poolId,
                     'status' => 1,
