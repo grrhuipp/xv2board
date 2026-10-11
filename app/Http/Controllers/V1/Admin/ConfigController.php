@@ -166,6 +166,7 @@ class ConfigController extends Controller
                 'plan_change_enable' => (int)config('v2board.plan_change_enable', 1),
                 'reset_traffic_method' => (int)config('v2board.reset_traffic_method', 0),
                 'surplus_enable' => (int)config('v2board.surplus_enable', 1),
+                'surplus_strategy' => (int)config('v2board.surplus_strategy', 0) === 1 ? 1 : 0,
                 'allow_new_period' => (int)config('v2board.allow_new_period', 0),
                 'new_order_event_id' => (int)config('v2board.new_order_event_id', 0),
                 'renew_order_event_id' => (int)config('v2board.renew_order_event_id', 0),

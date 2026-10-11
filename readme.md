@@ -13,6 +13,23 @@
 
 克隆后可执行 `git config core.hooksPath .githooks` 启用本地推送保护；钩子会阻止误推到原版仓库及直接推送 `master` / `main`。GitHub 网页创建 PR 时也应核对目标仓库。
 
+## 订阅抵扣策略
+
+「系统配置 → 订阅 → 抵扣策略」支持自动保存。配置项 `surplus_strategy` 只控制零元赠送权益是否参与抵扣，不切换残值公式。
+
+| 值 | 策略 | 计算口径 |
+| --- | --- | --- |
+| `0`（默认） | 订单金额残值（赠送不抵扣） | 取上一笔非零元赠送的已完成订阅订单，计算其未消耗残值；赠送权益不计价 |
+| `1` | 套餐剩余价值（赠送参与抵扣） | 保留同一笔付费订单的残值，额外计入未消耗赠送权益的套餐价值 |
+
+- 只查询当前用户、当前套餐的已完成订阅订单；按订单 ID 倒序找到上一笔有价值的订单，不汇总历史付费订单金额。充值、流量重置、取消订单和其他套餐订单不参与。
+- 订单价值 = 实付金额 + 余额支付 + 原订单抵扣 - 原订单退回金额。不能仅因 `total_amount` 为零就判为赠送；余额全额支付、旧套餐抵扣支付仍有订单价值。
+- 周期权益按购买周期或 `gift_days` 赠送天数，从用户当前到期时间倒推其剩余部分。后续赠送不会覆盖付费残值，也不会被误当成仍未消耗的付费时长；付费权益耗尽、只剩赠送时，策略 `0` 抵扣为零。
+- 两种策略共用时间/流量残值公式：短周期沿用原有时间与流量折算；长周期按固定 30 天分段，当前分段折算、后续完整分段计入全额，剩余恰好 30 天属于当前分段。一次性权益从用户当前流量额度，按当前套餐每次购买授予的额度倒推，各自按未消耗流量比例折算；已消耗的旧赠送不再计入。
+- 策略 `1` 中，零元购买周期订单按对应套餐周期现价估值；按天赠送沿用邀请奖励的最高月均价值口径（周期价格除以月数，一次性价格按 12 个月折算），以 30 天折算赠送天数。套餐没有价格时，赠送价值为零，不生成虚拟抵扣。付费订单折扣不因策略切换而重新按标价计算。
+- 金额按分向下取整。换套餐后旧权益统一作废，包括不计价的赠送订单，防止重复计入；超出新订单金额的抵扣仍在订单开通时返还余额。
+- 抵扣总开关 `surplus_enable` 关闭时两种策略均不生效，所选策略保留；切换仅影响新建的换套餐订单，已有订单不重新计价。此前的四种公式选项已移除。
+
 ## AS 节点地址替换
 
 后台站点配置提供 AS 黑名单和白名单模式：
@@ -41,6 +58,64 @@ Telegram 新增签到、优惠码查询、管理员查邮箱及收入统计命�
 探活健康快照及日志分别存入 `v2_sr_ingress_ip`、`v2_sr_ingress_probe_log`。
 
 ## 部署提示
+
+### mise 必备环境（Linux / WSL）
+
+项目根目录的 `mise.toml` 固定 PHP 8.3.35；PHP 后端同时安装 Composer。
+该后端从源码编译，仅支持 Linux/macOS。Windows 请在 WSL 的 Linux 发行版内
+执行以下命令；Horizon 依赖 `pcntl` / `posix`，不能在原生 Windows 完整运行。
+mise 管理 PHP / Composer，MySQL 和 Redis 使用系统服务，不由 mise 自动启动。
+
+Windows 尚未配置 WSL 时，在管理员 PowerShell 中执行 `wsl --install -d Ubuntu`，
+按系统提示启用虚拟化并重启，完成 Ubuntu 首次用户初始化后再进入项目目录。
+WSL 内须另行安装 Linux 版 mise，不能使用 Windows 的 `mise.exe`。
+
+Ubuntu / Debian 安装服务和 PHP 编译依赖：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y curl ca-certificates git build-essential autoconf bison \
+    re2c pkg-config libxml2-dev libssl-dev libicu-dev libzip-dev libonig-dev \
+    libcurl4-openssl-dev libpng-dev libjpeg-dev libfreetype6-dev libwebp-dev \
+    libgmp-dev libsodium-dev libreadline-dev libbz2-dev libsqlite3-dev \
+    mysql-server redis-server
+
+curl -fsSL https://mise.run | sh
+# 在项目根目录执行；无需更改 shell 配置即可使用 mise exec。
+export PATH="$HOME/.local/bin:$PATH"
+mise trust
+mise install
+
+# 扩展须安装到 mise 的 PHP，不能用 apt 的 php-redis 混装。
+mise exec -- pecl install igbinary redis
+php_prefix="$(mise exec -- php-config --prefix)"
+printf 'extension=igbinary.so\nextension=redis.so\n' > "$php_prefix/conf.d/xv2board.ini"
+```
+
+启动服务（有 systemd 使用第一组；没有 systemd 的 WSL 使用第二组）：
+
+```bash
+sudo systemctl enable --now mysql redis-server
+# 无 systemd 时：
+# sudo service mysql start
+# sudo service redis-server start
+```
+
+验证工具、必需扩展与服务：
+
+```bash
+mise exec -- php -v
+mise exec -- composer --version
+mise exec -- php -r '$required = ["bcmath", "ctype", "curl", "dom", "fileinfo", "json", "mbstring", "openssl", "pcntl", "pdo_mysql", "posix", "redis", "igbinary", "tokenizer", "xml", "zip"]; $missing = array_filter($required, fn($ext) => !extension_loaded($ext)); if ($missing) { fwrite(STDERR, "Missing extensions: ".implode(", ", $missing).PHP_EOL); exit(1); } echo "PHP extensions OK".PHP_EOL;'
+redis-cli ping
+sudo mysql -e 'SELECT VERSION();'
+```
+
+Redis 应返回 `PONG`，MySQL 应返回版本号。环境验证通过后，执行
+`mise exec -- composer install` 安装项目依赖；不要通过忽略平台要求或关闭安全审计绕过失败。
+应用安装前需自行创建数据库和专用用户，并在 `.env` 配置数据库凭据、Redis 和 `APP_KEY`；
+不要沿用 `.env.example` 的 root 示例密码。以上步骤只准备运行环境，不会初始化或迁移业务数据。
+生产部署还需配置 Web 服务、PHP-FPM 与队列进程守护，不应使用开发服务器对外提供服务。
 
 按部署环境设置 Redis 缓存驱动后，刷新 Laravel 配置缓存并重启队列进程：
 

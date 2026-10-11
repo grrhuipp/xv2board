@@ -5437,13 +5437,7 @@
                     value: 3
                 }, "\u6bcf\u5e741\u67081\u65e5"), f.a.createElement("option", {
                     value: 4
-                }, "\u6309\u5e74\u91cd\u7f6e"))), f.a.createElement(m, {
-                    title: "\u5f00\u542f\u6298\u62b5\u65b9\u6848",
-                    description: "\u5f00\u542f\u540e\u7528\u6237\u66f4\u6362\u8ba2\u9605\u5c06\u4f1a\u7531\u7cfb\u7edf\u5bf9\u539f\u6709\u8ba2\u9605\u8fdb\u884c\u6298\u62b5\uff0c\u65b9\u6848\u53c2\u8003\u6587\u6863\u3002"
-                }, f.a.createElement(l["a"], {
-                    checked: parseInt(r.surplus_enable),
-                    onChange: e=>this.set("subscribe", "surplus_enable", e ? 1 : 0)
-                })), f.a.createElement(m, {
+                }, "\u6309\u5e74\u91cd\u7f6e"))), f.a.createElement(f.a.Fragment, null, f.a.createElement(m, {title: "\u5f00\u542f\u6298\u62b5\u65b9\u6848", description: "\u5f00\u542f\u540e\u7528\u6237\u66f4\u6362\u8ba2\u9605\u5c06\u4f1a\u7531\u7cfb\u7edf\u5bf9\u539f\u6709\u8ba2\u9605\u8fdb\u884c\u6298\u62b5\uff0c\u65b9\u6848\u53c2\u8003\u6587\u6863\u3002"}, f.a.createElement(l["a"], {checked: parseInt(r.surplus_enable), onChange: e=>this.set("subscribe", "surplus_enable", e ? 1 : 0)})), f.a.createElement(m, {title: "抵扣策略", description: "两种策略都按上一笔非零元赠送订单计算付费残值；套餐剩余价值额外计入未消耗的赠送权益。仅影响新建的换套餐订单。"}, f.a.createElement("select", {className: "form-control", "aria-label": "抵扣策略", value: parseInt(r.surplus_strategy, 10) === 1 ? 1 : 0, disabled: !parseInt(r.surplus_enable), onChange: e=>this.set("subscribe", "surplus_strategy", parseInt(e.target.value, 10))}, f.a.createElement("option", {value: 0}, "订单金额残值（赠送不抵扣）"), f.a.createElement("option", {value: 1}, "套餐剩余价值（赠送参与抵扣）")))), f.a.createElement(m, {
                     title: "\u5141\u8bb8\u63d0\u524d\u5f00\u542f\u6d41\u91cf\u5468\u671f",
                     description: "\u5f00\u542f\u540e\u7528\u6237\u6d41\u91cf\u7528\u5c3d\u65f6\u53ef\u4ee5\u9009\u62e9\u6263\u9664\u8ba2\u9605\u65f6\u957f\u4e3a\u4ee3\u4ef7\u91cd\u7f6e\u6d41\u91cf\uff0c\u6309\u6708\u91cd\u7f6e\u65f6\u6263\u9664\u672c\u5468\u671f\u5269\u4f59\u8ba2\u9605\u65f6\u957f\uff0c\u6bcf\u6708\u0031\u53f7\u91cd\u7f6e\u65f6\u6263\u9664\u6574\u6708\u65f6\u95f4\u0033\u0030\u5929\u3002"
                 }, f.a.createElement(l["a"], {

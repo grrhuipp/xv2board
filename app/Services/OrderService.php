@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Plan;
 use App\Models\User;
 use App\Utils\Helper;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -186,75 +187,129 @@ class OrderService
 
     private function getSurplusValueByOneTime(User $user, Order $order)
     {
-        $lastOneTimeOrder = Order::where('user_id', $user->id)
+        $orders = Order::where('user_id', $user->id)
+            ->where('plan_id', $user->plan_id)
             ->where('period', 'onetime_price')
             ->where('status', 3)
             ->orderBy('id', 'DESC')
-            ->first();
-        if (!$lastOneTimeOrder) return;
-        $nowUserTraffic = $user->transfer_enable / 1073741824;
-        if ($nowUserTraffic == 0) return;
-        $paidTotalAmount = ($lastOneTimeOrder->total_amount + $lastOneTimeOrder->balance_amount);
-        if ($paidTotalAmount == 0) return;
-        $notUsedTraffic = $nowUserTraffic - (($user->u + $user->d) / 1073741824);
-        $remainingTrafficRatio = $notUsedTraffic / $nowUserTraffic;
-        $result = $remainingTrafficRatio * $paidTotalAmount;
-        $order->surplus_amount = max($result, 0);
-        $orderModel = Order::where('user_id', $user->id)->where('period', '!=', 'reset_price')->where('status', 3);
-        $order->surplus_order_ids = array_column($orderModel->get()->toArray(), 'id');
+            ->get();
+        if ($orders->isEmpty()) return;
+        $order->surplus_order_ids = $orders->pluck('id')->all();
+        if ($user->transfer_enable <= 0) return;
+
+        $plan = Plan::find($user->plan_id);
+        if (!$plan) return;
+        $quotaPerOrder = (int)round($plan->transfer_enable * 1073741824);
+        if ($quotaPerOrder <= 0) return;
+        $includeGifts = (int)config('v2board.surplus_strategy', 0) === 1;
+        $endTraffic = (int)$user->transfer_enable;
+        $usedTraffic = max(0, $user->u + $user->d);
+        $paidOrderFound = false;
+        $surplusAmount = 0;
+        foreach ($orders as $item) {
+            // 一次性购买追加流量并重置计数；已消耗的旧赠送不会进入当前额度。
+            $startTraffic = max(0, $endTraffic - $quotaPerOrder);
+            $remainingTraffic = max(0, $endTraffic - max($usedTraffic, $startTraffic));
+            $endTraffic = $startTraffic;
+            $amount = $this->getOrderValue($item);
+            if ($amount > 0) {
+                if ($paidOrderFound) continue;
+                $paidOrderFound = true;
+            } else {
+                if (!$includeGifts) continue;
+                $amount = max(0, (int)$plan->onetime_price);
+            }
+            $surplusAmount += $amount * ($remainingTraffic / $quotaPerOrder);
+        }
+        $order->surplus_amount = (int)floor($surplusAmount);
     }
 
     private function getSurplusValueByPeriod(User $user, Order $order)
     {
         $orders = Order::where('user_id', $user->id)
-            ->where('period', '!=', 'reset_price')
-            ->where('period', '!=', 'onetime_price')
-            ->where('period', '!=', 'deposit')
+            ->where('plan_id', $user->plan_id)
+            ->whereNotIn('period', ['reset_price', 'onetime_price', 'deposit'])
             ->where('status', 3)
-            ->get()
-            ->toArray();
-        if (!$orders) return;
-        $orderAmountSum = 0;
-        $orderMonthSum = 0;
-        $lastValidateAt = null;
+            ->orderBy('id', 'DESC')
+            ->get();
+        if ($orders->isEmpty()) return;
+        $now = Carbon::now()->timestamp;
+        $endAt = (int)$user->expired_at;
+        if ($endAt <= $now) return;
+        $includeGifts = (int)config('v2board.surplus_strategy', 0) === 1;
+        $trafficRatio = $user->transfer_enable > 0
+            ? max(0, min(1, ($user->transfer_enable - $user->u - $user->d) / $user->transfer_enable))
+            : 0;
+        $paidOrderFound = false;
+        $plan = null;
+        $surplusAmount = 0;
+        $orderIds = [];
         foreach ($orders as $item) {
-            $period = self::STR_TO_TIME[$item['period']];
-            $orderEndTime = strtotime("+{$period} month", $item['created_at']);
-            if ($orderEndTime < time()) continue;
-            $lastValidateAt = $item['created_at'] > $lastValidateAt ? $item['created_at'] : $lastValidateAt;
-            $orderMonthSum += $period;
-            $orderAmountSum += $item['total_amount'] + $item['balance_amount'] + $item['surplus_amount'] - $item['refund_amount'];
+            if (isset(self::STR_TO_TIME[$item->period])) {
+                $months = self::STR_TO_TIME[$item->period];
+                $duration = strtotime("+{$months} month", $item->created_at) - $item->created_at;
+            } else {
+                // 邀请赠送订单没有购买周期，使用实际赠送天数。
+                $duration = (int)round((float)$item->gift_days * 86400);
+            }
+            if ($duration <= 0) continue;
+            $orderIds[] = $item->id;
+            // 续费和赠送均追加时长；从当前到期时间倒推每笔权益的位置。
+            $startAt = $endAt - $duration;
+            $remaining = max(0, $endAt - max($now, $startAt));
+            $endAt = $startAt;
+            $amount = $this->getOrderValue($item);
+            if ($amount > 0) {
+                if ($paidOrderFound) continue;
+                $paidOrderFound = true;
+            } else {
+                if (!$includeGifts || $remaining === 0) continue;
+                if ($plan === null) $plan = Plan::find($user->plan_id);
+                if (!$plan) continue;
+                $amount = $this->getGiftOrderValue($item, $plan, $duration);
+            }
+            $surplusAmount += $this->getPeriodResidual($amount, $duration, $remaining, $trafficRatio);
         }
-        if ($lastValidateAt === null) return;
+        // 赠送权益不抵扣时也随换套餐作废，不能在下次换购重复计入。
+        $order->surplus_order_ids = $orderIds;
+        $order->surplus_amount = (int)floor($surplusAmount);
+    }
 
-        $expiredAtByOrder = strtotime("+{$orderMonthSum} month", $lastValidateAt);
-        $expiredAtByUser = $user->expired_at;
-        if ($expiredAtByOrder < time() || $expiredAtByUser < time()) return;
-        $orderSurplusSecond = $expiredAtByUser - time();
-        $orderRangeSecond = $expiredAtByOrder - $lastValidateAt;
+    private function getOrderValue(Order $order): int
+    {
+        return max(0, (int)$order->total_amount + (int)$order->balance_amount
+            + (int)$order->surplus_amount - (int)$order->refund_amount);
+    }
 
-        $totalTraffic = $user->transfer_enable;
-        $usedTraffic = ($user->u + $user->d);
-        if ($totalTraffic == 0) return;
+    private function getGiftOrderValue(Order $order, Plan $plan, int $duration): float
+    {
+        if (isset(self::STR_TO_TIME[$order->period])) {
+            return max(0, (int)$plan->{$order->period});
+        }
+        // 与邀请奖励的月价值口径相同，但无价格时不制造虚拟价值。
+        $monthlyValue = 0;
+        foreach (self::STR_TO_TIME as $period => $months) {
+            $monthlyValue = max($monthlyValue, (float)$plan->{$period} / $months);
+        }
+        if ($plan->onetime_price > 0) $monthlyValue = max($monthlyValue, $plan->onetime_price / 12);
+        return $monthlyValue * $duration / (30 * 86400);
+    }
 
-        $remainingTrafficRatio = ($totalTraffic - $usedTraffic) / $totalTraffic;
-
-        $avgPricePerSecond = $orderAmountSum / $orderRangeSecond;
-        if ($orderRangeSecond <= 31 * 86400) {
-            $remainingExpiredTimeRatio = $orderSurplusSecond / $orderRangeSecond;
-            $surplusRatio = min($remainingExpiredTimeRatio, $remainingTrafficRatio);
-            $orderSurplusAmount = $avgPricePerSecond * $orderSurplusSecond * $surplusRatio;
+    private function getPeriodResidual(float $amount, int $duration, int $remaining, float $trafficRatio): float
+    {
+        if ($amount <= 0 || $remaining <= 0) return 0;
+        $timeRatio = $remaining / $duration;
+        if ($duration <= 31 * 86400) {
+            // 两种策略共用原有短周期残值公式，只改变赠送权益是否计价。
+            $result = $amount * $timeRatio * min($timeRatio, $trafficRatio);
         } else {
             $monthSeconds = 30 * 86400;
-            $firstMonthRemainSeconds = $orderSurplusSecond % $monthSeconds;
-            $surplusRatio = min($firstMonthRemainSeconds / $monthSeconds, $remainingTrafficRatio);
-            $laterMonthsSeconds = $orderSurplusSecond - $firstMonthRemainSeconds;
-            $orderSurplusAmount = $avgPricePerSecond * $monthSeconds * $surplusRatio +
-                                  $avgPricePerSecond * $laterMonthsSeconds;
+            $laterSeconds = max(0, ceil($remaining / $monthSeconds) - 1) * $monthSeconds;
+            $currentSeconds = $remaining - $laterSeconds;
+            $ratio = min($currentSeconds / $monthSeconds, $trafficRatio);
+            $result = $amount / $duration * ($monthSeconds * $ratio + $laterSeconds);
         }
-
-        $order->surplus_amount = max($orderSurplusAmount, 0);
-        $order->surplus_order_ids = array_column($orders, 'id');
+        return max(0, min($amount, $result));
     }
 
     public function paid(string $callbackNo)
