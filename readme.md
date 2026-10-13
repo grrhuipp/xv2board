@@ -154,11 +154,6 @@ PHP-FPM 和常驻队列进程。若修改路径配置，需刷新 Laravel 配置
 - Redis
 - Laravel
 
-## Demo
-[Demo_user](https://v2bdemo.v-50.me/)
-[Demo_admin](https://v2bdemo.v-50.me/admindashboard)
-邮箱和密码可随意输入
-
 ## Document
 [Click](https://v2board.com)
 
