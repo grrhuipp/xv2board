@@ -30,6 +30,10 @@ class QuantumultX
         header("subscription-userinfo: upload={$upload}; download={$download}; total={$total}; expire={$expire}");
 
         foreach ($servers as $item) {
+            if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
+                $item['type'] = $item['protocol'];
+            }
+
             // 提前过滤不支持的传输协议 (QX 不支持 gRPC, HTTPUpgrade, XHTTP)
             $network = $item['network'] ?? 'tcp';
             if (in_array($network, ['grpc', 'httpupgrade', 'xhttp'])) {

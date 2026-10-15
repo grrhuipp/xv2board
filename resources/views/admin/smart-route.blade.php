@@ -1798,7 +1798,8 @@ function smartRoute() {
                 vless: 'VLESS',
                 hysteria: 'Hysteria',
                 tuic: 'TUIC',
-                anytls: 'AnyTLS'
+                anytls: 'AnyTLS',
+                v2node: 'v2node'
             })[type] || type || '-';
         },
 

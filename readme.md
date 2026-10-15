@@ -4,6 +4,15 @@
 
 ## 本分支支持的后端
  - [修改版V2bX](https://github.com/wyx2685/V2bX)
+ - [v2node](https://github.com/wyx2685/v2node)
+
+## v2node 对接
+
+后台节点管理支持创建、编辑、复制和排序 v2node 节点；订阅按节点实际协议生成。节点通过 `/api/v2/server/config` 拉取配置，用户、流量和在线设备继续使用 `/api/v1/server/UniProxy/` 接口，`node_type` 填 `v2node`，使用系统配置中的通讯密钥。
+
+「系统配置 → 服务端」中的节点对接 API 地址用于生成一键安装指令；留空时使用站点 URL。支持 `trusted_x_forwarded_for` 配置，以及 AnyTLS 的 Reality 和传输配置。旧节点路由组功能保持停用。
+
+已有部署执行正常更新流程 `php artisan v2board:update`，也可单独执行 `php artisan migrate --path=database/migrations/2026_10_13_000001_restore_v2node.php --force` 补齐节点表。迁移保留已有节点；如果之前的移除更新已经删除节点表和统计，只能从备份恢复原数据或重新创建节点。本次恢复不会从空表重建旧记录。
 
 ## 开发约定
 

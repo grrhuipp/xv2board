@@ -29,7 +29,7 @@ class Shadowrocket
         $uri .= "STATUS=🚀↑:{$upload}GB,↓:{$download}GB,TOT:{$totalTraffic}GB💡Expires:{$expiredDate}\r\n";
 
         foreach ($this->servers as $server) {
-            if ($server['type'] === 'vmess') {
+            if ($server['type'] === 'vmess' || ($server['type'] === 'v2node' && $server['protocol'] === 'vmess')) {
                 $uri .= self::buildVmess($user['uuid'], $server);
             } else {
                 $uri .= Helper::buildUri($this->user['uuid'], $server);

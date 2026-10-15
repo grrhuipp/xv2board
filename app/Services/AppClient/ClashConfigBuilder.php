@@ -41,7 +41,8 @@ class ClashConfigBuilder
             $index++;
             if (empty($item['tags']) || empty($item['tags'][0])) continue;
             $nodes[] = ['name' => $item['name'], 'server' => $item['host'], 'server_port' => $item['port'],
-                'flag' => $item['tags'][0], 'tags' => $item['tags'], 'type' => $item['type'], 'index' => $index];
+                'flag' => $item['tags'][0], 'tags' => $item['tags'],
+                'type' => $item['type'] === 'v2node' ? $item['protocol'] : $item['type'], 'index' => $index];
         }
         return $nodes;
     }
@@ -64,7 +65,8 @@ class ClashConfigBuilder
         $proxy = []; $proxies = []; $uuid = $user->uuid;
         foreach ($servers as $item) {
             $built = null;
-            if ($item['type'] === 'shadowsocks') $built = $this->buildClashShadowsocks($uuid, $item);
+            if ($item['type'] === 'v2node') $built = $this->buildV2nodeClash($uuid, $item);
+            elseif ($item['type'] === 'shadowsocks') $built = $this->buildClashShadowsocks($uuid, $item);
             elseif ($item['type'] === 'vmess') $built = $this->buildClashVmess($uuid, $item);
             elseif ($item['type'] === 'vless') $built = $this->buildClashVless($uuid, $item);
             elseif ($item['type'] === 'trojan') $built = $this->buildClashTrojan($uuid, $item);
@@ -93,6 +95,23 @@ class ClashConfigBuilder
         $yaml = Yaml::dump($config, 2, 4, Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE);
         return str_replace('$app_name', config('v2board.app_name', 'V2Board'), $yaml);
     }
+    private function buildV2nodeClash($uuid, array $server)
+    {
+        if ($server['protocol'] === 'hysteria2') {
+            return \App\Protocols\Stash::buildHysteria2($uuid, $server);
+        }
+        $methods = [
+            'shadowsocks' => 'buildShadowsocks',
+            'vmess' => 'buildVmess',
+            'vless' => 'buildVless',
+            'trojan' => 'buildTrojan',
+            'tuic' => 'buildTuic',
+            'anytls' => 'buildAnyTLS',
+        ];
+        $method = $methods[$server['protocol']] ?? null;
+        return $method ? \App\Protocols\ClashMeta::$method($uuid, $server) : null;
+    }
+
     public function buildClashShadowsocks($password, $server)
     {
         if ($server['cipher'] === '2022-blake3-aes-128-gcm') {
