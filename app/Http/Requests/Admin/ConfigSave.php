@@ -70,6 +70,7 @@ class ConfigSave extends FormRequest
         'show_subscribe_method' => 'in:0,1,2',
         'show_subscribe_expire' => 'nullable|integer',
         // server
+        'server_api_url' => 'nullable|url',
         'server_token' => 'nullable|min:16',
         'server_pull_interval' => 'integer',
         'server_push_interval' => 'integer',
@@ -210,6 +211,7 @@ class ConfigSave extends FormRequest
             'app_url.url' => '站点URL格式不正确，必须携带http(s)://',
             'subscribe_url.url' => '订阅URL格式不正确，必须携带http(s)://',
             'subscribe_path.regex' => '订阅路径必须以/开头',
+            'server_api_url.url' => '节点对接API地址格式不正确，必须携带http(s)://',
             'surplus_strategy.in' => '抵扣策略必须为订单金额残值或套餐剩余价值',
             'as_rule_node_keyword.required_with' => '填写AS列表时必须填写节点关键词',
             'as_rule_host.required_with' => '填写AS列表时必须填写替换host',

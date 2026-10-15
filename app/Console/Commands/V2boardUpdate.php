@@ -38,14 +38,6 @@ class V2boardUpdate extends Command
      */
     public function handle()
     {
-        $config = config('v2board', []);
-        if (array_key_exists('server_api_url', $config)) {
-            unset($config['server_api_url']);
-            $data = var_export($config, true);
-            if (\File::put(base_path() . '/config/v2board.php', "<?php\n return $data ;") === false) {
-                throw new \RuntimeException('Failed to remove retired server configuration');
-            }
-        }
         \Artisan::call('config:cache');
         DB::connection()->getPdo();
         $file = \File::get(base_path() . '/database/update.sql');
@@ -76,6 +68,9 @@ class V2boardUpdate extends Command
             throw new \RuntimeException(\Artisan::output());
         }
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000003_add_marked_subscription_host_rule.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_13_000001_restore_v2node.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
         $this->info('更新完毕，队列服务已重启，你无需进行任何操作。');
