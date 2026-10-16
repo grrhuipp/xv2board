@@ -147,6 +147,7 @@ CREATE TABLE IF NOT EXISTS `v2_sr_ingress_map` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `server_type` varchar(20) NOT NULL COMMENT 'vmess/trojan/shadowsocks/vless/hysteria/tuic/anytls',
   `server_id` bigint(20) unsigned NOT NULL COMMENT '对应节点表的 id',
+  `server_name` varchar(255) NOT NULL DEFAULT '' COMMENT '节点名称快照，便于直接维护入口映射',
   `exposure_tier` varchar(30) NOT NULL COMMENT 'intl_only/public_intl/domestic_limited/domestic_sensitive',
   `ingress_host` varchar(255) NOT NULL COMMENT '该暴露层下发的入口地址',
   `ingress_port` int(10) unsigned DEFAULT NULL COMMENT '入口端口（为空则用原始端口）',
