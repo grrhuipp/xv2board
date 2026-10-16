@@ -10,6 +10,8 @@ use App\Services\AppClient\ClashConfigBuilder;
 use App\Services\NodeIpWhitelist;
 use App\Services\ServerService;
 use App\Utils\Helper;
+use Illuminate\Database\Connection;
+use Illuminate\Database\Schema\Builder;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Database\Schema\Blueprint;
@@ -100,9 +102,10 @@ class V2nodeSupportTest extends TestCase
     public function test_restore_migration_leaves_existing_node_tables_untouched(): void
     {
         require_once database_path('migrations/2026_10_13_000001_restore_v2node.php');
-        Schema::shouldReceive('hasTable')->once()->with('v2_server_v2node')->andReturn(true);
-        Schema::shouldReceive('hasColumn')->once()->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(true);
-        Schema::shouldReceive('table')->never();
+        $schema = $this->mockMigrationSchema();
+        $schema->shouldReceive('hasTable')->once()->with('v2_server_v2node')->andReturn(true);
+        $schema->shouldReceive('hasColumn')->once()->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(true);
+        $schema->shouldReceive('table')->never();
         DB::shouldReceive('unprepared')->never();
         (new \RestoreV2node())->up();
     }
@@ -110,8 +113,10 @@ class V2nodeSupportTest extends TestCase
     public function test_restore_migration_creates_missing_tables_without_deleting_statistics(): void
     {
         require_once database_path('migrations/2026_10_13_000001_restore_v2node.php');
-        Schema::shouldReceive('hasTable')->once()->with('v2_server_v2node')->andReturn(false);
-        Schema::shouldReceive('hasColumn')->once()->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(true);
+        $schema = $this->mockMigrationSchema();
+        $schema->shouldReceive('hasTable')->once()->with('v2_server_v2node')->andReturn(false);
+        $schema->shouldReceive('hasColumn')->once()->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(true);
+        $schema->shouldReceive('table')->never();
         DB::shouldReceive('unprepared')->once()->withArgs(function ($sql) {
             return strpos($sql, 'CREATE TABLE IF NOT EXISTS `v2_server_v2node`') === 0
                 && strpos($sql, 'trusted_x_forwarded_for') !== false
@@ -167,9 +172,10 @@ class V2nodeSupportTest extends TestCase
     public function test_restore_migration_adds_xff_to_older_tables_without_recreating_them(): void
     {
         require_once database_path('migrations/2026_10_13_000001_restore_v2node.php');
-        Schema::shouldReceive('hasTable')->once()->with('v2_server_v2node')->andReturn(true);
-        Schema::shouldReceive('hasColumn')->once()->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(false);
-        Schema::shouldReceive('table')->once()->withArgs(function ($name, $callback) {
+        $schema = $this->mockMigrationSchema();
+        $schema->shouldReceive('hasTable')->once()->with('v2_server_v2node')->andReturn(true);
+        $schema->shouldReceive('hasColumn')->once()->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(false);
+        $schema->shouldReceive('table')->once()->withArgs(function ($name, $callback) {
             $blueprint = new Blueprint($name);
             $callback($blueprint);
             $columns = $blueprint->getColumns();
@@ -178,6 +184,17 @@ class V2nodeSupportTest extends TestCase
         });
         DB::shouldReceive('unprepared')->never();
         (new \RestoreV2node())->up();
+    }
+
+    private function mockMigrationSchema(): Builder
+    {
+        // Laravel 8 resolves Schema through the connection rather than a container key.
+        $schema = \Mockery::mock(Builder::class);
+        $connection = \Mockery::mock(Connection::class);
+        $connection->shouldReceive('getSchemaBuilder')->andReturn($schema);
+        DB::shouldReceive('connection')->withNoArgs()->andReturn($connection);
+
+        return $schema;
     }
 
     /** @dataProvider protocols */
