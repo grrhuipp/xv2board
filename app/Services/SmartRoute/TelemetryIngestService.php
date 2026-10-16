@@ -322,22 +322,29 @@ final class TelemetryIngestService
         }
 
         $totalSessions = $todaySessions->count();
-        $agg = SrBehaviorDailyAgg::firstOrCreate(
-            ['user_id' => $userId, 'device_id' => $deviceId, 'date' => $date],
-            ['active_flag' => 0]
-        );
+        $values = [
+            'active_flag' => $totalSessions > 0 ? 1 : 0,
+            'stable_session_count' => $stableCount,
+            'stable_connected_minutes' => $stableMinutes,
+            'effective_bytes_up' => $bytesUp,
+            'effective_bytes_down' => $bytesDown,
+            'bidirectional_active_windows' => $activeWindows,
+            'probe_only_session_count' => $probeOnlyCount,
+            'burstiness_ratio' => $totalSessions > 0 ? (float)$todaySessions->avg('burstiness_ratio') : 0,
+            'probe_without_connect_ratio' => $totalSessions > 0 ? $probeOnlyCount / $totalSessions : 0,
+            'distinct_destinations_daily' => $distinctDestinations,
+        ];
 
-        $agg->active_flag = $totalSessions > 0 ? 1 : 0;
-        $agg->stable_session_count = $stableCount;
-        $agg->stable_connected_minutes = $stableMinutes;
-        $agg->effective_bytes_up = $bytesUp;
-        $agg->effective_bytes_down = $bytesDown;
-        $agg->bidirectional_active_windows = $activeWindows;
-        $agg->probe_only_session_count = $probeOnlyCount;
-        $agg->burstiness_ratio = $totalSessions > 0 ? (float)$todaySessions->avg('burstiness_ratio') : 0;
-        $agg->probe_without_connect_ratio = $totalSessions > 0 ? $probeOnlyCount / $totalSessions : 0;
-        $agg->distinct_destinations_daily = $distinctDestinations;
-        $agg->save();
+        // A single upsert also handles workers creating the same day's row concurrently.
+        // Update only rebuilt metrics, preserving created_at and unrelated aggregate fields.
+        // Concurrent first inserts can also deadlock while InnoDB resolves the unique key.
+        DB::transaction(function () use ($userId, $deviceId, $date, $values) {
+            SrBehaviorDailyAgg::upsert(
+                [array_merge(['user_id' => $userId, 'device_id' => $deviceId, 'date' => $date], $values)],
+                ['user_id', 'device_id', 'date'],
+                array_keys($values)
+            );
+        }, 5);
     }
 
     /**

@@ -25,9 +25,7 @@ class Loon
         header("Subscription-Userinfo: upload={$user['u']}; download={$user['d']}; total={$user['transfer_enable']}; expire={$user['expired_at']}");
 
         foreach ($servers as $item) {
-            if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
-                $item['type'] = $item['protocol'];
-            }
+            $item = Helper::unwrapV2node($item);
             if ($item['type'] === 'shadowsocks') {
                 $uri .= self::buildShadowsocks($user['uuid'], $item);
             }elseif ($item['type'] === 'vmess') {
@@ -36,7 +34,7 @@ class Loon
                 $uri .= self::buildVless($user['uuid'], $item);
             }elseif ($item['type'] === 'trojan' && (($item['network'] ?? null) !== 'grpc')) {
                 $uri .= self::buildTrojan($user['uuid'], $item);
-            }elseif ($item['type'] === 'hysteria' && $item['version'] === 2) { //loon只支持hysteria2
+            }elseif (($item['type'] === 'hysteria' && $item['version'] === 2) || $item['type'] === 'hysteria2') { //loon只支持hysteria2
                 $uri .= self::buildHysteria($user['uuid'], $item);
             }elseif ($item['type'] === 'anytls') {
                 $uri .= self::buildAnytls($user['uuid'], $item);
@@ -84,7 +82,10 @@ class Loon
 
     public static function buildVmess($uuid, $server)
     {
-        $networkSettings = $server['networkSettings'] ?? [];
+        $tlsSettings = $server['tls_settings'] ?? ($server['tlsSettings'] ?? []);
+        $networkSettings = $server['network_settings'] ?? ($server['networkSettings'] ?? []);
+        $serverName = $tlsSettings['server_name'] ?? ($tlsSettings['serverName'] ?? '');
+        $allowInsecure = (bool)($tlsSettings['allow_insecure'] ?? ($tlsSettings['allowInsecure'] ?? 0));
         $config = [
             "{$server['name']}=vmess",
             "{$server['host']}",
@@ -98,8 +99,8 @@ class Loon
 
         if ($server['network'] === 'tcp') {
             array_push($config, 'transport=tcp');
-            if ($server['networkSettings']) {
-                $tcpSettings = $server['networkSettings'];
+            if ($networkSettings) {
+                $tcpSettings = $networkSettings;
                 if (isset($tcpSettings['header']['type']) && !empty($tcpSettings['header']['type']) && $tcpSettings['header']['type'] == 'http')
                     $config = str_replace('transport=tcp', "transport={$tcpSettings['header']['type']}", $config);
                 if (isset($tcpSettings['header']['request']['path'][0]) && !empty($tcpSettings['header']['request']['path'][0]))
@@ -108,20 +109,19 @@ class Loon
                     array_push($config, "host={$tcpSettings['header']['request']['headers']['Host'][0]}");
             }
         }
-        if ($server['tls']) {
+        if (!empty($server['tls'])) {
             array_push($config, 'over-tls=true');
-            if ($server['tlsSettings']) {
-                $tlsSettings = $server['tlsSettings'];
-                if (isset($tlsSettings['allowInsecure']) && !empty($tlsSettings['allowInsecure']))
-                    array_push($config, 'skip-cert-verify=' . ($tlsSettings['allowInsecure'] ? 'true' : 'false'));
-                if (isset($tlsSettings['serverName']) && !empty($tlsSettings['serverName']))
-                    array_push($config, "tls-name={$tlsSettings['serverName']}");
+            if ($tlsSettings) {
+                if ($allowInsecure)
+                    array_push($config, 'skip-cert-verify=' . ($allowInsecure ? 'true' : 'false'));
+                if ($serverName !== '')
+                    array_push($config, "tls-name={$serverName}");
             }
         }
         if ($server['network'] === 'ws') {
             array_push($config, 'transport=ws');
-            if ($server['networkSettings']) {
-                $wsSettings = $server['networkSettings'];
+            if ($networkSettings) {
+                $wsSettings = $networkSettings;
                 if (isset($wsSettings['path']) && !empty($wsSettings['path']))
                     array_push($config, "path={$wsSettings['path']}");
                 if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))

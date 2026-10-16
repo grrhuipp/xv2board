@@ -28,9 +28,7 @@ class Surfboard
         $proxyGroup = '';
 
         foreach ($servers as $item) {
-            if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
-                $item['type'] = $item['protocol'];
-            }
+            $item = Helper::unwrapV2node($item);
             if ($item['type'] === 'shadowsocks'
                 && in_array($item['cipher'], [
                     'aes-128-gcm',
@@ -112,6 +110,10 @@ class Surfboard
 
     public static function buildVmess($uuid, $server)
     {
+        $tlsSettings = $server['tls_settings'] ?? ($server['tlsSettings'] ?? []);
+        $networkSettings = $server['network_settings'] ?? ($server['networkSettings'] ?? []);
+        $serverName = $tlsSettings['server_name'] ?? ($tlsSettings['serverName'] ?? '');
+        $allowInsecure = (bool)($tlsSettings['allow_insecure'] ?? ($tlsSettings['allowInsecure'] ?? 0));
         $config = [
             "{$server['name']}=vmess",
             "{$server['host']}",
@@ -122,20 +124,19 @@ class Surfboard
             'udp-relay=true'
         ];
 
-        if ($server['tls']) {
+        if (!empty($server['tls'])) {
             array_push($config, 'tls=true');
-            if ($server['tlsSettings']) {
-                $tlsSettings = $server['tlsSettings'];
-                if (isset($tlsSettings['allowInsecure']) && !empty($tlsSettings['allowInsecure']))
-                    array_push($config, 'skip-cert-verify=' . ($tlsSettings['allowInsecure'] ? 'true' : 'false'));
-                if (isset($tlsSettings['serverName']) && !empty($tlsSettings['serverName']))
-                    array_push($config, "sni={$tlsSettings['serverName']}");
+            if ($tlsSettings) {
+                if ($allowInsecure)
+                    array_push($config, 'skip-cert-verify=' . ($allowInsecure ? 'true' : 'false'));
+                if ($serverName !== '')
+                    array_push($config, "sni={$serverName}");
             }
         }
         if ($server['network'] === 'ws') {
             array_push($config, 'ws=true');
-            if ($server['networkSettings']) {
-                $wsSettings = $server['networkSettings'];
+            if ($networkSettings) {
+                $wsSettings = $networkSettings;
                 if (isset($wsSettings['path']) && !empty($wsSettings['path']))
                     array_push($config, "ws-path={$wsSettings['path']}");
                 if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))

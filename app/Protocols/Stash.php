@@ -37,9 +37,7 @@ class Stash
         $proxies = [];
 
         foreach ($servers as $item) {
-            if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
-                $item['type'] = $item['protocol'];
-            }
+            $item = Helper::unwrapV2node($item);
             if ($item['type'] === 'shadowsocks') {
                 array_push($proxy, self::buildShadowsocks($user['uuid'], $item));
                 array_push($proxies, $item['name']);
@@ -141,6 +139,10 @@ class Stash
 
     public static function buildVmess($uuid, $server)
     {
+        $tlsSettings = $server['tls_settings'] ?? ($server['tlsSettings'] ?? []);
+        $networkSettings = $server['network_settings'] ?? ($server['networkSettings'] ?? []);
+        $serverName = $tlsSettings['server_name'] ?? ($tlsSettings['serverName'] ?? '');
+        $allowInsecure = (bool)($tlsSettings['allow_insecure'] ?? ($tlsSettings['allowInsecure'] ?? 0));
         $array = [];
         $array['name'] = $server['name'];
         $array['type'] = 'vmess';
@@ -151,18 +153,17 @@ class Stash
         $array['cipher'] = 'auto';
         $array['udp'] = true;
 
-        if ($server['tls']) {
+        if (!empty($server['tls'])) {
             $array['tls'] = true;
-            if ($server['tlsSettings']) {
-                $tlsSettings = $server['tlsSettings'];
-                if (isset($tlsSettings['allowInsecure']) && !empty($tlsSettings['allowInsecure']))
-                    $array['skip-cert-verify'] = ($tlsSettings['allowInsecure'] ? true : false);
-                if (isset($tlsSettings['serverName']) && !empty($tlsSettings['serverName']))
-                    $array['servername'] = $tlsSettings['serverName'];
+            if ($tlsSettings) {
+                if ($allowInsecure)
+                    $array['skip-cert-verify'] = ($allowInsecure ? true : false);
+                if ($serverName !== '')
+                    $array['servername'] = $serverName;
             }
         }
         if ($server['network'] === 'tcp') {
-            $tcpSettings = $server['networkSettings'];
+            $tcpSettings = $networkSettings;
             if (isset($tcpSettings['header']['type']) && $tcpSettings['header']['type'] == 'http') {
                 $array['network'] = $tcpSettings['header']['type'];
                 if (isset($tcpSettings['header']['request']['headers']['Host'])) $array['http-opts']['headers']['Host'] = $tcpSettings['header']['request']['headers']['Host'];
@@ -170,8 +171,8 @@ class Stash
         }
         if ($server['network'] === 'ws') {
             $array['network'] = 'ws';
-            if ($server['networkSettings']) {
-                $wsSettings = $server['networkSettings'];
+            if ($networkSettings) {
+                $wsSettings = $networkSettings;
                 $array['ws-opts'] = [];
                 if (isset($wsSettings['path']) && !empty($wsSettings['path']))
                     $array['ws-opts']['path'] = $wsSettings['path'];
@@ -188,8 +189,8 @@ class Stash
         }
         if ($server['network'] === 'grpc') {
             $array['network'] = 'grpc';
-            if ($server['networkSettings']) {
-                $grpcSettings = $server['networkSettings'];
+            if ($networkSettings) {
+                $grpcSettings = $networkSettings;
                 $array['grpc-opts'] = [];
                 if (isset($grpcSettings['serviceName']))  $array['grpc-opts']['grpc-service-name'] = $grpcSettings['serviceName'];
             }

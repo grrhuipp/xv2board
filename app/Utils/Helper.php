@@ -168,6 +168,24 @@ class Helper
         return strtr(rawurlencode($str), $revert);
     }
 
+    public static function unwrapV2node(array $server): array
+    {
+        if (($server['type'] ?? null) !== 'v2node' || !isset($server['protocol'])) {
+            return $server;
+        }
+
+        $server['type'] = $server['protocol'];
+        $tls = $server['tls_settings'] ?? [];
+        $server['server_name'] = $server['server_name'] ?? ($tls['server_name'] ?? '');
+        $server['allow_insecure'] = $server['allow_insecure'] ?? ($tls['allow_insecure'] ?? 0);
+        $server['insecure'] = $server['insecure'] ?? ($tls['allow_insecure'] ?? 0);
+        if ($server['type'] === 'hysteria2') {
+            $server['version'] = 2;
+        }
+
+        return $server;
+    }
+
     public static function buildUri($uuid, $server)
     {
         if ($server['type'] == 'v2node') {
