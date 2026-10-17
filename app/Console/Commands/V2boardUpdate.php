@@ -60,7 +60,6 @@ class V2boardUpdate extends Command
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_10_000001_install_app_smartroute.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
-        \Artisan::call('horizon:terminate');
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000001_add_subscription_analysis.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
@@ -70,9 +69,19 @@ class V2boardUpdate extends Command
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000003_add_marked_subscription_host_rule.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_26_000001_add_ingress_probe.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_09_000001_add_server_name_to_sr_ingress_map.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_13_000001_restore_v2node.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
-        $this->info('更新完毕，队列服务已重启，你无需进行任何操作。');
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_17_000001_backfill_v2node_ingress_names.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
+        \Artisan::call('horizon:terminate');
+        $this->info('更新完毕，已通知 Horizon 退出，请确认进程守护已重新拉起队列服务。');
     }
 }

@@ -12,7 +12,7 @@
 
 「系统配置 → 服务端」中的节点对接 API 地址用于生成一键安装指令；留空时使用站点 URL。支持 `trusted_x_forwarded_for` 配置，以及 AnyTLS 的 Reality 和传输配置。旧节点路由组功能保持停用。
 
-已有部署执行正常更新流程 `php artisan v2board:update`，也可单独执行 `php artisan migrate --path=database/migrations/2026_10_13_000001_restore_v2node.php --force` 补齐节点表。迁移保留已有节点；如果之前的移除更新已经删除节点表和统计，只能从备份恢复原数据或重新创建节点。本次恢复不会从空表重建旧记录。
+已有 App/SmartRoute 部署请按[定向升级步骤](docs/app-smartroute-migration.md)补齐 v2node 表和入口映射名称，然后刷新配置并重启常驻进程。v2node 支持按设备信任层选择入口，后台入口映射的节点类型选择 `v2node`。迁移保留已有节点；如果之前的移除更新已经删除节点表和统计，只能从备份恢复原数据或重新创建节点。本次恢复不会从空表重建旧记录。
 
 ## 开发约定
 
@@ -60,7 +60,7 @@
 定时任务包含试用用户流量限制、每日支付方式收款统计和探活日志清理。
 Telegram 新增签到、优惠码查询、管理员查邮箱及收入统计命令。
 
-部署入口池探活前先执行 `php artisan migrate --force`，确认 Redis 连接可用，并在
+部署入口池探活前先按[部署说明](docs/app-smartroute-migration.md)执行对应的定向迁移，确认 Redis 连接可用，并在
 `v2_sr_ingress_pool` 中按需将具体入口的 `enabled` 设为 1；该字段默认关闭。
 配置 `SMARTROUTE_INGRESS_PROBE_ENABLED=true`，刷新配置缓存后，通过 supervisor/systemd
 单实例常驻运行 `php artisan smartroute:ingress-probe`。探活默认关闭，不会自动启动。
