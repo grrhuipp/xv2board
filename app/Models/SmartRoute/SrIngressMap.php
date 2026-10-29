@@ -34,6 +34,7 @@ class SrIngressMap extends Model
             'hysteria' => \App\Models\ServerHysteria::class,
             'tuic' => \App\Models\ServerTuic::class,
             'anytls' => \App\Models\ServerAnytls::class,
+            'v2node' => \App\Models\ServerV2node::class,
         ];
 
         $model = $models[$serverType] ?? null;

@@ -64,10 +64,10 @@ final class VisibleNodeResolver
             $servers = $modelClass::where('show', 1)->orderBy('sort', 'asc')->get();
             foreach ($servers as $server) {
                 $serverGroups = $server->group_id ?? [];
-                if (!empty($serverGroups) && !empty($userGroupIds)) {
-                    if (empty(array_intersect($serverGroups, $userGroupIds))) {
-                        continue;
-                    }
+                // Match subscription authorization: an empty group is not public access.
+                if (empty($serverGroups) || empty($userGroupIds)
+                    || empty(array_intersect($serverGroups, $userGroupIds))) {
+                    continue;
                 }
                 $key = $type . '_' . $server->id;
                 $visibleServers[] = ['type' => $type, 'server' => $server, 'key' => $key];
