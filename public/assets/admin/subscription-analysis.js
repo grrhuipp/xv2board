@@ -91,24 +91,40 @@ window.createSubscriptionAnalysisPage = function (n) {
                 this.setState({hostOpen: false, hostSaving: false, hostRule: result.data}); this.load();
             } catch (error) { if (this.alive) this.setState({hostSaving: false, hostError: error.message}); }
         }
+        renderRanking(row, kind) {
+            const ranking = row[kind + '_ranking'];
+            const items = ranking ? ranking.data : [];
+            return h('div', {className: 'sa-ranking', 'aria-label': (kind === 'ip' ? 'IP' : 'UA') + ' 排行'},
+                items.length ? h('ol', {className: 'sa-ranking-list', tabIndex: 0}, ...items.map((item, index) =>
+                    h('li', {className: 'sa-ranking-item', key: item.value},
+                        h('span', {className: 'sa-ranking-position'}, index + 1),
+                        h('span', {className: 'sa-ranking-value'}, item.value),
+                        h('span', {className: 'sa-ranking-count'}, h('strong', null, item.count + ' 次'),
+                            h('span', {className: 'text-muted'}, item.percentage.toFixed(2) + '%'))))) : muted('暂无已记录的 ' + (kind === 'ip' ? 'IP' : 'UA')),
+                ranking && ranking.missing_requests > 0 && muted('另有 ' + ranking.missing_requests + ' 次未记录'));
+        }
         columns() {
             return [
-                {title: '用户', key: 'user', width: 230, render: (_, row) => h('div', null, row.email, muted('UID ' + row.user_id), row.is_marked && tag('已标记', 'blue'), muted('注册 ' + date(row.registered_at)))},
-                {title: '最近订阅 IP / 归属地 / UA', key: 'latest', width: 340, render: (_, row) => {
+                {title: '用户', key: 'user', width: 210, render: (_, row) => h('div', null, row.email, muted('UID ' + row.user_id), row.is_marked && tag('已标记', 'blue'), muted('注册 ' + date(row.registered_at)), muted('最近拉取 ' + row.last_at))},
+                {title: 'IP 排行（3 天）', key: 'ip_ranking', width: 270, render: (_, row) => {
                     const info = row.latest || {};
-                    return h('div', null, info.ip || '—', muted([info.country, info.city, info.isp, info.as].filter(Boolean).join(' · ')), h('div', {className: 'sa-ua text-muted'}, info.user_agent || 'UA 未记录'), muted(row.last_at));
+                    return h('div', null, this.renderRanking(row, 'ip'),
+                        h('div', {className: 'sa-ranking-latest'}, muted('最近 IP：' + (info.ip || '—')), muted([info.country, info.city, info.isp, info.as].filter(Boolean).join(' · '))));
                 }},
-                {title: '拉取次数', key: 'counts', width: 160, render: (_, row) => h('div', null,
+                {title: 'UA 排行（3 天）', key: 'ua_ranking', width: 360, render: (_, row) => this.renderRanking(row, 'ua')},
+                {title: '拉取次数', key: 'counts', width: 140, render: (_, row) => h('div', null,
                     ...[['2 分钟', row.count_2m], ['5 分钟', row.count_5m], ['1 小时', row.count_1h], ['3 天', row.count_3d]].map(([label, count]) => h('div', {key: label}, label + '：' + count + ' 次')),
                     muted('均隔 ' + (row.average_interval == null ? '—' : row.average_interval + ' 秒')))},
-                {title: 'IP / 异地 / UA', key: 'risk_counts', width: 175, render: (_, row) => h('div', null,
-                    h('div', null, '10 分钟 IP：' + row.ips_10m), h('div', null, '3 天 IP：' + row.ips_3d),
-                    h('div', null, '3 天 UA：' + row.uas_3d), muted('国家 ' + row.countries_3d + ' / 城市 ' + row.cities_3d))},
-                {title: '优先级 / 异常提示 / 标记', key: 'signals', width: 235, render: (_, row) => h('div', null,
+                {title: 'IP / 异地 / UA', key: 'risk_counts', width: 140, render: (_, row) => h('div', null,
+                    h('div', null, '10 分钟 IP：' + row.ips_10m),
+                    h('div', null, '3 天 IP：' + row.ips_3d),
+                    h('div', null, '3 天 UA：' + row.uas_3d),
+                    muted('国家 ' + row.countries_3d + ' / 城市 ' + row.cities_3d))},
+                {title: '优先级 / 异常提示 / 标记', key: 'signals', width: 200, render: (_, row) => h('div', null,
                     h('div', {className: 'sa-priority-status'}, row.is_priority ? h('span', {className: 'sa-priority-badge'}, '重点排查') : h('span', {className: 'sa-regular-status'}, '非重点排查')),
                     (row.signals || []).length ? row.signals.map(signal => tag(names[signal], 'orange', signal)) : muted('暂无异常提示'),
                     row.note && h('div', {className: 'sa-note'}, row.note), row.marked_at && muted('标记更新 ' + date(row.marked_at)))},
-                {title: '操作', key: 'actions', width: 110, fixed: 'right', render: (_, row) => h('div', {className: 'sa-actions'},
+                {title: '操作', key: 'actions', width: 90, fixed: 'right', render: (_, row) => h('div', {className: 'sa-actions'},
                     h('a', {onClick: () => this.setState({active: row, note: row.note || '', markError: ''})}, row.is_marked ? '编辑标记' : '标记'),
                     h(Logs, {userId: row.user_id, email: row.email, modalClassName: 'sa-scroll-modal'}, h('a', null, '订阅记录')))}
             ];
@@ -139,7 +155,7 @@ window.createSubscriptionAnalysisPage = function (n) {
                     summary && h(React.Fragment, null, h('span', null, '用户 ' + summary.users), h('span', null, '请求 ' + summary.requests), tag('异常提示 ' + summary.attention_users, 'orange'),
                         ...[['multi_ip_users', '多 IP'], ['geo_users', '异地'], ['frequent_users', '频繁'], ['multi_ua_users', '多 UA'], ['marked_users', '已标记']].map(([key, label]) => h('span', {key}, label + ' ' + summary[key])))),
                 s.error && h('div', {className: 'alert alert-danger', role: 'alert'}, s.error),
-                h(Table, {rowKey: 'user_id', columns: this.columns(), dataSource: s.rows, loading: s.loading, scroll: {x: 1250},
+                h(Table, {rowKey: 'user_id', columns: this.columns(), dataSource: s.rows, loading: s.loading, scroll: {x: 1410},
                     locale: {emptyText: s.error ? '加载失败，请重试' : '没有符合条件的订阅记录'},
                     pagination: {current: s.page, pageSize: s.pageSize, total: s.total, size: 'small', showSizeChanger: true, pageSizeOptions: ['10', '20', '50'], showTotal: total => '共 ' + total + ' 位用户'},
                     onChange: page => this.load(page.pageSize !== s.pageSize ? 1 : page.current, page.pageSize)}),

@@ -20,6 +20,15 @@
 #subscription-analysis .sa-note { white-space:pre-wrap; margin:4px 0; }
 #subscription-analysis .sa-actions a { display:block; margin-bottom:6px; }
 #subscription-analysis .sa-footnote { clear:both; padding:0 16px 12px; font-size:12px; }
+#subscription-analysis .sa-ranking-list { list-style:none; padding:0; margin:0; max-height:260px; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
+#subscription-analysis .sa-ranking-item { display:grid; grid-template-columns:18px minmax(0, 1fr) auto; gap:6px; align-items:start; padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:12px; }
+#subscription-analysis .sa-ranking-item:first-child { padding-top:0; }
+#subscription-analysis .sa-ranking-item:last-child { border-bottom:0; }
+#subscription-analysis .sa-ranking-position { color:#999; }
+#subscription-analysis .sa-ranking-value { overflow-wrap:anywhere; white-space:pre-wrap; }
+#subscription-analysis .sa-ranking-count { display:flex; flex-direction:column; align-items:flex-end; white-space:nowrap; font-variant-numeric:tabular-nums; }
+#subscription-analysis .sa-ranking-count strong { color:#262626; }
+#subscription-analysis .sa-ranking-latest { border-top:1px solid #e8e8e8; padding-top:6px; margin-top:6px; }
 @media(max-width:767px) {
     #subscription-analysis .sa-search, #subscription-analysis .sa-event-select { width:100%; }
     #subscription-analysis .sa-priority-button { width:100%; }

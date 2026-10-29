@@ -75,6 +75,47 @@ class SubscriptionAnalysisService
         return compact('base', 'frequent', 'multiIp', 'geo', 'multiUa', 'attention', 'priority', 'now', 'asOf', 'since', 'limits', 'notNodeIp');
     }
 
+    public function rankings(array $userIds, string $asOf): array
+    {
+        $rankings = [];
+        foreach ($userIds as $id) {
+            $rankings[$id] = array_fill_keys(['ip', 'ua'], ['data' => [], 'total' => 0, 'requests' => 0, 'missing_requests' => 0]);
+        }
+        if (!$userIds) return $rankings;
+        $since = Carbon::parse($asOf)->subDays(3)->format('Y-m-d H:i:s');
+        $logs = DB::table('v2_subscribe_log')->whereIn('user_id', $userIds)
+            ->whereBetween('created_at', [$since, $asOf])->whereRaw(NodeIpWhitelist::notInSql('ip'));
+        // Two grouped queries for the current page, regardless of the number of users.
+        foreach (['ip' => "NULLIF(ip, '')", 'ua' => "NULLIF(TRIM(user_agent), '')"] as $kind => $value) {
+            $groups = (clone $logs)->select('user_id')
+                ->selectRaw("$value AS value, COUNT(*) AS count, MIN(created_at) AS first_at, MAX(created_at) AS last_at")
+                ->groupBy('user_id')->groupByRaw($value)
+                ->orderBy('user_id')->orderByDesc('count')->orderByDesc('last_at')->orderBy('value')->get();
+            foreach ($groups as $row) {
+                $ranking = &$rankings[$row->user_id][$kind];
+                $row->count = (int) $row->count;
+                $ranking['requests'] += $row->count;
+                if ($row->value === null) {
+                    $ranking['missing_requests'] += $row->count;
+                } else {
+                    unset($row->user_id);
+                    $ranking['data'][] = $row;
+                }
+                unset($ranking);
+            }
+            foreach ($rankings as &$userRanking) {
+                $ranking = &$userRanking[$kind];
+                $ranking['total'] = count($ranking['data']);
+                foreach ($ranking['data'] as $row) {
+                    $row->percentage = round($row->count * 100 / $ranking['requests'], 2);
+                }
+                unset($ranking);
+            }
+            unset($userRanking);
+        }
+        return $rankings;
+    }
+
     public function fetch(array $params): array
     {
         $analysis = $this->buildAnalysisQuery();
@@ -131,6 +172,7 @@ class SubscriptionAnalysisService
                 });
             $latest = SubscribeLog::whereIn('id', $latestIds)->get(['user_id', 'ip', 'as', 'isp', 'country', 'city', 'user_agent'])->keyBy('user_id');
         }
+        $rankings = $this->rankings(array_map(fn ($row) => (int) $row->user_id, $page->items()), $asOf);
         $rows = [];
         foreach ($page->items() as $row) {
             foreach (['user_id', 'count_3d', 'count_2m', 'count_5m', 'count_1h', 'ips_10m', 'ips_3d', 'uas_3d', 'countries_3d', 'cities_3d'] as $field) $row->$field = (int) $row->$field;
@@ -143,6 +185,8 @@ class SubscriptionAnalysisService
             if ($row->uas_3d >= $limits['ua_3d']) $row->signals[] = 'multi_ua';
             $row->average_interval = $row->count_3d > 1 ? (int) round(Carbon::parse($row->last_at)->diffInSeconds(Carbon::parse($row->first_at)) / ($row->count_3d - 1)) : null;
             $row->latest = $latest->get($row->user_id);
+            $row->ip_ranking = $rankings[$row->user_id]['ip'];
+            $row->ua_ranking = $rankings[$row->user_id]['ua'];
             $rows[] = $row;
         }
         return [

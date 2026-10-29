@@ -5,6 +5,8 @@
 - `GET /subscription-analysis/fetch`：`q`（邮箱、UID、IP、UA、备注）、`event`（all/attention/frequent/multi_ip/geo/multi_ua）、`marked`、`page`、`page_size`（默认20，最大50）。
 - `POST /subscription-analysis/mark`：`user_id`、`marked`（布尔）、`note`（最多500字）。取消标记删除该用户的标记记录。
 - 历史弹窗复用 `GET /user/fetchSubscribeLogs`，按用户分页展示所有现存普通订阅记录。
+- 用户列表直接展示“IP 排行（3 天）”“UA 排行（3 天）”，包含每项完整值、拉取次数和占比，无需点击或打开弹窗。按次数降序排列，同次数按最近时间降序、值升序；全部排名随用户列表返回，条目较多时在单元格内滚动查看。
+- `fetch` 每行新增 `ip_ranking`、`ua_ranking`，各包含 `data`（value/count/percentage/first_at/last_at）、不同值总数 `total`、用户同期请求数 `requests`、未记录次数 `missing_requests`。占比以用户同期所有有效请求为分母，空值单独计数；UA 去除首尾空格并按数据库排序规则分组。只对当前页用户执行两次批量分组查询，使用与列表相同的72小时窗口及节点 IP 排除规则，不为每个用户逐次发请求。
 - 群发邮件的“订阅分析受众”是**多选排除**：`POST /user/sendMail` 的 `audience` 为可选数组（`marked`、`attention`、`priority`）。选中的任一类别均不发送；空数组或省略表示不额外排除，仍遵守用户列表已有筛选。已标记用户即使最近三天没有订阅记录也排除；异常提示和重点排查依据最近三天的分析阈值。管理员和员工群发均适用。
 
 - `POST /subscription-analysis/settings`：保存全局阈值。字段：`frequent_2m`、`frequent_5m`、`frequent_1h`、`ip_10m`、`ip_3d`、`ua_3d`、`countries_3d`、`cities_3d`。频率最小1，其余最小2，最大100000，均为整数。

@@ -78,6 +78,12 @@ try {
     checkAnalysis($service->fetch(['q' => '%'])['total'] === 1, 'search treats percent literally');
     checkAnalysis($service->fetch(['q' => '192.0.2.99'])['total'] === 0, 'search stays inside time window');
     $controller = new SubscriptionAnalysisController();
+    checkAnalysis($row->ip_ranking['total'] === $row->ips_3d && $row->ip_ranking['requests'] === $row->count_3d && $row->ip_ranking['data'][0]->count === 3, 'list includes complete IP ranking sorted by requests');
+    checkAnalysis($row->ua_ranking['total'] === $row->uas_3d && $row->ua_ranking['data'][0]->count === 7, 'list includes UA ranking');
+    $missing = collect($result['data'])->firstWhere('user_id', $b->id);
+    checkAnalysis($missing->ip_ranking['missing_requests'] === 2 && $missing->ip_ranking['data'] === [], 'list reports missing IPs without creating a ranked value');
+    $singlePage = $service->fetch(['page_size' => 1]);
+    checkAnalysis(count($singlePage['data']) === 1 && $singlePage['data'][0]->ip_ranking['total'] === 5, 'user pagination retains complete rankings');
     $request = Request::create('/', 'POST', ['user_id' => $a->id, 'marked' => true, 'note' => ' manual note ', 'user' => ['id' => $b->id]]);
     $controller->mark($request);
     $controller->mark($request);
