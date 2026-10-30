@@ -30,7 +30,6 @@
 #subscription-analysis .sa-ranking-location, #subscription-analysis .sa-ranking-asn { margin-top:2px; font-size:11px; line-height:1.5; }
 #subscription-analysis .sa-ranking-count { display:flex; flex-direction:column; align-items:flex-end; white-space:nowrap; font-variant-numeric:tabular-nums; }
 #subscription-analysis .sa-ranking-count strong { color:#262626; }
-#subscription-analysis .sa-ranking-latest { border-top:1px solid #e8e8e8; padding-top:6px; margin-top:6px; }
 @media(max-width:767px) {
     #subscription-analysis .sa-search, #subscription-analysis .sa-event-select { width:100%; }
     #subscription-analysis .sa-priority-button { width:100%; }

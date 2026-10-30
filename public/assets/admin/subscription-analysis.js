@@ -16,7 +16,7 @@ window.createSubscriptionAnalysisPage = function (n) {
     const asnLabel = value => {
         const match = known(value).match(/^(?:AS)?\s*(\d+)(?:\b.*)?$/i);
         const number = match ? match[1].replace(/^0+/, '') : '';
-        return number ? 'ASN：AS' + number : 'ASN 未知';
+        return number ? 'ASN：' + number : 'ASN 未知';
     };
     async function api(path, body) {
         let auth = localStorage.getItem('authorization') || localStorage.getItem('auth_data') || '';
@@ -111,7 +111,7 @@ window.createSubscriptionAnalysisPage = function (n) {
                             kind === 'ip' && h('div', {className: 'sa-ranking-location text-muted'},
                                 [item.country, item.city].map(known).filter(Boolean).join(' · ') || '位置未知'),
                             kind === 'ip' && h('div', {className: 'sa-ranking-asn text-muted'},
-                                asnLabel(item.as), known(item.isp) ? ' · ' + known(item.isp) : '')),
+                                asnLabel(item.as))),
                         h('span', {className: 'sa-ranking-count'}, h('strong', null, item.count + ' 次'),
                             h('span', {className: 'text-muted'}, item.percentage.toFixed(2) + '%'))))) : muted('暂无已记录的 ' + (kind === 'ip' ? 'IP' : 'UA')),
                 ranking && ranking.missing_requests > 0 && muted('另有 ' + ranking.missing_requests + ' 次未记录'));
@@ -119,11 +119,7 @@ window.createSubscriptionAnalysisPage = function (n) {
         columns() {
             return [
                 {title: '用户', key: 'user', width: 210, render: (_, row) => h('div', null, row.email, muted('UID ' + row.user_id), row.is_marked && tag('已标记', 'blue'), muted('注册 ' + date(row.registered_at)), muted('最近拉取 ' + row.last_at))},
-                {title: 'IP 排行（3 天）', key: 'ip_ranking', width: 270, render: (_, row) => {
-                    const info = row.latest || {};
-                    return h('div', null, this.renderRanking(row, 'ip'),
-                        h('div', {className: 'sa-ranking-latest'}, muted('最近 IP：' + (info.ip || '—')), muted([info.country, info.city, info.isp, info.as].filter(Boolean).join(' · '))));
-                }},
+                {title: 'IP 排行（3 天）', key: 'ip_ranking', width: 270, render: (_, row) => this.renderRanking(row, 'ip')},
                 {title: 'UA 排行（3 天）', key: 'ua_ranking', width: 360, render: (_, row) => this.renderRanking(row, 'ua')},
                 {title: '拉取次数', key: 'counts', width: 140, render: (_, row) => h('div', null,
                     ...[['2 分钟', row.count_2m], ['5 分钟', row.count_5m], ['1 小时', row.count_1h], ['3 天', row.count_3d]].map(([label, count]) => h('div', {key: label}, label + '：' + count + ' 次')),
