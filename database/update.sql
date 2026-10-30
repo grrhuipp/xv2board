@@ -893,3 +893,4 @@ ALTER TABLE `v2_subscribe_log` ADD INDEX `subscribe_created_user_idx` (`created_
 ALTER TABLE `v2_subscribe_log` ADD INDEX `subscribe_user_created_idx` (`user_id`, `created_at`);
 ALTER TABLE `v2_user_connect_log` ADD INDEX `connect_updated_user_idx` (`updated_at`, `user_id`);
 ALTER TABLE `v2_stat_user` ADD INDEX `stat_user_recent_idx` (`user_id`, `record_type`, `record_at`);
+ALTER TABLE `v2_user_connect_log` ADD INDEX `connect_user_updated_idx` (`user_id`, `updated_at`);

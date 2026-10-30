@@ -109,52 +109,37 @@ class ConnectionAnalysisTest extends TestCase
         $this->assertSame(['day_1' => 300, 'day_3' => 400], (new UserTrafficSummaryService())->forUsers([7], '2026-10-30 12:00:00')[7]);
     }
 
-    public function test_window_metadata_filters_and_user_pagination_are_consistent(): void
+    public function test_current_page_connections_use_one_query_and_the_subscription_snapshot(): void
     {
         $this->ip(7, '192.0.2.1', '2026-10-30 11:59:00', ['as_number' => '64500', 'country' => '日本', 'region' => '东京']);
         $this->ip(7, '192.0.2.2', '2026-10-27 12:00:00', ['as_number' => '64501', 'country' => '中国', 'region' => '上海']);
         $this->ip(7, '192.0.2.3', '2026-10-27 11:59:59');
         $this->ip(7, '192.0.2.4', '2026-10-30 12:00:01');
-        $this->ip(8, '2001:db8::1', '2026-10-29 11:00:00', ['as_number' => '0', 'country' => 'unknown', 'region' => 'literal%place']);
+        $this->ip(8, '2001:db8::1');
         $this->ip(99, '192.0.2.99');
-        $this->traffic(7, '2026-10-30', 100, 200);
         $service = new ConnectionAnalysisService();
+        Carbon::setTestNow('2026-10-31 12:00:00');
         DB::enableQueryLog();
-        $result = $service->fetch(['page_size' => 1]);
-        $this->assertSame(2, $result['total']);
-        $this->assertCount(4, DB::getQueryLog());
-        $row = $result['data'][0];
-        $this->assertSame(7, $row->user_id);
-        $this->assertSame('alpha@example.test', $row->email);
-        $this->assertSame(2, $row->ip_count);
-        $this->assertSame(1, $row->ips_1d);
-        $this->assertSame(2, $row->countries);
-        $this->assertSame('64500', $row->ips[0]->as_number);
-        $this->assertSame('东京', $row->ips[0]->region);
-        $this->assertSame('2026-09-01 00:00:00', $row->first_at);
-        $this->assertSame(300, $row->traffic['day_1']);
-        $this->assertSame(1, $service->fetch(['event' => 'multi_ip'])['total']);
-        $this->assertSame(1, $service->fetch(['event' => 'geo'])['total']);
-        foreach (['alpha@', '192.0.2.1', 'AS64500', '日本', '东京', '7'] as $q) {
-            $this->assertSame(1, $service->fetch(['q' => $q])['total'], $q);
-        }
-        $this->assertSame(1, $service->fetch(['q' => '%'])['total']);
-        $this->assertSame(0, $service->fetch(['q' => '192.0.2.4'])['total']);
-        $this->assertSame(1, $service->fetch(['days' => 1])['total']);
-        $second = $service->fetch(['page_size' => 1, 'page' => 2]);
-        $this->assertSame(8, $second['data'][0]->user_id);
-        $this->assertSame(0, $second['data'][0]->asns);
-        $this->assertSame([], $service->fetch(['page_size' => 1, 'page' => 3])['data']);
-        $this->assertSame(3, $service->fetch(['days' => 0])['data'][0]->ip_count);
+        $result = $service->forUsers([7, 8, 9], '2026-10-30 12:00:00');
+        $this->assertCount(1, DB::getQueryLog());
+        $this->assertSame([7, 8, 9], array_keys($result));
+        $this->assertSame(['192.0.2.1', '192.0.2.2'], array_column($result[7], 'ip'));
+        $this->assertSame('64500', $result[7][0]->as_number);
+        $this->assertSame('日本', $result[7][0]->country);
+        $this->assertSame('东京', $result[7][0]->region);
+        $this->assertSame('2026-10-30 11:59:00', $result[7][0]->updated_at);
+        $this->assertSame('2001:db8::1', $result[8][0]->ip);
+        $this->assertSame([], $result[9]);
+        DB::flushQueryLog();
+        $this->assertSame([], $service->forUsers([], '2026-10-30 12:00:00'));
+        $this->assertSame([], DB::getQueryLog());
     }
-
     public function test_node_networks_are_excluded_and_an_empty_window_is_valid(): void
     {
         NodeIpWhitelist::remember('8.8.8.8');
         $this->ip(7, '8.8.8.9');
-        $result = (new ConnectionAnalysisService())->fetch([]);
-        $this->assertSame(0, $result['total']);
-        $this->assertSame([], $result['data']);
+        $result = (new ConnectionAnalysisService())->forUsers([7], '2026-10-30 12:00:00');
+        $this->assertSame([7 => []], $result);
     }
 
     public function test_alive_batch_refreshes_last_seen_without_changing_first_seen_or_duplicating_pairs(): void
@@ -172,7 +157,7 @@ class ConnectionAnalysisTest extends TestCase
         $this->assertSame('2026-10-30 12:15:00', $rows[0]->updated_at);
         $this->assertSame('64500', $rows[0]->as_number);
         $this->assertSame('东京', $rows[0]->region);
-        $this->assertSame(2, (new ConnectionAnalysisService())->fetch([])['total']);
+        $this->assertCount(1, (new ConnectionAnalysisService())->forUsers([7], '2026-10-30 12:15:00')[7]);
     }
 
     public function test_invalid_reported_ips_do_not_create_connection_records(): void

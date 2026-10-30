@@ -20730,11 +20730,6 @@
                             className: "nav-main-link-icon si si-chart"
                         })
                     }, {
-                        title: "连接 IP 分析",
-                        type: "item",
-                        href: "/connection/analysis",
-                        icon: o.a.createElement("i", {className: "nav-main-link-icon si si-globe"})
-                    }, {
                         title: "\u516c\u544a\u7ba1\u7406",
                         type: "item",
                         href: "/notice",
@@ -82101,10 +82096,6 @@
             path: "/subscription/analysis",
             exact: !0,
             component: window.createSubscriptionAnalysisPage(n)
-        }, {
-            path: "/connection/analysis",
-            exact: !0,
-            component: window.createConnectionAnalysisPage(n)
         }];
         window.g_routes = u;
         var h = n("PszG");

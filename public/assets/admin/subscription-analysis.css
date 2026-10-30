@@ -32,7 +32,7 @@
 .sa-analysis .sa-ranking-count strong { color:#262626; }
 .sa-analysis .sa-traffic { display:flex; flex-wrap:wrap; gap:2px 10px; margin:4px 0; font-size:12px; line-height:1.5; font-variant-numeric:tabular-nums; }
 .sa-analysis .sa-traffic > div { white-space:nowrap; }
-.sa-analysis .sa-connection-item { display:grid; grid-template-columns:18px minmax(0, 1fr) auto; gap:6px; padding:4px 0; border-bottom:1px solid #f0f0f0; font-size:12px; }
+.sa-analysis .sa-connection-item { display:grid; grid-template-columns:18px minmax(0, 1fr); gap:6px; padding:4px 0; border-bottom:1px solid #f0f0f0; font-size:12px; }
 .sa-analysis .sa-connection-item:last-child { border-bottom:0; }
 .sa-analysis .sa-connection-seen { font-size:11px; white-space:nowrap; }
 .sa-analysis .ant-table-small { border:0; }

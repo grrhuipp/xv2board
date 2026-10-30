@@ -130,10 +130,24 @@ window.createSubscriptionAnalysisPage = function (n) {
                             h('span', {className: 'text-muted'}, item.percentage.toFixed(2) + '%'))))) : muted('暂无已记录的 ' + (kind === 'ip' ? 'IP' : 'UA')),
                 ranking && ranking.missing_requests > 0 && muted('另有 ' + ranking.missing_requests + ' 次未记录'));
         }
+        renderConnections(row) {
+            const items = row.connection_ips || [];
+            if (!items.length) return muted('暂无连接 IP 上报');
+            return h('div', {className: 'sa-connections', 'aria-label': '连接 IP 分析'},
+                muted(items.length + ' 个 IP'),
+                h('ol', {className: 'sa-ranking-list', tabIndex: 0, 'aria-label': '连接 IP 列表'},
+                    ...items.map((item, index) => h('li', {className: 'sa-connection-item', key: item.ip},
+                        h('span', {className: 'sa-ranking-position'}, index + 1),
+                        h('div', {className: 'sa-ranking-value'}, item.ip,
+                            h('div', {className: 'sa-ranking-location text-muted'}, [item.country, item.region].map(known).filter(Boolean).join(' · ') || '位置未知'),
+                            h('div', {className: 'sa-ranking-asn text-muted'}, asnLabel(item.as_number)),
+                            h('div', {className: 'sa-connection-seen text-muted'}, '上报 ' + item.updated_at))))));
+        }
         columns() {
             return [
                 {title: '用户 / 流量', key: 'user', width: 210, render: (_, row) => h('div', null, row.email, muted('UID ' + row.user_id), row.is_marked && tag('已标记', 'blue'), traffic(row.traffic, this.state.meta && this.state.meta.traffic_scope), muted('注册 ' + date(row.registered_at)), muted('最近拉取 ' + row.last_at))},
                 {title: 'IP 排行（3 天）', key: 'ip_ranking', width: 270, render: (_, row) => this.renderRanking(row, 'ip')},
+                {title: '连接 IP 分析（3 天）', key: 'connection_ips', width: 290, render: (_, row) => this.renderConnections(row)},
                 {title: 'UA 排行（3 天）', key: 'ua_ranking', width: 360, render: (_, row) => this.renderRanking(row, 'ua')},
                 {title: '拉取次数', key: 'counts', width: 140, render: (_, row) => h('div', null,
                     ...[['2 分钟', row.count_2m], ['5 分钟', row.count_5m], ['1 小时', row.count_1h], ['3 天', row.count_3d]].map(([label, count]) => h('div', {key: label}, label + '：' + count + ' 次')),
@@ -178,11 +192,11 @@ window.createSubscriptionAnalysisPage = function (n) {
                     summary && h(React.Fragment, null, h('span', null, '用户 ' + summary.users), h('span', null, '请求 ' + summary.requests), tag('异常提示 ' + summary.attention_users, 'orange'),
                         ...[['multi_ip_users', '多 IP'], ['geo_users', '异地'], ['frequent_users', '频繁'], ['multi_ua_users', '多 UA'], ['marked_users', '已标记']].map(([key, label]) => h('span', {key}, label + ' ' + summary[key])))),
                 s.error && h('div', {className: 'alert alert-danger', role: 'alert'}, s.error),
-                h(Table, {size: 'small', rowKey: 'user_id', columns: this.columns(), dataSource: s.rows, loading: s.loading, scroll: {x: 1410},
+                h(Table, {size: 'small', rowKey: 'user_id', columns: this.columns(), dataSource: s.rows, loading: s.loading, scroll: {x: 1700},
                     locale: {emptyText: s.error ? '加载失败，请重试' : '没有符合条件的订阅记录'},
                     pagination: {current: s.page, pageSize: s.pageSize, total: s.total, size: 'small', showSizeChanger: true, pageSizeOptions: ['10', '20', '50'], showTotal: total => '共 ' + total + ' 位用户'},
                     onChange: page => this.load(page.pageSize !== s.pageSize ? 1 : page.current, page.pageSize)}),
-                s.meta && h('div', {className: 'sa-footnote text-muted'}, '统计时间：' + s.meta.as_of + '（' + s.meta.timezone + '） · 不包含 APP 订阅；优先级与异常提示仅供人工排查，不自动封禁或惩罚。', h('div', null, s.meta.traffic_scope)),
+                s.meta && h('div', {className: 'sa-footnote text-muted'}, '统计时间：' + s.meta.as_of + '（' + s.meta.timezone + '） · 不包含 APP 订阅；优先级与异常提示仅供人工排查，不自动封禁或惩罚。', h('div', null, s.meta.traffic_scope), h('div', null, s.meta.connection_scope)),
                 h(Modal, {className: 'sa-scroll-modal', title: '用户标记', visible: !!s.active, onCancel: close, confirmLoading: s.saving, maskClosable: !s.saving, closable: !s.saving, keyboard: !s.saving,
                     footer: [s.active && s.active.is_marked && h(Button, {key: 'unmark', disabled: s.saving, onClick: () => this.save(false)}, '取消标记'), h(Button, {key: 'cancel', disabled: s.saving, onClick: close}, '关闭'), h(Button, {key: 'save', type: 'primary', loading: s.saving, onClick: () => this.save(true)}, '保存标记')]},
                     s.active && h('p', null, s.active.email + ' · UID ' + s.active.user_id),

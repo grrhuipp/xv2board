@@ -619,7 +619,8 @@ CREATE TABLE `v2_user_connect_log` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_user_ip` (`user_id`, `ip`),
-  KEY `connect_updated_user_idx` (`updated_at`, `user_id`)
+  KEY `connect_updated_user_idx` (`updated_at`, `user_id`),
+  KEY `connect_user_updated_idx` (`user_id`, `updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

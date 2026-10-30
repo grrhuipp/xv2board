@@ -285,10 +285,19 @@ class SubscriptionFrequencyTest extends TestCase
             $table->bigInteger('u')->default(0); $table->bigInteger('d')->default(0);
             $table->string('record_type'); $table->integer('record_at');
         });
+        $schema->create('v2_user_connect_log', function ($table) {
+            $table->temporary(); $table->integer('user_id'); $table->string('ip');
+            foreach (['as_number', 'country', 'region'] as $field) $table->string($field)->nullable();
+            $table->dateTime('updated_at');
+        });
         DB::table('v2_user')->insert([['id' => 7, 'email' => 'seven@example.test'], ['id' => 8, 'email' => 'eight@example.test']]);
         for ($i = 0; $i < 5; $i++) $this->log('192.0.2.1', 'Client ' . $i, '2026-10-29 11:59:00', 7, ['as' => '64500', 'city' => '东京']);
         $this->log(null, 'Latest without IP', '2026-10-29 11:00:00', 8);
         DB::table('v2_subscription_analysis_marks')->insert(['user_id' => 8]);
+        DB::table('v2_user_connect_log')->insert([
+            ['user_id' => 7, 'ip' => '203.0.113.7', 'as_number' => '64507', 'updated_at' => '2026-10-29 11:00:00'],
+            ['user_id' => 8, 'ip' => '203.0.113.8', 'as_number' => '64508', 'updated_at' => '2026-10-29 11:00:00'],
+        ]);
         $service = new SubscriptionAnalysisService();
         DB::enableQueryLog();
         $result = $service->fetch(['page_size' => 1]);
@@ -298,13 +307,18 @@ class SubscriptionFrequencyTest extends TestCase
         $this->assertSame('Client 4', $result['data'][0]->latest->user_agent);
         $this->assertSame('64500', $result['data'][0]->ip_ranking['data'][0]->as);
         $queries = DB::getQueryLog();
-        $this->assertCount(10, $queries);
+        $this->assertCount(11, $queries);
+        $this->assertSame('203.0.113.7', $result['data'][0]->connection_ips[0]->ip);
+        $connectionQueries = array_values(array_filter($queries, fn ($query) => stripos($query['query'], 'v2_user_connect_log') !== false));
+        $this->assertCount(1, $connectionQueries);
+        $this->assertSame([7], array_values(array_filter($connectionQueries[0]['bindings'], 'is_int')));
         $this->assertCount(0, array_filter($queries, fn ($query) => stripos($query['query'], 'as aggregate') !== false));
         $this->assertSame([7], $queries[3]['bindings'] ? array_values(array_filter($queries[3]['bindings'], 'is_int')) : []);
         $second = $service->fetch(['page_size' => 1, 'page' => 2]);
         $this->assertSame(8, $second['data'][0]->user_id);
         $this->assertSame('Latest without IP', $second['data'][0]->latest->user_agent);
         $this->assertSame([], $second['data'][0]->ip_ranking['data']);
+        $this->assertSame('203.0.113.8', $second['data'][0]->connection_ips[0]->ip);
         foreach (['priority', 'frequent', 'multi_ua', 'attention'] as $event) {
             DB::flushQueryLog();
             $filtered = $service->fetch(['event' => $event]);
