@@ -25,6 +25,15 @@ require_once database_path('migrations/2026_09_13_000002_add_subscription_analys
 require_once database_path('migrations/2026_09_13_000003_add_marked_subscription_host_rule.php');
 (new AddMarkedSubscriptionHostRule())->up();
 (new AddMarkedSubscriptionHostRule())->up();
+preg_match('/ALTER TABLE `v2_subscribe_log` ADD INDEX `subscribe_user_created_idx`[^;]+;/', file_get_contents(database_path('update.sql')), $indexSql);
+checkAnalysis(!empty($indexSql[0]), 'upgrade SQL includes user/time index');
+foreach ([1, 2] as $attempt) {
+    try { DB::statement($indexSql[0]); }
+    catch (Illuminate\Database\QueryException $e) {
+        if ((int)($e->errorInfo[1] ?? 0) !== 1061) throw $e;
+    }
+}
+checkAnalysis(count(DB::select("SHOW INDEX FROM v2_subscribe_log WHERE Key_name = 'subscribe_user_created_idx'")) === 2, 'upgrade index exists after replay');
 checkAnalysis(true, 'migration is idempotent');
 $prefix = config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key'))));
 foreach (['fetch' => 'GET', 'mark' => 'POST', 'settings' => 'POST', 'host-rule' => 'POST'] as $action => $method) {

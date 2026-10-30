@@ -9,6 +9,15 @@ window.createSubscriptionAnalysisPage = function (n) {
     const tag = (value, color, key) => h('span', {key, className: 'ant-tag ant-tag-' + color}, value);
     const muted = value => h('div', {className: 'text-muted sa-small'}, value || '—');
     const date = value => value ? new Date(value * 1000).toLocaleString('zh-CN', {hour12: false}) : '—';
+    const known = value => {
+        const text = String(value == null ? '' : value).trim();
+        return ['', '0', '-', '未知', 'unknown'].includes(text.toLowerCase()) ? '' : text;
+    };
+    const asnLabel = value => {
+        const match = known(value).match(/^(?:AS)?\s*(\d+)(?:\b.*)?$/i);
+        const number = match ? match[1].replace(/^0+/, '') : '';
+        return number ? 'ASN：AS' + number : 'ASN 未知';
+    };
     async function api(path, body) {
         let auth = localStorage.getItem('authorization') || localStorage.getItem('auth_data') || '';
         if (!auth) for (const part of document.cookie.split(';')) {
@@ -98,7 +107,11 @@ window.createSubscriptionAnalysisPage = function (n) {
                 items.length ? h('ol', {className: 'sa-ranking-list', tabIndex: 0}, ...items.map((item, index) =>
                     h('li', {className: 'sa-ranking-item', key: item.value},
                         h('span', {className: 'sa-ranking-position'}, index + 1),
-                        h('span', {className: 'sa-ranking-value'}, item.value),
+                        h('div', {className: 'sa-ranking-value'}, item.value,
+                            kind === 'ip' && h('div', {className: 'sa-ranking-location text-muted'},
+                                [item.country, item.city].map(known).filter(Boolean).join(' · ') || '位置未知'),
+                            kind === 'ip' && h('div', {className: 'sa-ranking-asn text-muted'},
+                                asnLabel(item.as), known(item.isp) ? ' · ' + known(item.isp) : '')),
                         h('span', {className: 'sa-ranking-count'}, h('strong', null, item.count + ' 次'),
                             h('span', {className: 'text-muted'}, item.percentage.toFixed(2) + '%'))))) : muted('暂无已记录的 ' + (kind === 'ip' ? 'IP' : 'UA')),
                 ranking && ranking.missing_requests > 0 && muted('另有 ' + ranking.missing_requests + ' 次未记录'));

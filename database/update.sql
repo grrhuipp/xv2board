@@ -890,3 +890,4 @@ CREATE TABLE IF NOT EXISTS `v2_subscription_analysis_settings` (
 
 ALTER TABLE `v2_subscription_analysis_settings` ADD COLUMN `marked_host_rule` text DEFAULT NULL;
 ALTER TABLE `v2_subscribe_log` ADD INDEX `subscribe_created_user_idx` (`created_at`, `user_id`);
+ALTER TABLE `v2_subscribe_log` ADD INDEX `subscribe_user_created_idx` (`user_id`, `created_at`);

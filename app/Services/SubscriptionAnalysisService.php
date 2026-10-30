@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\SubscribeLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class SubscriptionAnalysisService
 {
@@ -70,9 +70,14 @@ class SubscriptionAnalysisService
             ->selectRaw("COUNT(DISTINCT NULLIF(TRIM(user_agent), '')) AS uas_3d")
             ->selectRaw("COUNT(DISTINCT CASE WHEN LOWER(TRIM(country)) NOT IN ('', '0', '-', '未知', 'unknown') THEN TRIM(country) END) AS countries_3d")
             ->selectRaw("COUNT(DISTINCT CASE WHEN LOWER(TRIM(city)) NOT IN ('', '0', '-', '未知', 'unknown') THEN CONCAT(COALESCE(TRIM(country), ''), '/', TRIM(city)) END) AS cities_3d");
-        $base = DB::query()->fromSub($stats, 's')->join('v2_user as u', 'u.id', '=', 's.user_id')
+        $base = $this->userBase($stats);
+        return compact('base', 'stats', 'frequent', 'multiIp', 'geo', 'multiUa', 'attention', 'priority', 'now', 'asOf', 'since', 'limits', 'notNodeIp');
+    }
+
+    private function userBase($stats)
+    {
+        return DB::query()->fromSub($stats, 's')->join('v2_user as u', 'u.id', '=', 's.user_id')
             ->leftJoin('v2_subscription_analysis_marks as m', 'm.user_id', '=', 's.user_id');
-        return compact('base', 'frequent', 'multiIp', 'geo', 'multiUa', 'attention', 'priority', 'now', 'asOf', 'since', 'limits', 'notNodeIp');
     }
 
     public function rankings(array $userIds, string $asOf): array
@@ -80,17 +85,37 @@ class SubscriptionAnalysisService
         $rankings = [];
         foreach ($userIds as $id) {
             $rankings[$id] = array_fill_keys(['ip', 'ua'], ['data' => [], 'total' => 0, 'requests' => 0, 'missing_requests' => 0]);
+            $rankings[$id]['latest'] = null;
         }
         if (!$userIds) return $rankings;
         $since = Carbon::parse($asOf)->subDays(3)->format('Y-m-d H:i:s');
         $logs = DB::table('v2_subscribe_log')->whereIn('user_id', $userIds)
             ->whereBetween('created_at', [$since, $asOf])->whereRaw(NodeIpWhitelist::notInSql('ip'));
-        // Two grouped queries for the current page, regardless of the number of users.
+        // Group only the current page. Fetch metadata by primary key, without regrouping logs.
         foreach (['ip' => "NULLIF(ip, '')", 'ua' => "NULLIF(TRIM(user_agent), '')"] as $kind => $value) {
-            $groups = (clone $logs)->select('user_id')
+            $query = (clone $logs)->select('user_id')
                 ->selectRaw("$value AS value, COUNT(*) AS count, MIN(created_at) AS first_at, MAX(created_at) AS last_at")
                 ->groupBy('user_id')->groupBy('value')
-                ->orderBy('user_id')->orderByDesc('count')->orderByDesc('last_at')->orderBy('value')->get();
+                ->orderBy('user_id')->orderByDesc('count')->orderByDesc('last_at')->orderBy('value');
+            if ($kind === 'ip') {
+                // Fixed-width unsigned bigint IDs make MAX order by timestamp, then ID.
+                // Avoid MAX(id) alone: an older imported record may have a larger ID.
+                $query->selectRaw("MAX(CONCAT(created_at, ':', LPAD(id, 20, '0'))) AS latest_key");
+            }
+            $groups = $query->get();
+            $ipDetails = collect();
+            if ($kind === 'ip' && $groups->isNotEmpty()) {
+                $ids = $groups->map(fn ($row) => substr($row->latest_key, -20))->unique()->values()->all();
+                $ipDetails = DB::table('v2_subscribe_log')->whereIn('id', $ids)
+                    ->get(['id', 'user_id', 'ip', 'as', 'isp', 'country', 'city', 'user_agent'])->keyBy('id');
+                $latestKeys = [];
+                foreach ($groups as $row) {
+                    if (!isset($latestKeys[$row->user_id]) || strcmp($row->latest_key, $latestKeys[$row->user_id]) > 0) {
+                        $latestKeys[$row->user_id] = $row->latest_key;
+                        $rankings[$row->user_id]['latest'] = $ipDetails->get(ltrim(substr($row->latest_key, -20), '0'));
+                    }
+                }
+            }
             foreach ($groups as $row) {
                 $ranking = &$rankings[$row->user_id][$kind];
                 $row->count = (int) $row->count;
@@ -98,7 +123,13 @@ class SubscriptionAnalysisService
                 if ($row->value === null) {
                     $ranking['missing_requests'] += $row->count;
                 } else {
-                    unset($row->user_id);
+                    if ($kind === 'ip') {
+                        $detail = $ipDetails->get(ltrim(substr($row->latest_key, -20), '0'));
+                        foreach (['as', 'isp', 'country', 'city'] as $field) {
+                            $row->$field = $detail->$field ?? null;
+                        }
+                    }
+                    unset($row->user_id, $row->latest_key);
                     $ranking['data'][] = $row;
                 }
                 unset($ranking);
@@ -153,25 +184,43 @@ class SubscriptionAnalysisService
             case 'attention': $base->whereRaw($attention); break;
             case 'priority': $base->whereRaw($priority); break;
         }
-        $page = $base->select('s.*', 'u.email', 'u.created_at as registered_at', 'u.last_login_at', 'm.note', 'm.updated_at as marked_at')
+        // Reuse exact totals already computed by the summary for common filters.
+        // paginate() would otherwise aggregate the entire three-day log window again.
+        $totals = ['all' => 'users', 'frequent' => 'frequent_users', 'multi_ip' => 'multi_ip_users',
+            'geo' => 'geo_users', 'multi_ua' => 'multi_ua_users', 'attention' => 'attention_users', 'priority' => 'priority_users'];
+        $event = $params['event'] ?? 'all';
+        $total = null;
+        if (($params['q'] ?? '') === '') {
+            if (empty($params['marked'])) $total = (int)$summary->{$totals[$event] ?? 'users'};
+            elseif ($event === 'all') $total = (int)$summary->marked_users;
+        }
+        if ($total === null) $total = (clone $base)->count();
+        $pageSize = $params['page_size'] ?? 20;
+        $pageNumber = $params['page'] ?? 1;
+        $alreadyPaged = false;
+        $emptyPage = false;
+        if ($total && $event === 'all' && ($params['q'] ?? '') === '') {
+            // Choose the visible users with a narrow index-only grouping first.
+            // DISTINCT UA/geography and detailed counts then scan only those users.
+            $recent = DB::table('v2_subscribe_log')->whereBetween('created_at', [$since, $asOf])->whereRaw($notNodeIp)
+                ->select('user_id')->selectRaw('MAX(created_at) AS last_at')->groupBy('user_id');
+            $active = $this->userBase($recent);
+            if (!empty($params['marked'])) $active->whereNotNull('m.user_id');
+            $ids = $active->orderByDesc('s.last_at')->orderByDesc('s.user_id')
+                ->forPage($pageNumber, $pageSize)->pluck('s.user_id')->all();
+            $base = $this->userBase((clone $stats)->whereIn('user_id', $ids));
+            $alreadyPaged = true;
+            $emptyPage = !$ids;
+        }
+        $items = $base->select('s.*', 'u.email', 'u.created_at as registered_at', 'u.last_login_at', 'm.note', 'm.updated_at as marked_at')
             ->selectRaw('m.user_id IS NOT NULL AS is_marked')
             ->selectRaw($priority . ' AS is_priority')
-            ->orderByDesc('s.last_at')->orderByDesc('s.user_id')
-            ->paginate($params['page_size'] ?? 20, ['*'], 'page', $params['page'] ?? 1);
-        $latest = collect();
-        if ($page->count()) {
-            // Timestamp first, then id: imported/out-of-order records must not replace the latest event.
-            $latestIds = DB::table('v2_subscribe_log')->selectRaw('MAX(id) AS id')->groupBy('user_id')
-                ->whereRaw($notNodeIp)
-                ->where(function ($query) use ($page) {
-                    foreach ($page->items() as $row) {
-                        $query->orWhere(function ($pair) use ($row) {
-                            $pair->where('user_id', $row->user_id)->where('created_at', $row->last_at);
-                        });
-                    }
-                });
-            $latest = SubscribeLog::whereIn('id', $latestIds)->get(['user_id', 'ip', 'as', 'isp', 'country', 'city', 'user_agent'])->keyBy('user_id');
+            ->orderByDesc('s.last_at')->orderByDesc('s.user_id');
+        $pageItems = [];
+        if ($total && !$emptyPage) {
+            $pageItems = ($alreadyPaged ? $items : $items->forPage($pageNumber, $pageSize))->get();
         }
+        $page = new LengthAwarePaginator($pageItems, $total, $pageSize, $pageNumber);
         $rankings = $this->rankings(array_map(fn ($row) => (int) $row->user_id, $page->items()), $asOf);
         $rows = [];
         foreach ($page->items() as $row) {
@@ -184,7 +233,7 @@ class SubscriptionAnalysisService
             if ($row->ips_3d >= 2 && ($row->countries_3d >= $limits['countries_3d'] || $row->cities_3d >= $limits['cities_3d'])) $row->signals[] = 'geo';
             if ($row->uas_3d >= $limits['ua_3d']) $row->signals[] = 'multi_ua';
             $row->average_interval = $row->count_3d > 1 ? (int) round(Carbon::parse($row->last_at)->diffInSeconds(Carbon::parse($row->first_at)) / ($row->count_3d - 1)) : null;
-            $row->latest = $latest->get($row->user_id);
+            $row->latest = $rankings[$row->user_id]['latest'];
             $row->ip_ranking = $rankings[$row->user_id]['ip'];
             $row->ua_ranking = $rankings[$row->user_id]['ua'];
             $rows[] = $row;

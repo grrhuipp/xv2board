@@ -582,7 +582,8 @@ CREATE TABLE `v2_subscribe_log` (
   PRIMARY KEY (`id`),
   KEY `user_id_idx` (`user_id`),
     KEY `email_idx` (`email`),
-    KEY `subscribe_created_user_idx` (`created_at`, `user_id`)
+    KEY `subscribe_created_user_idx` (`created_at`, `user_id`),
+    KEY `subscribe_user_created_idx` (`user_id`, `created_at`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `v2_subscription_analysis_marks` (
