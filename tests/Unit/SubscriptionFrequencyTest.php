@@ -23,7 +23,10 @@ class SubscriptionFrequencyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        if (!extension_loaded('pdo_sqlite')) $this->markTestSkipped('Requires pdo_sqlite.');
+        $mysql = getenv('SUBSCRIPTION_FREQUENCY_TEST_MYSQL') === '1';
+        if (!extension_loaded($mysql ? 'pdo_mysql' : 'pdo_sqlite')) {
+            $this->markTestSkipped('Requires the selected PDO database driver.');
+        }
         $this->previousContainer = Container::getInstance();
         $this->previousFacade = Facade::getFacadeApplication();
         $container = new Container();
@@ -31,11 +34,34 @@ class SubscriptionFrequencyTest extends TestCase
         $container->instance('config', new Repository(['app' => ['timezone' => 'UTC']]));
         $container->instance('cache', new CacheRepository(new ArrayStore()));
         $this->database = new Manager($container);
-        $this->database->addConnection(['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']);
+        $connection = ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => ''];
+        if ($mysql) {
+            foreach (['HOST', 'DATABASE', 'USERNAME'] as $name) {
+                if (!getenv('SUBSCRIPTION_FREQUENCY_TEST_MYSQL_' . $name)) {
+                    throw new \RuntimeException('Missing MariaDB test connection setting: ' . $name);
+                }
+            }
+            $connection = [
+                'driver' => 'mysql',
+                'host' => getenv('SUBSCRIPTION_FREQUENCY_TEST_MYSQL_HOST'),
+                'port' => getenv('SUBSCRIPTION_FREQUENCY_TEST_MYSQL_PORT') ?: 3306,
+                'database' => getenv('SUBSCRIPTION_FREQUENCY_TEST_MYSQL_DATABASE'),
+                'username' => getenv('SUBSCRIPTION_FREQUENCY_TEST_MYSQL_USERNAME'),
+                'password' => getenv('SUBSCRIPTION_FREQUENCY_TEST_MYSQL_PASSWORD'),
+                'prefix' => 'freq_test_' . bin2hex(random_bytes(6)) . '_',
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'strict' => true,
+                'modes' => ['ONLY_FULL_GROUP_BY', 'STRICT_TRANS_TABLES', 'NO_ENGINE_SUBSTITUTION'],
+            ];
+        }
+        $this->database->addConnection($connection);
         $container->instance('db', $this->database->getDatabaseManager());
         Facade::clearResolvedInstances();
         Facade::setFacadeApplication($container);
         $this->database->getConnection()->getSchemaBuilder()->create('v2_subscribe_log', function ($table) {
+            // Session-local tables and unique MySQL prefixes keep existing application tables untouched.
+            $table->temporary();
             $table->increments('id');
             $table->integer('user_id');
             $table->string('ip')->nullable();
@@ -127,9 +153,11 @@ class SubscriptionFrequencyTest extends TestCase
 
     public function test_node_network_is_excluded_from_both_dimensions(): void
     {
-        $this->database->getConnection()->getPdo()->sqliteCreateFunction('INET_ATON', function ($ip) {
-            return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? (int) sprintf('%u', ip2long($ip)) : null;
-        }, 1);
+        if ($this->database->getConnection()->getDriverName() === 'sqlite') {
+            $this->database->getConnection()->getPdo()->sqliteCreateFunction('INET_ATON', function ($ip) {
+                return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? (int) sprintf('%u', ip2long($ip)) : null;
+            }, 1);
+        }
         NodeIpWhitelist::remember('8.8.8.8');
         $this->log('8.8.8.9', 'Node Client');
         $this->log('192.0.2.1', 'User Client');

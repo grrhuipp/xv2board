@@ -39,6 +39,14 @@ php artisan migrate --path=database/migrations/2026_09_13_000003_add_marked_subs
 
 ## 验证
 
+排行单元测试默认使用内存 SQLite：
+
+```sh
+vendor/bin/phpunit --no-configuration --bootstrap vendor/autoload.php tests/Unit/SubscriptionFrequencyTest.php
+```
+
+MariaDB 回归可设置 `SUBSCRIPTION_FREQUENCY_TEST_MYSQL=1`，并通过环境变量传入同前缀的 `HOST`、`DATABASE`、`USERNAME`、`PASSWORD`（可选 `PORT`），再执行相同命令。不要把密码写入命令行或提交。测试为当前连接启用 `ONLY_FULL_GROUP_BY`，使用随机表前缀的 `TEMPORARY` 表并在断开连接时释放；不会读写现有订阅日志。此模式用于验证 IP/UA 归一化分组在 MariaDB 严格模式下不会产生 1055 错误。
+
 仅在 `APP_ENV=testing`、数据库名以 `qa_` 开头的隔离数据库运行：
 
 ```sh

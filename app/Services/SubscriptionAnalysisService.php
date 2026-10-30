@@ -89,7 +89,7 @@ class SubscriptionAnalysisService
         foreach (['ip' => "NULLIF(ip, '')", 'ua' => "NULLIF(TRIM(user_agent), '')"] as $kind => $value) {
             $groups = (clone $logs)->select('user_id')
                 ->selectRaw("$value AS value, COUNT(*) AS count, MIN(created_at) AS first_at, MAX(created_at) AS last_at")
-                ->groupBy('user_id')->groupByRaw($value)
+                ->groupBy('user_id')->groupBy('value')
                 ->orderBy('user_id')->orderByDesc('count')->orderByDesc('last_at')->orderBy('value')->get();
             foreach ($groups as $row) {
                 $ranking = &$rankings[$row->user_id][$kind];
