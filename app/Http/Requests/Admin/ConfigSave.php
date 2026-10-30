@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Services\TrustedProxySettings;
 
 class ConfigSave extends FormRequest
 {
@@ -113,6 +114,7 @@ class ConfigSave extends FormRequest
         'app_client_aes_key' => 'nullable|string|regex:/^[\x21-\x7E]{16}$/',
         'app_client_aes_iv' => 'nullable|string|regex:/^[\x21-\x7E]{16}$/',
         // safe
+        'trusted_proxies' => ['nullable', 'string', 'max:10000'],
         'email_whitelist_enable' => 'in:0,1',
         'email_whitelist_suffix' => 'nullable|array',
         'email_gmail_limit_enable' => 'in:0,1',
@@ -172,6 +174,15 @@ class ConfigSave extends FormRequest
     public function rules()
     {
         $rules = self::RULES;
+
+        $rules['trusted_proxies'][] = function ($attribute, $value, $fail) {
+            if (!is_string($value)) return;
+            try {
+                TrustedProxySettings::parse($value);
+            } catch (\InvalidArgumentException $e) {
+                $fail($e->getMessage());
+            }
+        };
 
         $rules['deposit_bounus'][] = function ($attribute, $value, $fail) {
             foreach ($value as $tier) {

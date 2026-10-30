@@ -5287,6 +5287,17 @@
                 }, f.a.createElement("div", {
                     className: ""
                 }, f.a.createElement(m, {
+                    title: "可信代理 IP / 网段",
+                    description: "用于从 X-Forwarded-For 识别客户端 IP，影响订阅记录、行为分析及 IP 限流。每行填写一个 IPv4、IPv6 或 CIDR，也可用逗号分隔；留空不信任代理。仅填写实际代理地址，不支持 * 或全网网段。停止输入后自动保存。"
+                }, f.a.createElement("textarea", {
+                    rows: "6",
+                    className: "form-control",
+                    "aria-label": "可信代理 IP / 网段",
+                    placeholder: "例如：\n127.0.0.1\n::1\n192.0.2.0/24",
+                    maxLength: 10000,
+                    defaultValue: _.trusted_proxies || "",
+                    onChange: e=>this.set("safe", "trusted_proxies", e.target.value)
+                })), f.a.createElement(m, {
                     title: "\u90ae\u7bb1\u9a8c\u8bc1",
                     description: "\u5f00\u542f\u540e\u5c06\u4f1a\u5f3a\u5236\u8981\u6c42\u7528\u6237\u8fdb\u884c\u90ae\u7bb1\u9a8c\u8bc1\u3002"
                 }, f.a.createElement(l["a"], {

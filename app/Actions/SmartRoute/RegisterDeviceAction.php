@@ -145,11 +145,6 @@ class RegisterDeviceAction
         $shouldResetTrust = $oldDevice && (int)$oldDevice->status !== 1;
 
         $ipData = (new SmartRouteIpResolver())->resolve($request);
-        if ($oldDevice && !empty($oldDevice->last_client_ip) && $ipData['last_ip_source'] !== 'client_header') {
-            $ipData['last_ip'] = $oldDevice->last_ip;
-            $ipData['last_client_ip'] = $oldDevice->last_client_ip;
-            $ipData['last_client_ip_at'] = $oldDevice->last_client_ip_at;
-        }
 
         $deviceData = array_merge([
             'user_id' => $user->id,

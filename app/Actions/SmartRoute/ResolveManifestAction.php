@@ -133,11 +133,6 @@ class ResolveManifestAction
         $device->last_network_type = $networkType;
         $device->last_active_at = time();
         $device->environment_class = EnvironmentClass::resolve($device->platform, $networkType);
-        if (!empty($device->last_client_ip) && $ipData['last_ip_source'] !== 'client_header') {
-            $ipData['last_ip'] = $device->last_ip;
-            $ipData['last_client_ip'] = $device->last_client_ip;
-            $ipData['last_client_ip_at'] = $device->last_client_ip_at;
-        }
         foreach ($ipData as $key => $value) {
             $device->{$key} = $value;
         }

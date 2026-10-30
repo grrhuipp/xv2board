@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\ConfigSave;
 use App\Jobs\SendEmailJob;
 use App\Services\MassEmailMailer;
 use App\Services\TelegramService;
+use App\Services\TrustedProxySettings;
 use App\Utils\Dict;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -226,6 +227,7 @@ class ConfigController extends Controller
                 'app_client_aes_iv_configured' => (bool)(config('v2board.app_client_aes_iv') ?: config('appclient.encryption.iv')),
             ],
             'safe' => [
+                'trusted_proxies' => config('v2board.trusted_proxies', '') ?? '',
                 'email_verify' => (int)config('v2board.email_verify', 0),
                 'safe_mode_enable' => (int)config('v2board.safe_mode_enable', 0),
                 'secure_path' => config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))),
@@ -259,6 +261,9 @@ class ConfigController extends Controller
     public function save(ConfigSave $request)
     {
         $data = $request->validated();
+        if (array_key_exists('trusted_proxies', $data)) {
+            $data['trusted_proxies'] = implode("\n", TrustedProxySettings::parse($data['trusted_proxies']));
+        }
         foreach (['email_password', 'email_secondary_password', 'app_client_aes_key', 'app_client_aes_iv'] as $passwordKey) {
             if (array_key_exists($passwordKey, $data) && ($data[$passwordKey] === '' || $data[$passwordKey] === null)) {
                 unset($data[$passwordKey]);
