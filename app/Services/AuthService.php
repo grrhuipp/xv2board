@@ -41,6 +41,12 @@ class AuthService
 
     public static function decryptAuthData($jwt)
     {
+        // Never pass request arrays to Cache: associative values become defaults
+        // in batch reads and can masquerade as an authenticated identity.
+        if (!is_string($jwt) || trim($jwt) === '') {
+            return false;
+        }
+
         try {
             if (!Cache::has($jwt)) {
                 $data = (array)JWT::decode($jwt, new Key(config('app.key'), 'HS256'));
