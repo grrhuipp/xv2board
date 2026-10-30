@@ -12,6 +12,8 @@
 - `POST /subscription-analysis/settings`：保存全局阈值。字段：`frequent_2m`、`frequent_5m`、`frequent_1h`、`ip_10m`、`ip_3d`、`ua_3d`、`countries_3d`、`cities_3d`。频率最小1，其余最小2，最大100000，均为整数。
 - 阈值保存在 `v2_subscription_analysis_settings`，返回在 fetch 的 `thresholds` 中；保存后立即影响汇总、筛选和行提示。
 - 统计字段：`count_3d`、`ips_3d`、`uas_3d`、`countries_3d`、`cities_3d`；原来的24小时字段已替换。
+- 用户栏直接显示1天、3天流量，取自 `v2_stat_user` 的日统计，上传下载合计并计入节点倍率。1天为站点时区的今天，3天为今天及前两天，以已入库统计为准；不是滚动24/72小时。当前页所有用户只增加一次批量查询，接口每行返回 `traffic.day_1/day_3`，页面脚注和提示说明口径。列表、按钮、筛选和分页采用现有后台组件的紧凑样式。
+- [连接 IP 分析](connection-analysis.md) 单独读取节点上报的 `v2_user_connect_log`，不与订阅请求频次混用。
 
 ## 数据口径
 

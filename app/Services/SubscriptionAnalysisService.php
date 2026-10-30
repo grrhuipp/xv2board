@@ -222,6 +222,7 @@ class SubscriptionAnalysisService
         }
         $page = new LengthAwarePaginator($pageItems, $total, $pageSize, $pageNumber);
         $rankings = $this->rankings(array_map(fn ($row) => (int) $row->user_id, $page->items()), $asOf);
+        $traffic = (new UserTrafficSummaryService())->forUsers(array_map(fn ($row) => (int)$row->user_id, $page->items()), $asOf);
         $rows = [];
         foreach ($page->items() as $row) {
             foreach (['user_id', 'count_3d', 'count_2m', 'count_5m', 'count_1h', 'ips_10m', 'ips_3d', 'uas_3d', 'countries_3d', 'cities_3d'] as $field) $row->$field = (int) $row->$field;
@@ -236,6 +237,7 @@ class SubscriptionAnalysisService
             $row->latest = $rankings[$row->user_id]['latest'];
             $row->ip_ranking = $rankings[$row->user_id]['ip'];
             $row->ua_ranking = $rankings[$row->user_id]['ua'];
+            $row->traffic = $traffic[$row->user_id];
             $rows[] = $row;
         }
         return [
@@ -243,6 +245,7 @@ class SubscriptionAnalysisService
             'summary' => $summary, 'thresholds' => $limits, 'marked_host_rule' => MarkedSubscriptionHostService::configuration(),
             'meta' => [
                 'as_of' => $asOf, 'window_start' => $since, 'timezone' => config('app.timezone'),
+                'traffic_scope' => UserTrafficSummaryService::SCOPE,
                 'retained_from' => DB::table('v2_subscribe_log')->orderBy('created_at')->value('created_at'),
                 'scope' => '仅统计普通订阅，不包含APP订阅。展示最近3天有记录且仍存在的用户；次数为鉴权后的订阅请求，不代表下载成功。节点公网 IP 及其 IPv4 /24 不计入次数、多 IP、地区和最近一次记录。',
             ],

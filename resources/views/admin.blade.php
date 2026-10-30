@@ -32,6 +32,7 @@
 <script src="/assets/admin/vendors.async.js?v={{$version}}"></script>
 <script src="/assets/admin/components.async.js?v={{$version}}"></script>
 <script src="/assets/admin/subscription-analysis.js?v={{$version}}&amp;m={{ is_file(public_path('assets/admin/subscription-analysis.js')) ? filemtime(public_path('assets/admin/subscription-analysis.js')) : 0 }}"></script>
+<script src="/assets/admin/connection-analysis.js?v={{$version}}&amp;m={{ is_file(public_path('assets/admin/connection-analysis.js')) ? filemtime(public_path('assets/admin/connection-analysis.js')) : 0 }}"></script>
 <script src="/assets/admin/umi.js?v={{$version}}&amp;m={{ is_file(public_path('assets/admin/umi.js')) ? filemtime(public_path('assets/admin/umi.js')) : 0 }}"></script>
 <script>
 (function(){

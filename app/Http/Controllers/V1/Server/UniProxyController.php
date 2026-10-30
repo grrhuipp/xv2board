@@ -4,8 +4,7 @@ namespace App\Http\Controllers\V1\Server;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\V2UserConnectLog;
-use App\Services\Geo\Ip2Region;
+use App\Services\ConnectionLogService;
 use App\Services\NodeIpWhitelist;
 use App\Services\ServerService;
 use App\Services\UserService;
@@ -231,39 +230,19 @@ class UniProxyController extends Controller
             ->whereIn('id', array_keys($recordsToProcess))
             ->get(['id', 'email'])
             ->keyBy('id');
+        $connectionRows = [];
         foreach ($recordsToProcess as $uid => $ips) {
             $user = $users->get($uid);
             if (!$user) {
                 continue;
             }
 
-            foreach ($ips as $ip) {
-                try {
-                    $ipData = Ip2Region::instance()->query($ip) ?? [];
-                    $region = implode(',', array_filter([
-                        $ipData['province'] ?? null,
-                        $ipData['city'] ?? null,
-                        $ipData['area'] ?? null,
-                    ]));
-
-                    V2UserConnectLog::updateOrCreate(
-                        ['user_id' => $uid, 'ip' => $ip],
-                        [
-                            'email' => $user->email,
-                            'as_number' => $ipData['as_number'] ?? null,
-                            'as_name' => $ipData['as_name'] ?? $ipData['isp'] ?? null,
-                            'country' => $ipData['country'] ?? null,
-                            'region' => $region,
-                        ]
-                    );
-                } catch (\Throwable $e) {
-                    \Log::warning('Failed to persist user connect log', [
-                        'user_id' => $uid,
-                        'ip' => $ip,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+            foreach ($ips as $ip) $connectionRows[] = ['user_id' => $uid, 'email' => $user->email, 'ip' => $ip];
+        }
+        try {
+            (new ConnectionLogService())->record($connectionRows);
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to persist user connect log batch', ['error' => $e->getMessage()]);
         }
 
         return response([

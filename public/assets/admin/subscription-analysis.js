@@ -1,11 +1,9 @@
 /* Reuse the admin bundle's React, Ant Design and layout components. */
-window.createSubscriptionAnalysisPage = function (n) {
+window.createAnalysisUi = function (n) {
     'use strict';
     const React = n('q1tI'), h = React.createElement;
     const Layout = n('Bl7J').a, Table = n('wCAj').a, Button = n('2/Rp').a;
-    const Input = n('5rEg').a, Select = n('2fM7').a, Modal = n('kLXV').a, Logs = n('UserSubscribeLogs').a;
-    const names = {multi_ip: '多 IP', geo: '异地拉取', frequent: '频繁拉取', multi_ua: '多 UA'};
-    const thresholdLabels = {frequent_2m: '2 分钟拉取次数', frequent_5m: '5 分钟拉取次数', frequent_1h: '1 小时拉取次数', ip_10m: '10 分钟不同 IP 数', ip_3d: '3 天不同 IP 数', ua_3d: '3 天不同 UA 数', countries_3d: '3 天不同国家数', cities_3d: '3 天不同城市数'};
+    const Input = n('5rEg').a, Select = n('2fM7').a;
     const tag = (value, color, key) => h('span', {key, className: 'ant-tag ant-tag-' + color}, value);
     const muted = value => h('div', {className: 'text-muted sa-small'}, value || '—');
     const date = value => value ? new Date(value * 1000).toLocaleString('zh-CN', {hour12: false}) : '—';
@@ -18,6 +16,14 @@ window.createSubscriptionAnalysisPage = function (n) {
         const number = match ? match[1].replace(/^0+/, '') : '';
         return number ? 'ASN：' + number : 'ASN 未知';
     };
+    const bytes = value => {
+        if (value == null || !Number.isFinite(Number(value))) return '—';
+        const number = Number(value), units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
+        const index = number > 0 ? Math.min(Math.floor(Math.log(number) / Math.log(1024)), units.length - 1) : 0;
+        return (number / Math.pow(1024, index)).toFixed(index ? 2 : 0) + ' ' + units[index];
+    };
+    const traffic = (value, scope) => h('div', {className: 'sa-traffic', title: scope || '1天为今天，3天为今天及前两天；上传和下载合计并计入节点倍率。'},
+        ...[['day_1', '1 天'], ['day_3', '3 天']].map(([key, label]) => h('div', {key}, label + '：', h('strong', null, bytes(value && value[key])))));
     async function api(path, body) {
         let auth = localStorage.getItem('authorization') || localStorage.getItem('auth_data') || '';
         if (!auth) for (const part of document.cookie.split(';')) {
@@ -38,6 +44,14 @@ window.createSubscriptionAnalysisPage = function (n) {
         if (!response.ok) throw new Error(response.status === 403 || response.status === 401 ? '登录已失效或没有管理员权限，请重新登录。' : '请求失败（' + response.status + '），请检查输入或稍后重试。');
         return response.json();
     }
+    return {React, h, Layout, Table, Button, Input, Select, tag, muted, date, known, asnLabel, traffic, api};
+};
+window.createSubscriptionAnalysisPage = function (n) {
+    'use strict';
+    const {React, h, Layout, Table, Button, Input, Select, tag, muted, date, known, asnLabel, traffic, api} = window.createAnalysisUi(n);
+    const Modal = n('kLXV').a, Logs = n('UserSubscribeLogs').a;
+    const names = {multi_ip: '多 IP', geo: '异地拉取', frequent: '频繁拉取', multi_ua: '多 UA'};
+    const thresholdLabels = {frequent_2m: '2 分钟拉取次数', frequent_5m: '5 分钟拉取次数', frequent_1h: '1 小时拉取次数', ip_10m: '10 分钟不同 IP 数', ip_3d: '3 天不同 IP 数', ua_3d: '3 天不同 UA 数', countries_3d: '3 天不同国家数', cities_3d: '3 天不同城市数'};
     return class SubscriptionAnalysis extends React.Component {
         constructor(props) {
             super(props);
@@ -118,7 +132,7 @@ window.createSubscriptionAnalysisPage = function (n) {
         }
         columns() {
             return [
-                {title: '用户', key: 'user', width: 210, render: (_, row) => h('div', null, row.email, muted('UID ' + row.user_id), row.is_marked && tag('已标记', 'blue'), muted('注册 ' + date(row.registered_at)), muted('最近拉取 ' + row.last_at))},
+                {title: '用户 / 流量', key: 'user', width: 210, render: (_, row) => h('div', null, row.email, muted('UID ' + row.user_id), row.is_marked && tag('已标记', 'blue'), traffic(row.traffic, this.state.meta && this.state.meta.traffic_scope), muted('注册 ' + date(row.registered_at)), muted('最近拉取 ' + row.last_at))},
                 {title: 'IP 排行（3 天）', key: 'ip_ranking', width: 270, render: (_, row) => this.renderRanking(row, 'ip')},
                 {title: 'UA 排行（3 天）', key: 'ua_ranking', width: 360, render: (_, row) => this.renderRanking(row, 'ua')},
                 {title: '拉取次数', key: 'counts', width: 140, render: (_, row) => h('div', null,
@@ -143,32 +157,32 @@ window.createSubscriptionAnalysisPage = function (n) {
             const summary = s.summary;
             const limits = s.thresholds || {};
             const close = () => { if (!s.saving) this.setState({active: null}); };
-            return h(Layout, {...this.props, title: '订阅分析'}, h('div', {id: 'subscription-analysis', className: 'block border-bottom'},
+            return h(Layout, {...this.props, title: '订阅分析'}, h('div', {id: 'subscription-analysis', className: 'sa-analysis block border-bottom'},
                 h('form', {className: 'sa-toolbar bg-white', onSubmit: event => this.search(event)},
-                    h(Input, {value: s.q, maxLength: 100, placeholder: '邮箱 / UID / IP / UA / 标记备注', 'aria-label': '搜索用户', className: 'sa-search', onChange: event => this.setState({q: event.target.value})}),
-                    h(Select, {value: s.event, className: 'sa-event-select', 'aria-label': '事件筛选', onChange: event => this.setState({event})},
+                    h(Input, {size: 'small', value: s.q, maxLength: 100, placeholder: '邮箱 / UID / IP / UA / 标记备注', 'aria-label': '搜索用户', className: 'sa-search', onChange: event => this.setState({q: event.target.value})}),
+                    h(Select, {size: 'small', value: s.event, className: 'sa-event-select', 'aria-label': '事件筛选', onChange: event => this.setState({event})},
                         ...[['all', '全部事件'], ['priority', '重点排查'], ['attention', '异常提示'], ...Object.entries(names)].map(([value, label]) => h(Select.Option, {key: value, value}, label))),
                     h('label', {className: 'ant-checkbox-wrapper'}, h('span', {className: 'ant-checkbox' + (s.marked ? ' ant-checkbox-checked' : '')}, h('input', {className: 'ant-checkbox-input', type: 'checkbox', checked: s.marked, onChange: event => this.setState({marked: event.target.checked})}), h('span', {className: 'ant-checkbox-inner'})), h('span', null, '只看已标记')),
-                    h(Button, {htmlType: 'submit', type: 'primary', icon: 'search'}, '查询'),
-                    h(Button, {icon: 'reload', onClick: () => this.load()}, '刷新'),
-                    h(Button, {icon: 'setting', disabled: !s.thresholds, onClick: () => this.setState({settingsOpen: true, draft: {...s.thresholds}, settingsError: ''})}, '阈值设置'),
-                    h(Button, {icon: 'swap', disabled: !s.hostRule, onClick: () => this.setState({hostOpen: true, hostDraft: {...s.hostRule}, hostError: ''})}, '替换规则'),
-                    h(Button, {icon: 'question-circle', disabled: !s.thresholds, onClick: () => this.setState({rules: true})}, '提示规则')),
+                    h(Button, {size: 'small', htmlType: 'submit', type: 'primary', icon: 'search'}, '查询'),
+                    h(Button, {size: 'small', icon: 'reload', onClick: () => this.load()}, '刷新'),
+                    h(Button, {size: 'small', icon: 'setting', disabled: !s.thresholds, onClick: () => this.setState({settingsOpen: true, draft: {...s.thresholds}, settingsError: ''})}, '阈值设置'),
+                    h(Button, {size: 'small', icon: 'swap', disabled: !s.hostRule, onClick: () => this.setState({hostOpen: true, hostDraft: {...s.hostRule}, hostError: ''})}, '替换规则'),
+                    h(Button, {size: 'small', icon: 'question-circle', disabled: !s.thresholds, onClick: () => this.setState({rules: true})}, '提示规则')),
                 h('div', {className: 'sa-priority-panel'},
                     h('div', {className: 'sa-priority-copy'}, h('strong', null, '重点排查'),
                         h('span', null, '频繁拉取、多 IP，或异地且多 UA；单一异地可能正常，仅作人工排查，不代表违规确证，也不会自动惩罚。')),
-                    h(Button, {className: 'sa-priority-button', type: this.filters.event === 'priority' ? 'primary' : 'default', 'aria-pressed': this.filters.event === 'priority', onClick: () => this.setState({event: 'priority'}, () => this.search())},
+                    h(Button, {size: 'small', className: 'sa-priority-button', type: this.filters.event === 'priority' ? 'primary' : 'default', 'aria-pressed': this.filters.event === 'priority', onClick: () => this.setState({event: 'priority'}, () => this.search())},
                         '查看重点排查（' + (summary ? summary.priority_users : '—') + ' 人）')),
                 h('div', {className: 'sa-summary text-muted'},
                     '最近 3 天 · 普通订阅',
                     summary && h(React.Fragment, null, h('span', null, '用户 ' + summary.users), h('span', null, '请求 ' + summary.requests), tag('异常提示 ' + summary.attention_users, 'orange'),
                         ...[['multi_ip_users', '多 IP'], ['geo_users', '异地'], ['frequent_users', '频繁'], ['multi_ua_users', '多 UA'], ['marked_users', '已标记']].map(([key, label]) => h('span', {key}, label + ' ' + summary[key])))),
                 s.error && h('div', {className: 'alert alert-danger', role: 'alert'}, s.error),
-                h(Table, {rowKey: 'user_id', columns: this.columns(), dataSource: s.rows, loading: s.loading, scroll: {x: 1410},
+                h(Table, {size: 'small', rowKey: 'user_id', columns: this.columns(), dataSource: s.rows, loading: s.loading, scroll: {x: 1410},
                     locale: {emptyText: s.error ? '加载失败，请重试' : '没有符合条件的订阅记录'},
                     pagination: {current: s.page, pageSize: s.pageSize, total: s.total, size: 'small', showSizeChanger: true, pageSizeOptions: ['10', '20', '50'], showTotal: total => '共 ' + total + ' 位用户'},
                     onChange: page => this.load(page.pageSize !== s.pageSize ? 1 : page.current, page.pageSize)}),
-                s.meta && h('div', {className: 'sa-footnote text-muted'}, '统计时间：' + s.meta.as_of + '（' + s.meta.timezone + '） · 不包含 APP 订阅；优先级与异常提示仅供人工排查，不自动封禁或惩罚。'),
+                s.meta && h('div', {className: 'sa-footnote text-muted'}, '统计时间：' + s.meta.as_of + '（' + s.meta.timezone + '） · 不包含 APP 订阅；优先级与异常提示仅供人工排查，不自动封禁或惩罚。', h('div', null, s.meta.traffic_scope)),
                 h(Modal, {className: 'sa-scroll-modal', title: '用户标记', visible: !!s.active, onCancel: close, confirmLoading: s.saving, maskClosable: !s.saving, closable: !s.saving, keyboard: !s.saving,
                     footer: [s.active && s.active.is_marked && h(Button, {key: 'unmark', disabled: s.saving, onClick: () => this.save(false)}, '取消标记'), h(Button, {key: 'cancel', disabled: s.saving, onClick: close}, '关闭'), h(Button, {key: 'save', type: 'primary', loading: s.saving, onClick: () => this.save(true)}, '保存标记')]},
                     s.active && h('p', null, s.active.email + ' · UID ' + s.active.user_id),

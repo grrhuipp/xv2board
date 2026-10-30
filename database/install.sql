@@ -494,6 +494,7 @@ CREATE TABLE `v2_stat_user` (
                                 PRIMARY KEY (`id`),
                                 UNIQUE KEY `server_rate_user_id_record_at` (`server_rate`,`user_id`,`record_at`),
                                 KEY `user_id` (`user_id`),
+                                KEY `stat_user_recent_idx` (`user_id`, `record_type`, `record_at`),
                                 KEY `record_at` (`record_at`),
                                 KEY `server_rate` (`server_rate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -617,7 +618,8 @@ CREATE TABLE `v2_user_connect_log` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_user_ip` (`user_id`, `ip`)
+  UNIQUE KEY `unique_user_ip` (`user_id`, `ip`),
+  KEY `connect_updated_user_idx` (`updated_at`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

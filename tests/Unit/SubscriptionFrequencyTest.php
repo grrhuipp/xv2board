@@ -280,6 +280,11 @@ class SubscriptionFrequencyTest extends TestCase
             $table->temporary();
             $table->integer('id')->primary(); $table->text('thresholds')->nullable(); $table->text('marked_host_rule')->nullable();
         });
+        $schema->create('v2_stat_user', function ($table) {
+            $table->temporary(); $table->integer('user_id'); $table->decimal('server_rate')->default(1);
+            $table->bigInteger('u')->default(0); $table->bigInteger('d')->default(0);
+            $table->string('record_type'); $table->integer('record_at');
+        });
         DB::table('v2_user')->insert([['id' => 7, 'email' => 'seven@example.test'], ['id' => 8, 'email' => 'eight@example.test']]);
         for ($i = 0; $i < 5; $i++) $this->log('192.0.2.1', 'Client ' . $i, '2026-10-29 11:59:00', 7, ['as' => '64500', 'city' => '东京']);
         $this->log(null, 'Latest without IP', '2026-10-29 11:00:00', 8);
@@ -293,7 +298,7 @@ class SubscriptionFrequencyTest extends TestCase
         $this->assertSame('Client 4', $result['data'][0]->latest->user_agent);
         $this->assertSame('64500', $result['data'][0]->ip_ranking['data'][0]->as);
         $queries = DB::getQueryLog();
-        $this->assertCount(9, $queries);
+        $this->assertCount(10, $queries);
         $this->assertCount(0, array_filter($queries, fn ($query) => stripos($query['query'], 'as aggregate') !== false));
         $this->assertSame([7], $queries[3]['bindings'] ? array_values(array_filter($queries[3]['bindings'], 'is_int')) : []);
         $second = $service->fetch(['page_size' => 1, 'page' => 2]);
