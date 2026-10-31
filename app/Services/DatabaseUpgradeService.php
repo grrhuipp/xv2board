@@ -69,4 +69,96 @@ final class DatabaseUpgradeService
             throw new \RuntimeException('APP credential migration did not create its required column.');
         }
     }
+
+    /** Prepare generated caches without booting providers from those caches. */
+    public static function prepareBootstrapCaches(string $root, string $mode, ?string $backupDirectory = null): void
+    {
+        \Dotenv\Dotenv::createImmutable($root)->safeLoad();
+        $app = require $root . '/bootstrap/app.php';
+        if (!in_array($mode, ['--repair-stale', '--clear', '--restore-ownership'], true) || ($mode !== '--restore-ownership' && empty($backupDirectory))) {
+            throw new \RuntimeException('Invalid cache preparation mode or missing backup directory.');
+        }
+        $paths = array_unique([
+            $app->getCachedConfigPath(), $app->getCachedPackagesPath(), $app->getCachedServicesPath(),
+        ]);
+        $cacheRoot = realpath($root . '/bootstrap/cache');
+        if ($cacheRoot === false) throw new \RuntimeException('Missing bootstrap/cache directory.');
+        $configPath = $app->getCachedConfigPath();
+        $ownerFile = $configPath . '.upgrade-owner.json';
+        $configParent = realpath(dirname($configPath));
+        if ($configParent === false || ($configParent !== $cacheRoot && strpos($configParent, $cacheRoot . DIRECTORY_SEPARATOR) !== 0)) {
+            throw new \RuntimeException('Custom config cache is outside bootstrap/cache; review it before upgrading.');
+        }
+        if ($mode === '--restore-ownership') {
+            if (!is_file($ownerFile)) return;
+            $owner = json_decode(file_get_contents($ownerFile), true);
+            if (!is_array($owner) || !isset($owner['uid'], $owner['gid']) || !is_int($owner['uid']) || !is_int($owner['gid'])
+                || $owner['uid'] < 0 || $owner['gid'] < 0 || !is_file($configPath) || is_link($configPath)) {
+                throw new \RuntimeException('Cannot restore configuration cache ownership.');
+            }
+            if ((fileowner($configPath) !== $owner['uid'] && !@chown($configPath, $owner['uid']))
+                || (filegroup($configPath) !== $owner['gid'] && !@chgrp($configPath, $owner['gid']))
+                || !chmod($configPath, 0640) || !unlink($ownerFile)) {
+                throw new \RuntimeException('Cannot restore configuration cache permissions; upgrade stopped.');
+            }
+            return;
+        }
+        $existing = [];
+        $providers = [];
+        $stale = false;
+        foreach ($paths as $path) {
+            if (!is_file($path)) continue;
+            $parent = realpath(dirname($path));
+            if (is_link($path) || $parent === false || ($parent !== $cacheRoot && strpos($parent, $cacheRoot . DIRECTORY_SEPARATOR) !== 0)) {
+                throw new \RuntimeException('Custom cache path is outside bootstrap/cache; review it before upgrading.');
+            }
+            try { $value = require $path; }
+            catch (\Throwable $e) { $stale = true; $value = []; }
+            if (!is_array($value)) { $stale = true; $value = []; }
+            if ($path === $app->getCachedConfigPath()) {
+                $providers = array_merge($providers, $value['app']['providers'] ?? []);
+            } elseif ($path === $app->getCachedPackagesPath()) {
+                foreach ($value as $package) $providers = array_merge($providers, $package['providers'] ?? []);
+            } else {
+                $providers = array_merge($providers, $value['providers'] ?? [], $value['eager'] ?? [], array_values($value['deferred'] ?? []));
+            }
+            $existing[] = $path;
+        }
+        foreach ($providers as $provider) {
+            try { $available = is_string($provider) && class_exists($provider); }
+            catch (\Throwable $e) { $available = false; }
+            if (!$available) { $stale = true; break; }
+        }
+        if (!$existing || ($mode === '--repair-stale' && !$stale)) return;
+
+        $destination = rtrim($backupDirectory, '/\\') . '/bootstrap-cache-' . gmdate('Ymd\THis\Z') . '-' . bin2hex(random_bytes(4));
+        if (!is_dir($destination) && !@mkdir($destination, 0700, true)) {
+            throw new \RuntimeException('Cannot back up bootstrap caches; no cache was removed.');
+        }
+        @chmod($destination, 0700);
+        $manifest = [];
+        // Finish and verify every backup before removing any live cache file.
+        foreach ($existing as $index => $path) {
+            $saved = $destination . '/' . $index . '-' . basename($path);
+            if (!copy($path, $saved) || !chmod($saved, 0600) || !hash_equals(hash_file('sha256', $path), hash_file('sha256', $saved))) {
+                throw new \RuntimeException('Bootstrap cache backup failed; no cache was removed.');
+            }
+            $manifest[] = ['original' => $path, 'backup' => basename($saved), 'mode' => fileperms($path) & 0777];
+        }
+        if (file_put_contents($destination . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT)) === false) {
+            throw new \RuntimeException('Cannot record bootstrap cache backup; no cache was removed.');
+        }
+        chmod($destination . '/manifest.json', 0600);
+        if (is_file($configPath) && !is_file($ownerFile)) {
+            if (file_put_contents($ownerFile, json_encode(['uid' => fileowner($configPath), 'gid' => filegroup($configPath)])) === false
+                || !chmod($ownerFile, 0600)) {
+                throw new \RuntimeException('Cannot preserve configuration cache ownership; no cache was removed.');
+            }
+        }
+        foreach ($existing as $path) {
+            if (!unlink($path)) throw new \RuntimeException('Cannot remove a stale bootstrap cache; upgrade stopped.');
+        }
+        echo 'Generated bootstrap caches backed up and cleared: ' . $destination . PHP_EOL;
+    }
+
 }

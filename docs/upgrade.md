@@ -19,7 +19,7 @@
 - `V2BOARD_HEALTHCHECK_COMMAND`：通过本站 Nginx/PHP-FPM 请求动态接口并核对成功状态，不能只请求静态页面。
 - 可选 `V2BOARD_COMPOSER`：Composer 的 PHP/PHAR 文件路径。某些系统的 `composer` 是调用另一 PHP 版本的 shell 包装器，必须指定真实 PHAR。升级器始终通过当前 `php` 执行 Composer。
 
-Docker 部署可在宿主机配置命令包装器，但 `php` 必须在应用容器中执行，传入的项目/暂存目录也必须能在容器内访问。不要直接照抄不同容器的路径。本项目源站使用专用部署脚本完成相同的备份、迁移、重载及验收步骤。
+Docker 部署可在宿主机配置命令包装器，但 `php` 必须在应用容器中执行，传入的项目/暂存目录也必须能在容器内访问。不要直接照抄不同容器的路径。本项目源站在既有容器部署环境下完成相同的备份、迁移、重载及验收步骤。
 
 ## 执行
 
@@ -47,6 +47,12 @@ bash update.sh
 升级器先保存当前锁文件（若文件已删除则记录恢复后的版本），再恢复当前提交内已审核的锁文件。若除 `composer.lock` 之外还有本地代码或 `composer.json` 改动，或存在暂存区改动，将停止并保留全部修改。`--check` 只报告待处理的锁文件差异，不修改文件、不创建备份。自动处理不清空数据库或覆盖站点配置；其余步骤照常暂存依赖、完整备份、迁移并验证服务。
 
 `Module "mbstring" is already loaded` 表示当前 PHP 的 ini/扩展扫描重复加载了同一扩展，并不表示缺少 Webman。用 `php --ini` 定位实际配置；移除重复项应按该服务器的 PHP 配置处理，升级器不会擅自重写全局 PHP 配置。
+
+### 切换 `--no-dev` 后提示 IgnitionServiceProvider 不存在
+
+旧的 `bootstrap/cache/config.php`、`packages.php` 或 `services.php` 可能仍保存已移除包的 Provider。新版升级器在启动任何 Laravel 命令前检查所有 Provider 的失效引用，并识别损坏的生成缓存，先把相关文件保存到私有备份目录，再清理；切换 vendor 后总会在包发现前备份并清理这三个缓存，重建后恢复配置缓存属主和安全权限。处理不依赖具体包名，也不启动 Laravel 内核，因此可以修复 Artisan 已经无法启动的站点。
+
+遇到 `Class "Facade\Ignition\IgnitionServiceProvider" not found`，拉取此修复后重新运行 `bash update.sh` 即可恢复升级，不需要安装开发依赖。`.env`、`config/v2board.php`、Redis 登录会话及其他缓存文件均不在此清理范围。原升级备份继续保留。
 
 有未提交的受跟踪文件或本地分叉提交时会拒绝更新；原样保留修改，先自行审查合并。旧站忽略的本地锁文件会在切换前备份。更新先在独立目录安装锁定依赖、检查平台和目标代码的数据库兼容性，失败时不改动线上代码/vendor。随后备份代码、原 vendor、本地配置及数据库，再快进合并、切换 vendor、执行迁移、刷新配置、通知 Horizon 退出、重载 PHP-FPM。只有动态 HTTP 检查和 Horizon 恢复运行后才报告成功。不会清空 Redis 或统一注销用户。
 

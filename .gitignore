@@ -24,3 +24,4 @@ public/clients/*
 /.deploy.env
 /.upgrade.lock
 /.upgrade-stage.*/
+/bootstrap/cache/*.upgrade-owner.json

@@ -24,6 +24,16 @@ class V2boardUpdate extends Command
             $reference = is_file($cachePath) ? $cachePath : dirname($cachePath);
             $owner = fileowner($reference);
             $group = filegroup($reference);
+            $ownerRecord = $cachePath . '.upgrade-owner.json';
+            if (is_file($ownerRecord)) {
+                $original = json_decode(file_get_contents($ownerRecord), true);
+                if (!is_array($original) || !isset($original['uid'], $original['gid'])
+                    || !is_int($original['uid']) || !is_int($original['gid']) || $original['uid'] < 0 || $original['gid'] < 0) {
+                    throw new \RuntimeException('Invalid saved configuration cache ownership.');
+                }
+                $owner = $original['uid'];
+                $group = $original['gid'];
+            }
             foreach (['config:cache', 'route:clear', 'view:clear'] as $command) {
                 if (Artisan::call($command) !== 0) {
                     throw new \RuntimeException('Upgrade stopped: ' . $command . ' failed.');

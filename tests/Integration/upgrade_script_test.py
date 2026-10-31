@@ -28,12 +28,11 @@ class UpgradeScriptTest(unittest.TestCase):
                         EVENTS=str(self.events), V2BOARD_HEALTH_TIMEOUT='1')
         for name in ['update.sh', 'init.sh']:
             shutil.copyfile(SOURCE / name, self.root / name)
-        (self.root / '.gitignore').write_text('.env\n.deploy.env\n.upgrade*\nvendor/\nartifact/\n')
+        (self.root / '.gitignore').write_text('.env\n.deploy.env\n.upgrade*\nvendor/\nartifact/\nbootstrap/cache/*.php\n')
         (self.root / 'composer.json').write_text('{}')
         (self.root / 'composer.lock').write_text('{}')
         (self.root / 'artisan').write_text('fixture')
-        (self.root / 'scripts').mkdir()
-        (self.root / 'scripts/deploy-runtime.php').write_text('fixture runtime')
+        (self.root / 'bootstrap/cache').mkdir(parents=True)
         (self.root / 'config').mkdir()
         (self.root / 'config/v2board.php').write_text('fixture configuration')
         self.git('init', '-b', 'master')
@@ -51,10 +50,20 @@ class UpgradeScriptTest(unittest.TestCase):
         (self.bin / 'composer').chmod(0o755)
         (self.bin / 'php').write_text('''#!/usr/bin/env bash
 set -euo pipefail
-if [[ "$1" == */scripts/deploy-runtime.php ]]; then
- echo "runtime $2" >>"$EVENTS"
+if [[ "$1" == -r && "$2" == *prepareBootstrapCaches* ]]; then
+ shift 2; shift
+ echo "prepare-cache $1" >>"$EVENTS"
+ if [[ "$1" == --restore-ownership ]]; then exit 0; fi
+ if [[ "$1" == --clear || ! -e vendor/old-marker ]]; then
+  rm -f bootstrap/cache/config.php bootstrap/cache/packages.php bootstrap/cache/services.php
+ fi
+ exit 0
+fi
+if [[ "$1" == -r && "$2" == *DeploymentRuntime::execute* ]]; then
+ shift 2; shift
+ echo "runtime $1" >>"$EVENTS"
  [[ "${FAIL_AT:-}" != auto_environment ]] || exit 27
- if [[ "$2" == backup ]]; then printf 'fixture SQL\\n' | gzip > "$3"; fi
+ if [[ "$1" == backup ]]; then printf 'fixture SQL\\n' | gzip > "$2"; fi
  exit 0
 fi
 if [[ "$1" == */composer ]]; then
@@ -70,6 +79,7 @@ if [[ "$1" == */composer ]]; then
  exit 0
 fi
 echo "php $*" >>"$EVENTS"
+if [[ " $* " == *' package:discover '* && -f bootstrap/cache/config.php ]]; then exit 28; fi
 if [[ " $* " == *' v2board:update '* ]]; then
  if [[ " $* " == *' --check '* ]]; then [[ "${FAIL_AT:-}" != preflight ]] || exit 24
  else [[ "${FAIL_AT:-}" != migration ]] || exit 25; fi
@@ -151,6 +161,22 @@ if [[ " $* " == *' v2board:install '* ]]; then [[ "${FAIL_AT:-}" != installation
     def test_failed_http_health_check_is_not_success(self):
         self.configure(health='exit 14')
         self.assertStopped(self.update())
+
+    def test_activation_removes_old_dev_provider_cache_before_package_discovery(self):
+        for name in ['config', 'packages', 'services']:
+            (self.root / f'bootstrap/cache/{name}.php').write_text('MissingDevelopmentProvider')
+        result = self.update()
+        self.assertEqual(0, result.returncode, result.stdout)
+        events = self.events.read_text()
+        self.assertLess(events.index('prepare-cache --clear'), events.index('php artisan package:discover'))
+
+    def test_retry_repairs_stale_cache_left_by_an_interrupted_vendor_switch(self):
+        (self.root / 'vendor/old-marker').unlink()
+        (self.root / 'vendor/new-marker').touch()
+        (self.root / 'bootstrap/cache/config.php').write_text('MissingDevelopmentProvider')
+        result = self.update()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn('prepare-cache --repair-stale', self.events.read_text())
 
     def test_success_and_repeat_preserve_config_and_unrelated_artifacts(self):
         for _ in range(2):

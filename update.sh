@@ -22,8 +22,32 @@ cleanup() {
 }
 trap cleanup EXIT
 trap 'exit 1' ERR
+prepare_bootstrap_cache() {
+    php -r '
+    try {
+        require getcwd() . "/vendor/autoload.php";
+        require_once getcwd() . "/app/Services/DatabaseUpgradeService.php";
+        App\Services\DatabaseUpgradeService::prepareBootstrapCaches(getcwd(), $argv[1] ?? "", $argv[2] ?? null);
+    } catch (Throwable $e) {
+        fwrite(STDERR, $e instanceof RuntimeException ? $e->getMessage() . PHP_EOL : "Cannot prepare generated bootstrap caches.\n");
+        exit(1);
+    }' -- "$@"
+}
+deployment_runtime() {
+    php -r '
+    try {
+        require getcwd() . "/vendor/autoload.php";
+        require_once getcwd() . "/app/Services/DeploymentRuntime.php";
+        $app = require getcwd() . "/bootstrap/app.php";
+        $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        App\Services\DeploymentRuntime::execute($argv[1] ?? "", $argv[2] ?? null);
+    } catch (Throwable $e) {
+        fwrite(STDERR, $e instanceof RuntimeException ? $e->getMessage() . PHP_EOL : "Deployment environment check failed; configure .deploy.env.\n");
+        exit(1);
+    }' -- "$@"
+}
 main() {
-    local no_pull=0 check=0 target before file
+    local no_pull=0 check=0 auto_backup=0 auto_reload=0 auto_health=0 target before file
     for option in "$@"; do
         case "$option" in
             --no-pull) no_pull=1 ;;
@@ -37,18 +61,22 @@ main() {
     exec 9>"$root/.upgrade.lock"
     flock -n 9 || fail 'Another upgrade is running.'
     if [[ -f .deploy.env ]]; then source ./.deploy.env; fi
-    export V2BOARD_RUNTIME_HELPER="$root/scripts/deploy-runtime.php"
+    # Recover an interrupted --no-dev deployment before any Laravel command.
+    # Healthy caches are left intact; broken caches are backed up first.
+    if (( check == 0 )); then
+        prepare_bootstrap_cache --repair-stale "${V2BOARD_BACKUP_ROOT:-"$(dirname "$root")/v2board-backups"}"
+    fi
     if [[ -z ${V2BOARD_BACKUP_COMMAND:-} ]]; then
-        php "$V2BOARD_RUNTIME_HELPER" check-backup
-        V2BOARD_BACKUP_COMMAND='php "$V2BOARD_RUNTIME_HELPER" backup "$BACKUP_DIR/database.sql.gz"'
+        deployment_runtime check-backup
+        auto_backup=1
     fi
     if [[ -z ${V2BOARD_RELOAD_COMMAND:-} ]]; then
-        php "$V2BOARD_RUNTIME_HELPER" check-reload
-        V2BOARD_RELOAD_COMMAND='php "$V2BOARD_RUNTIME_HELPER" reload'
+        deployment_runtime check-reload
+        auto_reload=1
     fi
     if [[ -z ${V2BOARD_HEALTHCHECK_COMMAND:-} ]]; then
-        php "$V2BOARD_RUNTIME_HELPER" check-health
-        V2BOARD_HEALTHCHECK_COMMAND='php "$V2BOARD_RUNTIME_HELPER" health'
+        deployment_runtime check-health
+        auto_health=1
     fi
     local timeout=${V2BOARD_HEALTH_TIMEOUT:-90}
     [[ "$timeout" =~ ^[1-9][0-9]*$ ]] || fail 'Health timeout must be a positive integer.'
@@ -123,22 +151,30 @@ main() {
     local -a protected=(.env)
     if [[ -f config/v2board.php ]]; then protected+=(config/v2board.php); fi
     sha256sum "${protected[@]}" >"$backup_dir/protected.sha256"
-    bash -Eeuo pipefail -c "$V2BOARD_BACKUP_COMMAND"
+    if (( auto_backup )); then deployment_runtime backup "$BACKUP_DIR/database.sql.gz"
+    else bash -Eeuo pipefail -c "$V2BOARD_BACKUP_COMMAND"; fi
     [[ -s "$backup_dir/database.sql.gz" ]] || fail 'Backup command must create $BACKUP_DIR/database.sql.gz.'
     gzip -t "$backup_dir/database.sql.gz"
     phase=activation
     git merge --ff-only "$target"
     if [[ -d vendor ]]; then mv -- vendor "$stage_dir/previous-vendor"; fi
     mv -- "$stage_dir/vendor" "$root/vendor"
+    # Old config/packages/services manifests can refer to removed dev providers.
+    prepare_bootstrap_cache --clear "$backup_dir"
     php artisan package:discover --ansi
     php artisan v2board:update
+    prepare_bootstrap_cache --restore-ownership
     sha256sum --check --status "$backup_dir/protected.sha256" || fail 'Protected local configuration changed.'
     php artisan horizon:terminate
     phase=service_reload
-    bash -Eeuo pipefail -c "$V2BOARD_RELOAD_COMMAND"
+    if (( auto_reload )); then deployment_runtime reload
+    else bash -Eeuo pipefail -c "$V2BOARD_RELOAD_COMMAND"; fi
     phase=health_check
     local deadline=$((SECONDS + timeout))
-    until php artisan horizon:status >/dev/null 2>&1 && bash -Eeuo pipefail -c "$V2BOARD_HEALTHCHECK_COMMAND" >/dev/null 2>&1; do
+    until php artisan horizon:status >/dev/null 2>&1 && {
+        if (( auto_health )); then deployment_runtime health
+        else bash -Eeuo pipefail -c "$V2BOARD_HEALTHCHECK_COMMAND"; fi
+    } >/dev/null 2>&1; do
         (( SECONDS < deadline )) || fail 'PHP-FPM/HTTP or Horizon did not recover before the deadline.'
         sleep 2
     done

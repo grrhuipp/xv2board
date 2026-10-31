@@ -6,6 +6,22 @@ use Symfony\Component\Process\Process;
 
 final class DeploymentRuntime
 {
+    public static function execute(string $action, ?string $path = null): void
+    {
+        $runtime = new self();
+        switch ($action) {
+            case 'check-backup': $runtime->dumpBinary(); return;
+            case 'check-reload': $runtime->fpmMaster(); return;
+            case 'check-health': $runtime->healthUrl(); return;
+            case 'backup':
+                if (!$path) throw new \RuntimeException('A private backup path is required.');
+                $runtime->backup($path); return;
+            case 'reload': $runtime->reload(); return;
+            case 'health': $runtime->health(); return;
+            default: throw new \RuntimeException('Unknown deployment runtime command.');
+        }
+    }
+
     public static function selectFpmMaster(array $processes, string $phpBinary): array
     {
         $prefix = dirname(dirname($phpBinary));
