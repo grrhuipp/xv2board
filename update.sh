@@ -1,34 +1,125 @@
-#!/bin/bash
-
-if [ ! -d ".git" ]; then
-  echo "Please deploy using Git."
-  exit 1
-fi
-
-if ! command -v git &> /dev/null; then
-    echo "Git is not installed! Please install git and try again."
-    exit 1
-fi
-
-git config --global --add safe.directory $(pwd)
-git fetch --all && git reset --hard origin/master && git pull origin master
-rm -rf composer.lock composer.phar
-wget https://github.com/composer/composer/releases/latest/download/composer.phar -O composer.phar
-php composer.phar update -vvv
-
-php_main_version=$(php -v | head -n 1 | cut -d ' ' -f 2 | cut -d '.' -f 1)
-if [ $php_main_version -ge 8 ]; then
-    php composer.phar require joanhey/adapterman
-    if ! php -m | grep -q "pcntl"; then
-        echo "Adding pcntl extension to cli-php.ini"
-        sed -i '/extension=redis.so/a extension=pcntl.so' cli-php.ini
+#!/usr/bin/env bash
+# Site-specific commands belong in .deploy.env (trusted shell configuration).
+set -Eeuo pipefail
+umask 077
+phase=preflight
+stage_dir=''
+backup_dir=''
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd "$root"
+fail() { printf 'Upgrade failed (%s): %s\n' "$phase" "$1" >&2; exit 1; }
+cleanup() {
+    local code=$?
+    if [[ -n "$stage_dir" && -d "$stage_dir" ]]; then
+        if [[ ! -d "$root/vendor" && -d "$stage_dir/previous-vendor" ]]; then
+            mv -- "$stage_dir/previous-vendor" "$root/vendor"
+        fi
+        rm -rf -- "$stage_dir"
     fi
-    php -c cli-php.ini webman.php stop
-    echo "Webman stopped.Please restart it by yourself."
-fi
-
-php artisan v2board:update
-
-if [ -f "/etc/init.d/bt" ]; then
-  chown -R www $(pwd);
-fi
+    if (( code != 0 )); then
+        printf 'Upgrade stopped during %s. Backup: %s\n' "$phase" "${backup_dir:-not created}" >&2
+    fi
+}
+trap cleanup EXIT
+trap 'exit 1' ERR
+main() {
+    local no_pull=0 check=0 target before file
+    for option in "$@"; do
+        case "$option" in
+            --no-pull) no_pull=1 ;;
+            --check) check=1 ;;
+            --help) printf 'Usage: bash update.sh [--check] [--no-pull]\nSee docs/upgrade.md and .deploy.env.example.\n'; return ;;
+            *) fail 'Unknown option; use --help.' ;;
+        esac
+    done
+    for tool in git php tar gzip flock sha256sum; do command -v "$tool" >/dev/null || fail "Missing tool: $tool"; done
+    [[ -d .git || -f .git ]] || fail 'A Git checkout is required.'
+    exec 9>"$root/.upgrade.lock"
+    flock -n 9 || fail 'Another upgrade is running.'
+    if [[ -f .deploy.env ]]; then source ./.deploy.env; fi
+    : "${V2BOARD_BACKUP_COMMAND:?Configure V2BOARD_BACKUP_COMMAND in .deploy.env}"
+    : "${V2BOARD_RELOAD_COMMAND:?Configure V2BOARD_RELOAD_COMMAND in .deploy.env}"
+    : "${V2BOARD_HEALTHCHECK_COMMAND:?Configure V2BOARD_HEALTHCHECK_COMMAND in .deploy.env}"
+    local timeout=${V2BOARD_HEALTH_TIMEOUT:-90}
+    [[ "$timeout" =~ ^[1-9][0-9]*$ ]] || fail 'Health timeout must be a positive integer.'
+    local -a composer
+    local composer_path=${V2BOARD_COMPOSER:-}
+    if [[ -z "$composer_path" ]]; then
+        if [[ -f composer.phar ]]; then composer_path="$root/composer.phar"
+        else composer_path=$(command -v composer || true); fi
+    fi
+    [[ -f "$composer_path" ]] || fail 'Set V2BOARD_COMPOSER to an installed Composer PHP/PHAR file.'
+    composer=(php "$composer_path")
+    local composer_version
+    composer_version=$("${composer[@]}" --version)
+    [[ "$composer_version" == 'Composer version '* ]] || fail 'Composer is a shell wrapper. Set V2BOARD_COMPOSER to its PHP/PHAR file so it uses the same PHP.'
+    git diff --quiet && git diff --cached --quiet || fail 'Tracked local changes must be reviewed and committed before upgrading.'
+    if [[ -s workerman.webman.php.pid ]]; then
+        local legacy_pid
+        legacy_pid=$(cat workerman.webman.php.pid)
+        if [[ "$legacy_pid" =~ ^[1-9][0-9]*$ ]] && kill -0 "$legacy_pid" 2>/dev/null; then
+            fail 'Legacy Webman PID is still alive. Switch Nginx to PHP-FPM and retire its process manager first (docs/upgrade.md).'
+        fi
+    fi
+    before=$(git rev-parse HEAD)
+    if (( no_pull )); then target=$before
+    else
+        git fetch origin master
+        target=$(git rev-parse FETCH_HEAD)
+        git merge-base --is-ancestor "$before" "$target" || fail 'Upgrade is not a fast-forward; resolve local commits first.'
+    fi
+    git cat-file -e "$target:composer.lock" || fail 'The target revision must contain a reviewed composer.lock.'
+    [[ -f .env ]] || fail 'This is an updater; install the application first.'
+    if (( check )); then
+        printf 'Git and deployment configuration checks passed. Target: %s\n' "$target"
+        return
+    fi
+    phase=dependency_staging
+    stage_dir=$(mktemp -d "$root/.upgrade-stage.XXXXXX")
+    git archive "$target" | tar -x -C "$stage_dir"
+    # Build dependencies before changing the live checkout or its vendor directory.
+    "${composer[@]}" --working-dir="$stage_dir" validate --no-check-publish
+    "${composer[@]}" --working-dir="$stage_dir" install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts --optimize-autoloader
+    "${composer[@]}" --working-dir="$stage_dir" check-platform-reqs --no-dev
+    cp -p -- .env "$stage_dir/.env"
+    if [[ -f config/v2board.php ]]; then cp -p -- config/v2board.php "$stage_dir/config/v2board.php"; fi
+    php "$stage_dir/artisan" v2board:update --check
+    phase=backup
+    local backup_root=${V2BOARD_BACKUP_ROOT:-"$(dirname "$root")/v2board-backups"}
+    mkdir -p -- "$backup_root"
+    backup_dir=$(mktemp -d "$backup_root/upgrade-$(date -u +%Y%m%dT%H%M%SZ).XXXXXX")
+    chmod 700 "$backup_dir"
+    export BACKUP_DIR="$backup_dir"
+    git archive "$before" | gzip >"$backup_dir/code-before.tar.gz"
+    printf '%s\n' "$before" >"$backup_dir/revision-before"
+    for file in .env config/v2board.php composer.lock .deploy.env; do
+        if [[ -f "$file" ]]; then mkdir -p -- "$backup_dir/local/$(dirname "$file")"; cp -p -- "$file" "$backup_dir/local/$file"; fi
+    done
+    if [[ -d vendor ]]; then tar -czf "$backup_dir/vendor-before.tar.gz" vendor; fi
+    local -a protected=(.env)
+    if [[ -f config/v2board.php ]]; then protected+=(config/v2board.php); fi
+    sha256sum "${protected[@]}" >"$backup_dir/protected.sha256"
+    bash -Eeuo pipefail -c "$V2BOARD_BACKUP_COMMAND"
+    [[ -s "$backup_dir/database.sql.gz" ]] || fail 'Backup command must create $BACKUP_DIR/database.sql.gz.'
+    gzip -t "$backup_dir/database.sql.gz"
+    phase=activation
+    git merge --ff-only "$target"
+    if [[ -d vendor ]]; then mv -- vendor "$stage_dir/previous-vendor"; fi
+    mv -- "$stage_dir/vendor" "$root/vendor"
+    php artisan package:discover --ansi
+    php artisan v2board:update
+    sha256sum --check --status "$backup_dir/protected.sha256" || fail 'Protected local configuration changed.'
+    php artisan horizon:terminate
+    phase=service_reload
+    bash -Eeuo pipefail -c "$V2BOARD_RELOAD_COMMAND"
+    phase=health_check
+    local deadline=$((SECONDS + timeout))
+    until php artisan horizon:status >/dev/null 2>&1 && bash -Eeuo pipefail -c "$V2BOARD_HEALTHCHECK_COMMAND" >/dev/null 2>&1; do
+        (( SECONDS < deadline )) || fail 'PHP-FPM/HTTP or Horizon did not recover before the deadline.'
+        sleep 2
+    done
+    printf '%s\n' "$target" >"$backup_dir/revision-complete"
+    phase=complete
+    printf 'Upgrade complete. PHP-FPM/HTTP and Horizon checks passed. Revision: %s\nBackup: %s\n' "$target" "$backup_dir"
+}
+main "$@"

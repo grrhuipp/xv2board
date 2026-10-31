@@ -137,7 +137,6 @@ class TrustedProxySettingsTest extends TestCase
         File::shouldReceive('exists')->with(base_path('bootstrap/cache/config.php'))->andReturn(false);
         Artisan::swap(Mockery::mock(\Illuminate\Contracts\Console\Kernel::class));
         Artisan::shouldReceive('call')->once()->with('config:cache')->andReturn(0);
-        Cache::shouldReceive('has')->with('WEBMANPID')->andReturn(false);
         $response = (new ConfigController())->save($request);
         $this->assertTrue($response->getOriginalContent()['data']);
         $this->assertSame("<?php\n return " . var_export([

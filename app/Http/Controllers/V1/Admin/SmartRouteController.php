@@ -69,14 +69,6 @@ class SmartRouteController extends Controller
             (new SmartRouteMetricsService())->bumpManifestGeneration();
         }
 
-        if (Cache::has('WEBMANPID')) {
-            $pid = Cache::get('WEBMANPID');
-            Cache::forget('WEBMANPID');
-            if (function_exists('posix_kill')) {
-                @posix_kill($pid, 15);
-            }
-        }
-
         return ApiResponse::adminData(true);
     }
 

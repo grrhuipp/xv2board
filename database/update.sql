@@ -895,7 +895,5 @@ ALTER TABLE `v2_user_connect_log` ADD INDEX `connect_updated_user_idx` (`updated
 ALTER TABLE `v2_stat_user` ADD INDEX `stat_user_recent_idx` (`user_id`, `record_type`, `record_at`);
 ALTER TABLE `v2_user_connect_log` ADD INDEX `connect_user_updated_idx` (`user_id`, `updated_at`);
 
--- Preserve existing APP logins until a security change; new accounts use only
--- session-bound APP credentials. Subscription tokens are independent.
-ALTER TABLE `v2_user` ADD COLUMN `app_legacy_token_disabled` tinyint unsigned NOT NULL DEFAULT '0';
-ALTER TABLE `v2_user` ALTER COLUMN `app_legacy_token_disabled` SET DEFAULT '1';
+/* Retired historical conversion log. New upgrades use versioned migrations;
+   see docs/upgrade.md. Never replay this file against an existing installation. */

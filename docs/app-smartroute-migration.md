@@ -29,9 +29,9 @@ php artisan horizon:terminate
 
 迁移依次补齐 App/SmartRoute、入口探活、入口名称字段、v2node 表及已有 v2node 映射的空名称。Laravel 会跳过已登记执行的迁移；新回填只填写空名称，不覆盖手工名称、入口地址或信任层配置。节点、用户和既有映射均保留；此前已经删除的节点需要从备份恢复。
 
-这是已有 App/SmartRoute 部署的定向升级步骤。此次没有修改 Composer 依赖，无需删除锁文件或执行 `composer update`。不要直接运行旧 `update.sh`：它会硬重置到 `origin/master`，可能覆盖本地补丁或使用错误远端；`v2board:update` 还会重放整份历史 `update.sql`，本次只需上面的定向迁移。
+这是已有 App/SmartRoute 部署的定向升级步骤。此次没有修改 Composer 依赖，无需删除锁文件或执行 `composer update`。完整升级使用[新版升级流程](upgrade.md)。新版 `update.sh` 使用快进合并和锁文件；`v2board:update` 只执行有版本记录的迁移，不再重放历史 `update.sql`。以上定向步骤仅用于已具备完整基础表的 App/SmartRoute 维护，不能替代完整升级和 APP 凭据迁移。
 
-`horizon:terminate` 只通知当前进程退出，须确认现有 Supervisor、systemd 或宝塔守护已重新拉起 Horizon。再通过现有进程管理器重启 Webman 或 PHP-FPM；启用了入口探活时一并重启该常驻进程。不要清空 Redis 或执行全量 `cache:clear`。
+`horizon:terminate` 只通知当前进程退出，须确认现有 Supervisor、systemd 或宝塔守护已重新拉起 Horizon。再通过现有进程管理器重启 PHP-FPM；启用了入口探活时一并重启该常驻进程。不要清空 Redis 或执行全量 `cache:clear`。
 
 保持 scheduler 与 Horizon 运行。首次上线 App 客户端前，在「系统配置 → APP」设置更新 JSON 与 AES-128-CBC 密钥/IV（各 16 字节），或者通过 `APPCLIENT_AES_KEY` / `APPCLIENT_AES_IV` 环境变量配置加密密钥；仓库不再内置密钥。入口探活默认关闭；启用前请阅读 `readme.md` 的「App 与 SmartRoute 扩展」部分，确认 Redis、数据库迁移和常驻进程配置。未启用探活时入口映射仍按现有配置下发域名/IP。
 

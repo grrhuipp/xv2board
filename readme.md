@@ -66,6 +66,10 @@ Telegram 新增签到、优惠码查询、管理员查邮箱及收入统计命�
 单实例常驻运行 `php artisan smartroute:ingress-probe`。探活默认关闭，不会自动启动。
 探活健康快照及日志分别存入 `v2_sr_ingress_ip`、`v2_sr_ingress_probe_log`。
 
+## 升级与 PHP-FPM
+
+统一使用 Nginx + PHP-FPM，Webman/Adapterman 启动与依赖安装逻辑已移除。升级前配置 `.deploy.env`，按[升级说明](docs/upgrade.md)执行。依赖由已提交的 `composer.lock` 固定，禁止生产环境删除锁文件或运行 `composer update`。
+
 ## 部署提示
 
 ### mise 必备环境（Linux / WSL）

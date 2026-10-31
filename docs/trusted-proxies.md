@@ -4,7 +4,7 @@
 
 配置经管理员 `config/save` 接口验证后保存到 `config/v2board.php` 的 `trusted_proxies` 字段；非法 IP、域名、端口、通配符和 `/0` 全网网段会被拒绝，不覆盖原配置。读取接口通过 `config/fetch` 的 `safe.trusted_proxies` 回填。
 
-全局 `TrustProxies` 中间件逐请求读取该配置，供 `$request->getClientIp()` 和 `$request->ip()` 使用。只有实际连接来源 `REMOTE_ADDR` 位于名单时才解析 `X-Forwarded-For`，按框架规则剥离可信代理链。未命中名单或名单为空时读取连接来源 IP。该配置只信任 XFF，不额外信任转发的 Host、协议和端口。长驻工作进程内每次处理请求都会重设信任列表，避免清空配置后继续沿用旧列表；保存后配置缓存更新及 Webman 重启沿用现有配置保存流程。
+全局 `TrustProxies` 中间件逐请求读取该配置，供 `$request->getClientIp()` 和 `$request->ip()` 使用。只有实际连接来源 `REMOTE_ADDR` 位于名单时才解析 `X-Forwarded-For`，按框架规则剥离可信代理链。未命中名单或名单为空时读取连接来源 IP。该配置只信任 XFF，不额外信任转发的 Host、协议和端口。长驻工作进程内每次处理请求都会重设信任列表，避免清空配置后继续沿用旧列表；保存后刷新配置缓存；PHP-FPM 请求使用新的可信代理设置。
 
 配置影响普通订阅记录、SmartRoute 行为分析，以及使用请求 IP 的注册／登录限流等功能。请填写实际控制的反向代理、负载均衡或 CDN 网段，不要填写任意客户端地址。网站无法仅从访问者提供的 XFF 确认真实 IP，也无法通过这些头穿透访问者自己使用的 VPN。
 

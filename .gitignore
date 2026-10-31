@@ -17,10 +17,10 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 composer.phar
-composer.lock
 yarn.lock
 docker-compose.yml
 .DS_Store
 public/clients/*
-workerman.webman.php.pid
-workerman.log
+/.deploy.env
+/.upgrade.lock
+/.upgrade-stage.*/

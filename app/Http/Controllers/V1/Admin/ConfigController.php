@@ -12,7 +12,6 @@ use App\Utils\Dict;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Cache;
 
 class ConfigController extends Controller
 {
@@ -309,14 +308,6 @@ class ConfigController extends Controller
             } catch (\Throwable $ignored) {
                 // 连删除都没权限，只能靠上面的告警提示人工处理
             }
-        }
-        if(Cache::has('WEBMANPID')) {
-            $pid = Cache::get('WEBMANPID');
-            Cache::forget('WEBMANPID');
-            return response(array_filter([
-                'data' => posix_kill($pid, 15),
-                'message' => $cacheWarning
-            ], function ($v) { return $v !== null; }));
         }
         return response(array_filter([
             'data' => true,
