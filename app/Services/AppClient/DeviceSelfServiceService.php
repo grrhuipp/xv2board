@@ -76,7 +76,7 @@ class DeviceSelfServiceService
 
         $decision = self::sessionDecision(
             $codeResult,
-            (bool) $user,
+            $user && $user->matchesEmailForVerification($email),
             $user ? (bool) $user->banned : false
         );
         if ($decision === 'locked') {

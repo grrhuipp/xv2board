@@ -100,12 +100,16 @@ class AppClientAuthService
     public function sendEmailVerify(Request $request)
     {
         $email = $request->input('email');
+        $user = User::where('email', $email)->first();
+        if ($user && !$user->matchesEmailForVerification($email)) {
+            return response()->json(['status' => 0, 'msg' => '该邮箱不存在系统中']);
+        }
         if (Cache::get(CacheKey::get('LAST_SEND_EMAIL_VERIFY_TIMESTAMP', $email))) {
             return response()->json(['status' => 0, 'msg' => '验证码已发送，请过一会再请求']);
         }
-        $code = rand(100000, 999999);
+        $code = random_int(100000, 999999);
         $subject = config('v2board.app_name', 'V2Board') . config('appclient.email_verify.subject_suffix', ' 邮箱验证码: ') . $code;
-        SendEmailJob::dispatch(['email' => $email, 'subject' => $subject,
+        SendEmailJob::dispatch(['email' => $user ? $user->email : $email, 'subject' => $subject,
             'template_name' => config('appclient.email_verify.template_name', 'verify'), 'template_value' => [
                 'name' => config('v2board.app_name', 'V2Board'), 'code' => $code, 'url' => config('v2board.app_url')
             ]]);
@@ -224,7 +228,9 @@ class AppClientAuthService
             return response()->json(['status' => 0, 'msg' => '邮箱验证码有误']);
         }
         $user = User::where('email', $request->input('email'))->first();
-        if (!$user) return response()->json(['status' => 0, 'msg' => '该邮箱不存在系统中']);
+        if (!$user || !$user->matchesEmailForVerification($request->input('email'))) {
+            return response()->json(['status' => 0, 'msg' => '该邮箱不存在系统中']);
+        }
         $user->password = password_hash($request->input('password'), PASSWORD_DEFAULT);
         $user->password_algo = NULL;
         if (!$user->save()) return response()->json(['status' => 0, 'msg' => '重置失败']);

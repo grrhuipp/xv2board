@@ -46,7 +46,11 @@ class CommController extends Controller
         $email = $request->input('email');
         $cacheKeyEmail = strtolower(trim((string)$email));
         $isforget = $request->input('isforget');
-        $email_exists = User::where('email', $email)->exists();
+        $user = User::where('email', $email)->first();
+        if ($user && !$user->matchesEmailForVerification($email)) {
+            abort(500, __('This email is not registered in the system'));
+        }
+        $email_exists = $user !== null;
         //检查是否在白名单内
         if ((int)config('v2board.email_whitelist_enable', 0)) {
             if (!Helper::emailSuffixVerify(
@@ -74,11 +78,11 @@ class CommController extends Controller
         if (Cache::get(CacheKey::get('LAST_SEND_EMAIL_VERIFY_TIMESTAMP', $cacheKeyEmail))) {
             abort(500, __('Email verification code has been sent, please request again later'));
         }
-        $code = (string)rand(100000, 999999);
+        $code = (string)random_int(100000, 999999);
         $subject = config('v2board.app_name', 'V2Board') . __('Email verification code');
 
         SendEmailJob::dispatch([
-            'email' => $email,
+            'email' => $user ? $user->email : $email,
             'subject' => $subject,
             'template_name' => 'verify',
             'template_value' => [

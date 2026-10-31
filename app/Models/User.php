@@ -34,6 +34,13 @@ class User extends Model
         'created_at' => 'timestamp',
         'updated_at' => 'timestamp'
     ];
+    public function matchesEmailForVerification(string $email): bool
+    {
+        // Database collations may equate accents or other distinct characters.
+        // Preserve ASCII case-insensitivity, but never fold Unicode mailboxes.
+        return strtolower(trim((string) $this->email)) === strtolower(trim($email));
+    }
+
     public function plan()
     {
         return $this->belongsTo(Plan::class, 'plan_id');

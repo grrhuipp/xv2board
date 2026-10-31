@@ -287,7 +287,7 @@ class AuthController extends Controller
             abort(500, __('Incorrect email verification code'));
         }
         $user = User::where('email', $email)->first();
-        if (!$user) {
+        if (!$user || !$user->matchesEmailForVerification($email)) {
             abort(500, __('This email is not registered in the system'));
         }
         $user->password      = password_hash($password, PASSWORD_DEFAULT);
