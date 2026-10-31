@@ -54,8 +54,11 @@ class AppClientResponseAdapter
 
         return $encrypted;
     }
-    public function buildUserResponse($user, $currentDeviceId = null, $accountStatus = null)
+    public function buildUserResponse($user, $currentDeviceId = null, $accountStatus = null, $loginToken = null)
     {
+        if (!\App\Services\UserTokenAuthenticator::isValid($loginToken)) {
+            throw new \InvalidArgumentException('APP login credential is required');
+        }
         if ($accountStatus === null) $accountStatus = $this->accountStatusService->checkAccountStatus($user, $currentDeviceId);
         $userService = new UserService();
         $resetDay = $userService->getResetDay($user);
@@ -104,7 +107,7 @@ class AppClientResponseAdapter
             'u' => $this->formatBytes($user->u), 'd' => $this->formatBytes($user->d),
             'useTf' => $this->formatBytes($user->u + $user->d),
             'transfer_enable' => $this->formatBytes($user->transfer_enable),
-            'token' => $user->token, 'expired' => $expired_date,
+            'token' => $loginToken, 'expired' => $expired_date,
             'residue' => $this->formatBytes($user->transfer_enable - ($user->u + $user->d)),
             'tfPercentage' => $percentage,
             'configs' => $encryptedConfig, 'configsNodes' => $encryptedNodes,

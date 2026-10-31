@@ -9,6 +9,7 @@ use App\Http\Middleware\Client;
 use App\Http\Requests\Staff\UserUpdate;
 use App\Models\User;
 use App\Services\AuthService;
+use App\Services\AppTokenAuthenticator;
 use App\Services\HorizonGrantService;
 use App\Services\UserTokenAuthenticator;
 use App\Utils\CacheKey;
@@ -64,6 +65,8 @@ class AuthenticationLifecycleTest extends TestCase
             $t->integer('id')->primary(); $t->string('email'); $t->string('password'); $t->string('token');
             $t->string('password_algo')->nullable(); $t->string('password_salt')->nullable();
             foreach (['is_admin', 'is_staff', 'banned', 'u', 'd'] as $name) $t->integer($name)->default(0);
+            $t->boolean('app_legacy_token_disabled')->default(0);
+            $t->integer('last_login_at')->nullable();
             foreach (['plan_id', 'group_id', 'expired_at', 'created_at', 'updated_at'] as $name) $t->integer($name)->nullable();
         });
         $schema->create('v2_plan', function ($t) {
@@ -206,7 +209,39 @@ class AuthenticationLifecycleTest extends TestCase
 
     public static function securityChanges(): array
     {
-        return [['password', 'updated-password-hash'], ['email', 'changed@example.test'], ['is_admin', 0], ['is_staff', 1], ['banned', 1]];
+        return [['email', 'changed@example.test'], ['is_admin', 0], ['is_staff', 1], ['banned', 1]];
+    }
+
+    public static function passwordChanges(): array
+    {
+        return [['password', 'updated-password-hash'], ['password_algo', 'fixture-algorithm'], ['password_salt', 'fixture-salt']];
+    }
+
+    /** @dataProvider passwordChanges */
+    public function test_password_changes_revoke_login_sessions_but_preserve_subscription_credentials(string $field, string $value): void
+    {
+        $user = $this->account(7, ['is_admin' => 1]); [$jwt] = $this->login($user);
+        $this->assertSame($user->id, AppTokenAuthenticator::resolve($user->token)->id);
+        $appToken = (new AuthService($user))->generateAppToken(Request::create('/', 'POST'));
+        $grant = HorizonGrantService::issue(AuthService::authenticate($jwt));
+        $code = AuthService::createLoginCode($user); $token = $user->token;
+        $user->$field = $value; $user->saveOrFail();
+        $this->assertSame($token, $user->fresh()->token);
+        $this->assertSame(1, $user->fresh()->app_legacy_token_disabled);
+        $this->assertNull(AppTokenAuthenticator::resolve($appToken));
+        $this->assertNull(AppTokenAuthenticator::resolve($token));
+        $this->assertSame($user->id, UserTokenAuthenticator::resolve($token)->id);
+        $this->assertFalse(AuthService::decryptAuthData($jwt));
+        $this->assertFalse(HorizonGrantService::allows($grant));
+        $this->assertNull(AuthService::consumeLoginCode($code));
+        $this->assertSame('subscription-valid', (new Client())->handle(new Request(['token' => $token]), function ($request) use ($user) {
+            $this->assertSame($user->id, $request->input('user')->id);
+            return 'subscription-valid';
+        }));
+        [$freshJwt] = $this->login($user->fresh());
+        $this->assertSame($user->id, AuthService::decryptAuthData($freshJwt)['id']);
+        $freshAppToken = (new AuthService($user->fresh()))->generateAppToken(Request::create('/', 'POST'));
+        $this->assertSame($user->id, AppTokenAuthenticator::resolve($freshAppToken)->id);
     }
 
     /** @dataProvider securityChanges */
@@ -252,7 +287,8 @@ class AuthenticationLifecycleTest extends TestCase
         $response = (new StaffUsers())->update($this->staffRequest(['id' => $user->id, 'email' => $user->email, 'password' => 'fixture-new-password', 'banned' => 0]));
         $this->assertTrue($response->getOriginalContent()['data']);
         $this->assertTrue(password_verify('fixture-new-password', $user->fresh()->password));
-        $this->assertNotSame($oldToken, $user->fresh()->token);
+        $this->assertSame($oldToken, $user->fresh()->token);
+        $this->assertSame($user->id, UserTokenAuthenticator::resolve($oldToken)->id);
         $this->assertFalse(AuthService::decryptAuthData($jwt));
     }
 
@@ -311,5 +347,69 @@ class AuthenticationLifecycleTest extends TestCase
         $response = (new \App\Http\Controllers\V1\Passport\AuthController())->token2Login(Request::create('/', 'GET', ['verify' => $code]));
         $this->assertSame($user->id, AuthService::decryptAuthData($response->getOriginalContent()['data']['auth_data'])['id']);
         $this->assertNull(AuthService::consumeLoginCode($code));
+    }
+
+    public function test_app_sessions_are_independent_from_subscription_credentials(): void
+    {
+        $user = $this->account(7, ['app_legacy_token_disabled' => 1]);
+        $this->assertNull(AppTokenAuthenticator::resolve($user->token));
+        $token = (new AuthService($user))->generateAppToken(Request::create('/', 'POST'));
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $token);
+        $this->assertNotSame($user->token, $token);
+        $this->assertSame($user->id, AppTokenAuthenticator::resolve($token)->id);
+        $this->assertNull(UserTokenAuthenticator::resolve($token));
+        $this->assertSame($user->id, UserTokenAuthenticator::resolve($user->token)->id);
+        $response = (new \App\Http\Middleware\SmartRouteAuth())->handle(Request::create('/', 'POST', [], [], [], ['HTTP_AUTHORIZATION' => $token]), function ($r) use ($user) {
+            $this->assertSame($user->id, $r->input('user')['id']); return 'app-authorized';
+        });
+        $this->assertSame('app-authorized', $response);
+    }
+
+    public function test_removing_an_app_session_preserves_other_logins_and_subscription(): void
+    {
+        $user = $this->account(); [$webJwt] = $this->login($user); $service = new AuthService($user);
+        $first = $service->generateAppToken(Request::create('/', 'POST'));
+        $second = $service->generateAppToken(Request::create('/', 'POST'));
+        $firstKey = AppTokenAuthenticator::CACHE_PREFIX . hash('sha256', $first);
+        $context = $this->cache->get($firstKey);
+        $this->assertTrue($service->removeSession($context['session_id']));
+        $this->assertNull(AppTokenAuthenticator::resolve($first));
+        $this->assertFalse($this->cache->has($firstKey));
+        $this->assertSame($user->id, AppTokenAuthenticator::resolve($second)->id);
+        $this->assertSame($user->id, AuthService::decryptAuthData($webJwt)['id']);
+        $service->removeAllSession();
+        $this->assertNull(AppTokenAuthenticator::resolve($second));
+        $this->assertSame($user->id, UserTokenAuthenticator::resolve($user->token)->id);
+    }
+
+    public function test_legacy_app_fence_survives_cache_flush_after_password_change(): void
+    {
+        $user = $this->account(); $subscription = $user->token;
+        $this->assertSame($user->id, AppTokenAuthenticator::resolve($subscription)->id);
+        $user->password = 'new-fixture-password-hash'; $user->saveOrFail();
+        $this->cache->flush();
+        $this->assertNull(AppTokenAuthenticator::resolve($subscription));
+        $this->assertSame($user->id, UserTokenAuthenticator::resolve($subscription)->id);
+        $this->assertSame(1, $user->fresh()->app_legacy_token_disabled);
+    }
+
+    public function test_app_password_login_and_sync_return_a_separate_stable_session_token(): void
+    {
+        $user = $this->account(7, ['password' => password_hash('fixture-password', PASSWORD_DEFAULT)]);
+        $status = $this->createMock(\App\Services\AppClient\AccountStatusService::class);
+        $status->expects($this->exactly(2))->method('checkAccountStatus')->willReturn(['status_code' => 0, 'device_count' => 0]);
+        $devices = $this->createMock(\App\Services\AppClient\AppDeviceService::class);
+        $adapter = $this->createMock(\App\Services\AppClient\AppClientResponseAdapter::class);
+        $adapter->expects($this->exactly(2))->method('buildUserResponse')->willReturnCallback(function ($account, $deviceId, $state, $loginToken) use ($user) {
+            $this->assertNotSame($user->token, $loginToken);
+            $this->assertSame($user->id, AppTokenAuthenticator::resolve($loginToken)->id);
+            return response(['token' => $loginToken]);
+        });
+        $service = new \App\Services\AppClient\AppClientAuthService($status, $devices, $adapter);
+        $login = $service->login(Request::create('/', 'POST', ['email' => $user->email, 'password' => 'fixture-password']));
+        $token = $login->getOriginalContent()['token'];
+        $sync = $service->sync(AppTokenAuthenticator::resolve($token), Request::create('/', 'POST', ['token' => $token]));
+        $this->assertSame($token, $sync->getOriginalContent()['token']);
+        $this->assertSame($user->token, $user->fresh()->token);
     }
 }

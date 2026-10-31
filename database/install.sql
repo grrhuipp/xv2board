@@ -558,6 +558,7 @@ CREATE TABLE `v2_user` (
                            `remind_expire` tinyint(4) DEFAULT '1',
                            `remind_traffic` tinyint(4) DEFAULT '1',
                            `token` char(32) NOT NULL,
+                           `app_legacy_token_disabled` tinyint unsigned NOT NULL DEFAULT '1',
                            `expired_at` bigint(20) DEFAULT '0',
                            `remarks` text,
                            `created_at` int(11) NOT NULL,

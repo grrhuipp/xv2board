@@ -3,7 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
-use App\Services\UserTokenAuthenticator;
+use App\Services\AppTokenAuthenticator;
 use App\Support\ApiResponse;
 use App\Support\SmartRouteCode;
 use Closure;
@@ -11,7 +11,7 @@ use Closure;
 /**
  * SmartRoute 客户端鉴权
  * 兼容两种 token 方式：
- *   1. authorization header 传 users.token（APP 客户端）
+ *   1. authorization header 传 APP 会话凭据（兼容尚未切换的旧账号凭据）
  *   2. auth_data（JWT，标准 V2Board 方式）
  */
 class SmartRouteAuth
@@ -24,8 +24,8 @@ class SmartRouteAuth
             return ApiResponse::srCode(SmartRouteCode::AUTH_MISSING_TOKEN);
         }
 
-        // 先尝试用 users.token 直接匹配（APP 客户端方式）
-        $user = UserTokenAuthenticator::resolve($token);
+        // APP session credentials are independent of subscription credentials.
+        $user = AppTokenAuthenticator::resolve($token);
 
         if (!$user) {
             // 回退到 JWT 解密（标准 V2Board 方式）

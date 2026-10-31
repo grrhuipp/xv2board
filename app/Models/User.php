@@ -9,10 +9,14 @@ class User extends Model
     protected static function booted()
     {
         static::updating(function (User $user) {
-            $credentialChange = $user->isDirty(['password', 'password_algo', 'password_salt', 'email', 'is_admin', 'is_staff']);
+            $passwordChange = $user->isDirty(['password', 'password_algo', 'password_salt']);
+            $credentialChange = $user->isDirty(['email', 'is_admin', 'is_staff']);
+            if ($passwordChange || $credentialChange || ($user->isDirty('banned') && $user->banned)) {
+                $user->app_legacy_token_disabled = 1;
+            }
             if ($credentialChange || ($user->isDirty('banned') && $user->banned)) {
-                // APP and subscription share this secret. Rotate on security
-                // changes so a revoked account cannot retain its old APP token.
+                // Password-only changes revoke sessions below while keeping
+                // the subscription credential stable.
                 $user->token = \App\Utils\Helper::guid();
             }
         });

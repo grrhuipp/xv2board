@@ -21,21 +21,34 @@ class AuthService
 
     public function generateAuthData(Request $request)
     {
+        return $this->registerSession($request, false);
+    }
+
+    public function generateAppToken(Request $request): string
+    {
+        return $this->registerSession($request, true)['token'];
+    }
+
+    private function registerSession(Request $request, bool $appSession): array
+    {
         $guid = Helper::guid();
+        $token = $appSession ? Helper::guid() : $this->user->token;
         $authData = JWT::encode([
             'id' => $this->user->id,
             'session' => $guid,
         ], config('app.key'), 'HS256');
-        $saved = self::addSession($this->user->id, $guid, [
+        $meta = [
             'ip' => $request->ip(),
             'login_at' => time(),
             'ua' => $request->userAgent(),
             'auth_data' => $authData,
             'security_hash' => self::securityHash($this->user),
-        ]);
+        ];
+        if ($appSession) $meta['app_token_hash'] = hash('sha256', $token);
+        $saved = self::addSession($this->user->id, $guid, $meta);
         if (!$saved) throw new \RuntimeException('Unable to register authentication session');
         return [
-            'token' => $this->user->token,
+            'token' => $token,
             'is_admin' => $this->user->is_admin,
             'auth_data' => $authData
         ];
@@ -125,7 +138,13 @@ class AuthService
             $cacheKey = CacheKey::get('USER_SESSIONS', $userId);
             $sessions = (array)Cache::get($cacheKey, []);
             $sessions[$guid] = $meta;
-            return Cache::put($cacheKey, $sessions);
+            $appKey = isset($meta['app_token_hash']) ? AppTokenAuthenticator::CACHE_PREFIX . $meta['app_token_hash'] : null;
+            if ($appKey && !Cache::put($appKey, ['user_id' => (int)$userId, 'session_id' => $guid])) return false;
+            if (!Cache::put($cacheKey, $sessions)) {
+                if ($appKey) Cache::forget($appKey);
+                return false;
+            }
+            return true;
         });
     }
 
@@ -141,8 +160,10 @@ class AuthService
             $cacheKey = CacheKey::get('USER_SESSIONS', $this->user->id);
             $sessions = (array)Cache::get($cacheKey, []);
             $jwt = $sessions[$sessionId]['auth_data'] ?? null;
+            $meta = $sessions[$sessionId] ?? null;
             unset($sessions[$sessionId]);
             if (!Cache::put($cacheKey, $sessions)) return false;
+            self::forgetAppToken($meta);
             if (is_string($jwt)) Cache::forget($jwt); // Remove legacy identity cache too.
             return true;
         });
@@ -155,9 +176,18 @@ class AuthService
             $sessions = (array)Cache::get($cacheKey, []);
             Cache::forget($cacheKey);
             foreach ($sessions as $meta) {
+                self::forgetAppToken($meta);
                 if (is_array($meta) && isset($meta['auth_data']) && is_string($meta['auth_data'])) Cache::forget($meta['auth_data']);
             }
             return !Cache::has($cacheKey);
         });
+    }
+
+    private static function forgetAppToken($meta): void
+    {
+        $hash = is_array($meta) ? ($meta['app_token_hash'] ?? null) : null;
+        if (is_string($hash) && preg_match('/\A[0-9a-f]{64}\z/', $hash)) {
+            Cache::forget(AppTokenAuthenticator::CACHE_PREFIX . $hash);
+        }
     }
 }
