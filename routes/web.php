@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\ThemeService;
+use App\Services\HorizonGrantService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -101,17 +102,15 @@ Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_pa
 //       拿到 token 后浏览器跳转到这里，我们把 token 换成 HttpOnly cookie，再 302 到 /monitor
 
 Route::get('/' . config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key')))) . '/horizon-auth', function (Request $request) {
-    $token = (string) $request->query('token', '');
-    if ($token === '') {
+    $token = $request->query('token');
+    if (!is_string($token) || $token === '') {
         abort(400, '缺少 token，请从后台重新进入');
     }
-    $cacheKey = 'HORIZON_ADMIN_GRANT:' . hash('sha256', $token);
-    $grant = Cache::get($cacheKey);
-    if (empty($grant) || empty($grant['admin_id'])) {
+    if (!HorizonGrantService::allows($token)) {
         abort(403, '凭证已过期或无效，请回后台重新登录后再进入队列监控');
     }
 
-    $ttl = 6 * 3600;
+    $ttl = HorizonGrantService::TTL;
     $cookieValue = $token;
     // HttpOnly + SameSite=Lax，随浏览器域名自动带上给 /monitor
     return redirect('/monitor')

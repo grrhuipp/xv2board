@@ -371,9 +371,7 @@ class AppClientAuthService
     }
     public function getTempToken($user, Request $request)
     {
-        $code = Helper::guid();
-        $key = CacheKey::get('TEMP_TOKEN', $code);
-        Cache::put($key, $user->id, 60);
+        $code = AuthService::createLoginCode($user);
         return response(['status' => 1, 'data' => $code]);
     }
     public function checkUpdate(Request $request)

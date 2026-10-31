@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Services\UserTokenAuthenticator;
 use App\Support\ApiResponse;
 use App\Support\SmartRouteCode;
 use Closure;
@@ -24,7 +25,7 @@ class SmartRouteAuth
         }
 
         // 先尝试用 users.token 直接匹配（APP 客户端方式）
-        $user = User::where('token', $token)->first();
+        $user = UserTokenAuthenticator::resolve($token);
 
         if (!$user) {
             // 回退到 JWT 解密（标准 V2Board 方式）

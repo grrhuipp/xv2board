@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1\AppClient;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\UserTokenAuthenticator;
 use App\Services\AppClient\AccountStatusService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -19,9 +20,7 @@ abstract class BaseAppClientController extends Controller
 {
     protected function getUser(Request $request)
     {
-        $token = $request->input('token');
-        if (!$token) return null;
-        return User::where('token', $token)->first();
+        return UserTokenAuthenticator::resolve($request->input('token'));
     }
 
     protected function validateUser(Request $request)

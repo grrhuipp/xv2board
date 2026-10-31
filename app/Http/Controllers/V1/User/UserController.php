@@ -460,9 +460,7 @@ class UserController extends Controller
             abort(500, __('The user does not exist'));
         }
 
-        $code = Helper::guid();
-        $key = CacheKey::get('TEMP_TOKEN', $code);
-        Cache::put($key, $user->id, 60);
+        $code = AuthService::createLoginCode($user);
         $redirect = '/#/login?verify=' . $code . '&redirect=' . ($request->input('redirect') ? $request->input('redirect') : 'dashboard');
         if (config('v2board.app_url')) {
             $url = config('v2board.app_url') . $redirect;

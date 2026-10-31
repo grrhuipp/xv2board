@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\AuthService;
+use App\Services\HorizonGrantService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
@@ -32,13 +33,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
         Horizon::auth(function ($request) {
             // 方式 1：cookie
             $token = $request->cookie('horizon_admin');
-            if (!empty($token)) {
-                $cacheKey = 'HORIZON_ADMIN_GRANT:' . hash('sha256', (string) $token);
-                $grant = Cache::get($cacheKey);
-                if (!empty($grant) && !empty($grant['admin_id'])) {
-                    return true;
-                }
-            }
+            if (HorizonGrantService::allows($token)) return true;
 
             // 方式 2：admin JWT（带在 authorization header 里）
             $auth = $request->header('authorization') ?: $request->input('auth_data');

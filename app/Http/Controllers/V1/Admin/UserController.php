@@ -175,11 +175,6 @@ class UserController extends Controller
             $params['invite_user_id'] = null;
         }
 
-        if (isset($params['banned']) && (int)$params['banned'] === 1) {
-            $authService = new AuthService($user);
-            $authService->removeAllSession();
-        }
-
         try {
             $user->update($params);
         } catch (\Exception $e) {
@@ -339,13 +334,12 @@ class UserController extends Controller
         $builder = User::orderBy($sort, $sortType);
         $this->filter($request, $builder);
         try {
-            $builder->each(function ($user){
-                $authService = new AuthService($user);
-                $authService->removeAllSession();
+            $builder->reorder('id')->chunkById(200, function ($users) {
+                foreach ($users as $user) {
+                    $user->banned = 1;
+                    $user->saveOrFail();
+                }
             });
-            $builder->update([
-                'banned' => 1
-            ]);
         } catch (\Exception $e) {
             abort(500, '处理失败');
         }

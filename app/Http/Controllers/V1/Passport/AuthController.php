@@ -225,19 +225,13 @@ class AuthController extends Controller
         }
 
         if ($request->input('verify')) {
-            $key =  CacheKey::get('TEMP_TOKEN', $request->input('verify'));
-            $userId = Cache::get($key);
-            if (!$userId) {
-                abort(500, __('Token error'));
-            }
-            $user = User::find($userId);
+            $user = AuthService::consumeLoginCode($request->input('verify'));
             if (!$user) {
                 abort(500, __('The user does not '));
             }
             if ($user->banned) {
                 abort(500, __('Your account has been suspended'));
             }
-            Cache::forget($key);
             $authService = new AuthService($user);
             return response([
                 'data' => $authService->generateAuthData($request)
@@ -253,9 +247,9 @@ class AuthController extends Controller
         $user = AuthService::decryptAuthData($authorization);
         if (!$user) abort(403, '未登录或登陆已过期');
 
-        $code = Helper::guid();
-        $key = CacheKey::get('TEMP_TOKEN', $code);
-        Cache::put($key, $user['id'], 60);
+        $account = User::find($user['id']);
+        if (!$account || $account->banned) abort(403, '账号不可用');
+        $code = AuthService::createLoginCode($account);
         $redirect = '/#/login?verify=' . $code . '&redirect=' . ($request->input('redirect') ? $request->input('redirect') : 'dashboard');
         if (config('v2board.app_url')) {
             $url = config('v2board.app_url') . $redirect;

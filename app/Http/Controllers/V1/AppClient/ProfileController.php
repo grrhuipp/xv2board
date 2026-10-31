@@ -103,6 +103,7 @@ class ProfileController extends BaseAppClientController
     public function knowledge(Request $request)
     {
         $user = $this->getUser($request);
+        if ($user && $user->banned) $user = null;
         if ($request->input('id')) {
             $knowledge = Knowledge::where('id', $request->input('id'))->where('show', 1)->first();
             if (!$knowledge) return response()->json(['status' => 0, 'msg' => '文章不存在']);

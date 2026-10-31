@@ -67,11 +67,11 @@ class AuthCredentialBoundaryTest extends TestCase
         }
     }
 
-    public function testExistingStringCredentialCacheHitsRemainCompatible(): void
+    public function testUnverifiedStringCacheEntriesCannotAuthenticate(): void
     {
         $identity = ['id' => 42, 'is_admin' => 0, 'is_staff' => 0];
         $this->cache->put('previously-verified-string-token', $identity, 60);
-        $this->assertSame($identity, AuthService::decryptAuthData('previously-verified-string-token'));
+        $this->assertFalse(AuthService::decryptAuthData('previously-verified-string-token'));
     }
 
     public function testUnsafeBanFiltersFailBeforeAnyDatabaseAccess(): void

@@ -15,9 +15,8 @@ class ShopController extends BaseAppClientController
 {
     public function shop(Request $request)
     {
-        $user = null;
-        $token = $request->input('token') ?? $request->query('token');
-        if ($token) $user = User::where('token', $token)->first();
+        $user = $this->getUser($request);
+        if ($user && $user->banned) $user = null;
         if ($request->input('id')) {
             $plan = Plan::where('id', $request->input('id'))->first();
             if (!$plan) return response(['data' => false, 'msg' => '套餐不存在']);

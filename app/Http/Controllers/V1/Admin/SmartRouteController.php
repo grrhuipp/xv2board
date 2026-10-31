@@ -1636,21 +1636,10 @@ class SmartRouteController extends Controller
      */
     public function grantHorizon(Request $request)
     {
-        $user = $request->input('user');
-        if (empty($user['id']) || empty($user['is_admin'])) {
-            return ApiResponse::adminError('未登录或无权限', 403);
-        }
-
-        // 与 v2board admin JWT 保持同寿命：最长 6 小时
-        $ttlSeconds = 6 * 3600;
-        $token = bin2hex(random_bytes(24));
-        $cacheKey = 'HORIZON_ADMIN_GRANT:' . hash('sha256', $token);
-        Cache::put($cacheKey, [
-            'admin_id' => (int) $user['id'],
-            'granted_at' => time(),
-            'ip' => $request->ip(),
-            'ua' => substr((string) $request->userAgent(), 0, 255),
-        ], $ttlSeconds);
+        $context = $request->attributes->get('auth_context');
+        if (!is_array($context)) return ApiResponse::adminError('未登录或无权限', 403);
+        $ttlSeconds = \App\Services\HorizonGrantService::TTL;
+        $token = \App\Services\HorizonGrantService::issue($context);
 
         $securePath = config('v2board.secure_path', config('v2board.frontend_admin_path', hash('crc32b', config('app.key'))));
 
