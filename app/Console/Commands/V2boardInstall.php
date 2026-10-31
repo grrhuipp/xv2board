@@ -74,12 +74,43 @@ class V2boardInstall extends Command
             if (!$file) {
                 abort(500, '数据库文件不存在');
             }
-            $this->info('正在导入数据库请稍等...');
-            foreach (\App\Services\SqlScript::statements($file) as $statement) {
-                DB::unprepared($statement);
+            $sql = str_replace("\n", "", $file);
+            $sql = preg_split("/;/", $sql);
+            if (!is_array($sql)) {
+                abort(500, '数据库文件格式有误');
             }
-            (new \App\Services\DatabaseUpgradeService())->run();
+            $this->info('正在导入数据库请稍等...');
+            foreach ($sql as $item) {
+                try {
+                    DB::select(DB::raw($item));
+                } catch (\Exception $e) {
+                }
+            }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_10_000001_install_app_smartroute.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
             $this->info('数据库导入完成');
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000001_add_subscription_analysis.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000002_add_subscription_analysis_settings.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_13_000003_add_marked_subscription_host_rule.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_09_26_000001_add_ingress_probe.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_09_000001_add_server_name_to_sr_ingress_map.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_13_000001_restore_v2node.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_17_000001_backfill_v2node_ingress_names.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
             $email = '';
             while (!$email) {
                 $email = $this->ask('请输入管理员邮箱?');
@@ -95,10 +126,8 @@ class V2boardInstall extends Command
 
             $defaultSecurePath = hash('crc32b', config('app.key'));
             $this->info("访问 http(s)://你的站点/{$defaultSecurePath} 进入管理面板，你可以在用户中心修改你的密码。");
-            return 0;
-        } catch (\Throwable $e) {
-            $this->error('Installation failed; inspect the private application log.');
-            return 1;
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
         }
     }
 
