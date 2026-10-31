@@ -187,7 +187,11 @@ if [[ " $* " == *' v2board:install '* ]]; then [[ "${FAIL_AT:-}" != installation
         self.assertEqual('fixture configuration', (self.root / 'config/v2board.php').read_text())
         self.assertEqual('unrelated local artifact', (self.root / 'artifact/preserve').read_text())
         self.assertTrue((self.root / 'vendor/new-marker').exists())
+        self.assertEqual(0o755, (self.root / 'vendor').stat().st_mode & 0o777)
+        self.assertEqual(0o644, (self.root / 'vendor/new-marker').stat().st_mode & 0o777)
         self.assertEqual(2, len(list((self.base / 'backups').glob('*/revision-complete'))))
+        for directory in (self.base / 'backups').iterdir():
+            self.assertEqual(0o700, directory.stat().st_mode & 0o777)
 
     def test_concurrent_upgrade_is_rejected(self):
         with (self.root / '.upgrade.lock').open('w') as lock:

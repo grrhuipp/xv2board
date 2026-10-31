@@ -128,11 +128,14 @@ main() {
     fi
     phase=dependency_staging
     stage_dir=$(mktemp -d "$root/.upgrade-stage.XXXXXX")
+    # The stage itself stays private, but deployed code/vendor must be readable by FPM.
+    umask 022
     git archive "$target" | tar -x -C "$stage_dir"
     # Build dependencies before changing the live checkout or its vendor directory.
     "${composer[@]}" --working-dir="$stage_dir" validate --no-check-publish
     "${composer[@]}" --working-dir="$stage_dir" install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts --optimize-autoloader
     "${composer[@]}" --working-dir="$stage_dir" check-platform-reqs --no-dev
+    umask 077
     cp -p -- .env "$stage_dir/.env"
     if [[ -f config/v2board.php ]]; then cp -p -- config/v2board.php "$stage_dir/config/v2board.php"; fi
     php "$stage_dir/artisan" v2board:update --check
@@ -156,6 +159,7 @@ main() {
     [[ -s "$backup_dir/database.sql.gz" ]] || fail 'Backup command must create $BACKUP_DIR/database.sql.gz.'
     gzip -t "$backup_dir/database.sql.gz"
     phase=activation
+    umask 022
     git merge --ff-only "$target"
     if [[ -d vendor ]]; then mv -- vendor "$stage_dir/previous-vendor"; fi
     mv -- "$stage_dir/vendor" "$root/vendor"
