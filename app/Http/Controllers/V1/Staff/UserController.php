@@ -121,9 +121,22 @@ class UserController extends Controller
 
     public function ban(Request $request)
     {
+        $request->validate([
+            'filter' => 'required|array|min:1',
+            'filter.*.key' => 'required|in:id,email,transfer_enable,device_limit,d,expired_at,uuid,token,invite_by_email,invite_user_id,plan_id,banned,remarks',
+            'filter.*.condition' => 'required|in:>,<,=,>=,<=,模糊,!=',
+            'filter.*.value' => ['required', function ($attribute, $value, $fail) {
+                if (!is_string($value) && !is_numeric($value)) {
+                    $fail('过滤值必须是字符串或数字');
+                }
+            }],
+        ]);
+
         $sortType = in_array($request->input('sort_type'), ['ASC', 'DESC']) ? $request->input('sort_type') : 'DESC';
         $sort = $request->input('sort') ? $request->input('sort') : 'created_at';
-        $builder = User::orderBy($sort, $sortType);
+        $builder = User::where('is_admin', 0)
+            ->where('is_staff', 0)
+            ->orderBy($sort, $sortType);
         $this->filter($request, $builder);
         try {
             $builder->update([
