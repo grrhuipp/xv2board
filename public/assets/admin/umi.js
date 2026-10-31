@@ -81493,6 +81493,9 @@
                                     }
                                     return e.abrupt("return");
                                 case 15:
+                                    if (window.V2boardAccountUpdate && window.V2boardAccountUpdate.handle(t)) {
+                                        return e.abrupt("return");
+                                    }
                                     return e.next = 17,
                                     i({
                                         type: "fetch"

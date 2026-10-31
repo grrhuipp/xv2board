@@ -154,6 +154,7 @@ class UserController extends Controller
         if (isset($params['password'])) {
             $params['password'] = password_hash($params['password'], PASSWORD_DEFAULT);
             $params['password_algo'] = NULL;
+            $params['password_salt'] = NULL;
         } else {
             unset($params['password']);
         }
@@ -180,9 +181,15 @@ class UserController extends Controller
         } catch (\Exception $e) {
             abort(500, '保存失败');
         }
-        return response([
-            'data' => true
-        ]);
+        $result = ['data' => true];
+        $actorId = $request->attributes->get('auth_context')['user']['id'] ?? $request->input('user.id');
+        if ((int)$actorId === (int)$user->id && $user->wasChanged([
+            'password', 'password_algo', 'password_salt', 'email', 'is_admin', 'is_staff', 'banned', 'token',
+        ])) {
+            $result['reauthentication_required'] = true;
+            $result['message'] = '账号信息已保存，请使用更新后的凭据重新登录。';
+        }
+        return response($result);
     }
 
     public function dumpCSV(Request $request)

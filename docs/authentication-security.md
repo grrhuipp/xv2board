@@ -31,6 +31,12 @@ Removing one session immediately revokes it without logging out other sessions.
 Session registry changes use a per-account cache lock to avoid overwriting a
 concurrent registration or revocation. Failures deny authentication.
 
+When an administrator changes their own password or another security field in
+the user editor, the successful response includes `reauthentication_required`.
+The admin UI displays a saved notice and returns to login without refreshing the
+user list using the now-revoked session. Editing another user's password keeps
+the administrator's own session active.
+
 `User` model security hooks revoke web sessions when password, password algorithm
 or salt, email, roles, banned state or account token changes. Password-only changes
 preserve the subscription token and URL while revoking web and APP sessions,

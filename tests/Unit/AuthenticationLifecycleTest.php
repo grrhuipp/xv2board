@@ -67,7 +67,7 @@ class AuthenticationLifecycleTest extends TestCase
             foreach (['is_admin', 'is_staff', 'banned', 'u', 'd'] as $name) $t->integer($name)->default(0);
             $t->boolean('app_legacy_token_disabled')->default(0);
             $t->integer('last_login_at')->nullable();
-            foreach (['plan_id', 'group_id', 'expired_at', 'created_at', 'updated_at'] as $name) $t->integer($name)->nullable();
+            foreach (['plan_id', 'group_id', 'invite_user_id', 'expired_at', 'created_at', 'updated_at'] as $name) $t->integer($name)->nullable();
         });
         $schema->create('v2_plan', function ($t) {
             $t->integer('id')->primary(); $t->string('name'); $t->integer('show'); $t->integer('renew');
@@ -279,6 +279,64 @@ class AuthenticationLifecycleTest extends TestCase
             } catch (HttpException $e) { $this->assertSame(403, $e->getStatusCode()); }
             $this->assertSame($before, $user->fresh()->getAttributes());
         }
+    }
+
+    private function adminRequest(User $target, User $actor, array $changes): \App\Http\Requests\Admin\UserUpdate
+    {
+        $request = new \App\Http\Requests\Admin\UserUpdate();
+        $request->merge($changes + ['id' => $target->id, 'email' => $target->email,
+            'is_admin' => $target->is_admin, 'is_staff' => $target->is_staff, 'banned' => $target->banned]);
+        $request->attributes->set('auth_context', ['user' => ['id' => $actor->id]]);
+        $request->setValidator((new Factory(new Translator(new ArrayLoader(), 'en')))->make($request->all(), $request->rules()));
+        return $request;
+    }
+
+    public function test_admin_self_password_save_requests_relogin_and_preserves_subscription(): void
+    {
+        $user = $this->account(7, ['is_admin' => 1]); [$jwt] = $this->login($user); $token = $user->token;
+        $appToken = (new AuthService($user))->generateAppToken(Request::create('/', 'POST'));
+        $response = (new \App\Http\Controllers\V1\Admin\UserController())->update(
+            $this->adminRequest($user, $user, ['password' => 'fixture-admin-new-password']));
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertTrue($response->getOriginalContent()['data']);
+        $this->assertTrue($response->getOriginalContent()['reauthentication_required']);
+        $this->assertTrue(password_verify('fixture-admin-new-password', $user->fresh()->password));
+        $this->assertSame($token, $user->fresh()->token);
+        $this->assertNull(AuthService::authenticate($jwt));
+        $this->assertNull(AppTokenAuthenticator::resolve($appToken));
+    }
+
+    public function test_admin_password_save_for_another_user_keeps_callers_session(): void
+    {
+        $admin = $this->account(8, ['is_admin' => 1]); [$jwt] = $this->login($admin);
+        $user = $this->account(); [$oldUserJwt] = $this->login($user); $token = $user->token;
+        $response = (new \App\Http\Controllers\V1\Admin\UserController())->update(
+            $this->adminRequest($user, $admin, ['password' => 'fixture-user-new-password']));
+        $this->assertSame(['data' => true], $response->getOriginalContent());
+        $this->assertNotNull(AuthService::authenticate($jwt));
+        $this->assertNull(AuthService::authenticate($oldUserJwt));
+        $this->assertSame($token, $user->fresh()->token);
+        $this->assertTrue(password_verify('fixture-user-new-password', $user->fresh()->password));
+    }
+
+    public function test_admin_ordinary_self_edit_does_not_require_relogin(): void
+    {
+        $admin = $this->account(8, ['is_admin' => 1]); [$jwt] = $this->login($admin);
+        $response = (new \App\Http\Controllers\V1\Admin\UserController())->update(
+            $this->adminRequest($admin, $admin, ['password' => null, 'u' => 12]));
+        $this->assertSame(['data' => true], $response->getOriginalContent());
+        $this->assertNotNull(AuthService::authenticate($jwt));
+        $this->assertSame(12, $admin->fresh()->u);
+    }
+
+    public function test_admin_password_input_must_be_a_string(): void
+    {
+        $request = new \App\Http\Requests\Admin\UserUpdate();
+        $validator = (new Factory(new Translator(new ArrayLoader(), 'en')))->make([
+            'email' => 'admin@example.test', 'password' => array_fill(0, 8, 'x'), 'banned' => 0, 'is_admin' => 1, 'is_staff' => 0,
+        ], $request->rules());
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('password'));
     }
 
     public function test_staff_can_update_normal_accounts_with_session_revocation(): void
