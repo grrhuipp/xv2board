@@ -187,9 +187,9 @@ if [[ " $* " == *' v2board:install '* ]]; then [[ "${FAIL_AT:-}" != installation
         self.assertIn('runtime reload', self.events.read_text())
         self.assertIn('runtime health', self.events.read_text())
 
-    def test_legacy_lock_is_backed_up_before_explicit_repair(self):
+    def test_legacy_lock_is_automatically_backed_up_and_restored(self):
         (self.root / 'composer.lock').write_text('legacy resolver output')
-        result = self.update(args=('--no-pull', '--repair-legacy-lock'))
+        result = self.update()
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertEqual('{}', (self.root / 'composer.lock').read_text())
         saved = list((self.base / 'backups').glob('legacy-lock-*/composer.lock.before'))
@@ -199,9 +199,23 @@ if [[ " $* " == *' v2board:install '* ]]; then [[ "${FAIL_AT:-}" != installation
     def test_legacy_lock_repair_never_discards_other_local_changes(self):
         (self.root / 'composer.lock').write_text('legacy resolver output')
         (self.root / 'artisan').write_text('local patch')
-        self.assertStopped(self.update(args=('--no-pull', '--repair-legacy-lock')))
+        self.assertStopped(self.update())
         self.assertEqual('legacy resolver output', (self.root / 'composer.lock').read_text())
         self.assertEqual('local patch', (self.root / 'artisan').read_text())
+
+    def test_missing_legacy_lock_is_automatically_restored(self):
+        (self.root / 'composer.lock').unlink()
+        result = self.update()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertEqual('{}', (self.root / 'composer.lock').read_text())
+
+    def test_check_reports_lock_repair_without_modifying_files_or_creating_backups(self):
+        (self.root / 'composer.lock').write_text('legacy resolver output')
+        result = self.update(args=('--no-pull', '--check'))
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn('will back it up', result.stdout)
+        self.assertEqual('legacy resolver output', (self.root / 'composer.lock').read_text())
+        self.assertFalse((self.base / 'backups').exists())
 
     def test_diverged_history_is_not_reset(self):
         upstream = self.base / 'upstream.git'

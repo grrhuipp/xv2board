@@ -23,13 +23,12 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 1' ERR
 main() {
-    local no_pull=0 check=0 repair_lock=0 target before file
+    local no_pull=0 check=0 target before file
     for option in "$@"; do
         case "$option" in
             --no-pull) no_pull=1 ;;
             --check) check=1 ;;
-            --repair-legacy-lock) repair_lock=1 ;;
-            --help) printf 'Usage: bash update.sh [--check] [--no-pull] [--repair-legacy-lock]\nSee docs/upgrade.md and .deploy.env.example.\n'; return ;;
+            --help) printf 'Usage: bash update.sh [--check] [--no-pull]\nSee docs/upgrade.md and .deploy.env.example.\n'; return ;;
             *) fail 'Unknown option; use --help.' ;;
         esac
     done
@@ -64,19 +63,21 @@ main() {
     local composer_version
     composer_version=$("${composer[@]}" --version)
     [[ "$composer_version" == 'Composer version '* ]] || fail 'Composer is a shell wrapper. Set V2BOARD_COMPOSER to its PHP/PHAR file so it uses the same PHP.'
-    if (( repair_lock )); then
-        (( check == 0 )) || fail '--repair-legacy-lock cannot be combined with --check.'
-        git diff --cached --quiet && git diff --quiet -- . ':!composer.lock' || fail 'Legacy lock repair only permits a changed composer.lock; other local changes are preserved.'
-        git cat-file -e HEAD:composer.lock || fail 'Pull the reviewed upgrade files before repairing an old lock.'
-        local legacy_root=${V2BOARD_BACKUP_ROOT:-"$(dirname "$root")/v2board-backups"} legacy_backup
-        mkdir -p -- "$legacy_root"
-        legacy_backup=$(mktemp -d "$legacy_root/legacy-lock-$(date -u +%Y%m%dT%H%M%SZ).XXXXXX")
-        if [[ -f composer.lock ]]; then cp -p -- composer.lock "$legacy_backup/composer.lock.before"; fi
-        git show HEAD:composer.lock >"$legacy_backup/composer.lock.reviewed"
-        cp -- "$legacy_backup/composer.lock.reviewed" composer.lock
-        printf 'Legacy lock backed up and restored from the current commit: %s\n' "$legacy_backup"
+    git diff --cached --quiet && git diff --quiet -- . ':!composer.lock' || fail 'Tracked local changes must be reviewed and committed before upgrading.'
+    if ! git diff --quiet -- composer.lock; then
+        if (( check )); then
+            printf 'Local composer.lock differs; a normal upgrade will back it up and restore the reviewed lock.\n'
+        else
+            git cat-file -e HEAD:composer.lock || fail 'Pull the reviewed upgrade files before restoring an old lock.'
+            local legacy_root=${V2BOARD_BACKUP_ROOT:-"$(dirname "$root")/v2board-backups"} legacy_backup
+            mkdir -p -- "$legacy_root"
+            legacy_backup=$(mktemp -d "$legacy_root/legacy-lock-$(date -u +%Y%m%dT%H%M%SZ).XXXXXX")
+            if [[ -f composer.lock ]]; then cp -p -- composer.lock "$legacy_backup/composer.lock.before"; fi
+            git show HEAD:composer.lock >"$legacy_backup/composer.lock.reviewed"
+            cp -- "$legacy_backup/composer.lock.reviewed" composer.lock
+            printf 'Legacy lock backed up and restored from the current commit: %s\n' "$legacy_backup"
+        fi
     fi
-    git diff --quiet && git diff --cached --quiet || fail 'Tracked local changes must be reviewed and committed before upgrading.'
     if [[ -s workerman.webman.php.pid ]]; then
         local legacy_pid
         legacy_pid=$(cat workerman.webman.php.pid)

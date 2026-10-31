@@ -36,15 +36,15 @@ bash update.sh --no-pull
 
 旧 Bash 脚本可能先把 Git 更新到新版本，然后继续执行内存里原来的 `composer require joanhey/adapterman`、`webman.php stop`。因此同一次输出会混合旧脚本报错和新版数据库命令提示。已经执行的旧命令无法被新文件撤回；不要根据它的提示再次安装 Adapterman。
 
-确认当前文件已是新版（开头含 `set -Eeuo pipefail`），再从站点目录重新执行新版脚本。如果旧脚本已经重新解析并改写了锁文件，可使用显式兼容选项：
+确认当前文件已是新版（开头含 `set -Eeuo pipefail`），再从站点目录正常执行新版脚本。旧脚本改写或删除的锁文件会自动备份并恢复，无需额外参数：
 
 ```sh
 head -n 8 update.sh
 git status --short
-bash update.sh --no-pull --repair-legacy-lock
+bash update.sh
 ```
 
-该选项先保存当前锁文件，再恢复当前提交内已审核的锁文件。若除 `composer.lock` 之外还有本地代码或 `composer.json` 改动，将停止并保留全部修改。它不清空数据库或覆盖站点配置；其余步骤照常暂存依赖、完整备份、迁移并验证服务。
+升级器先保存当前锁文件（若文件已删除则记录恢复后的版本），再恢复当前提交内已审核的锁文件。若除 `composer.lock` 之外还有本地代码或 `composer.json` 改动，或存在暂存区改动，将停止并保留全部修改。`--check` 只报告待处理的锁文件差异，不修改文件、不创建备份。自动处理不清空数据库或覆盖站点配置；其余步骤照常暂存依赖、完整备份、迁移并验证服务。
 
 `Module "mbstring" is already loaded` 表示当前 PHP 的 ini/扩展扫描重复加载了同一扩展，并不表示缺少 Webman。用 `php --ini` 定位实际配置；移除重复项应按该服务器的 PHP 配置处理，升级器不会擅自重写全局 PHP 配置。
 
