@@ -1,6 +1,6 @@
 # 升级与 PHP-FPM
 
-生产 Web 运行方式统一为 Nginx + PHP-FPM，站点根目录指向 `public/`。Horizon、scheduler 和已启用的入口探活继续由现有进程管理器运行。本仓库不再提供 Webman/Adapterman 的安装、启动文件或配置保存后按缓存 PID 杀进程的行为。
+生产 Web 运行方式统一为 Nginx + PHP-FPM，站点根目录指向 `public/`。Horizon、scheduler 和已启用的入口探活继续由现有进程管理器运行。本仓库不再安装或启动 Webman/Adapterman，也不会在保存配置后按缓存 PID 杀进程。`webman.php` 只保留旧脚本 `stop/status` 调用的兼容提示；发现旧进程仍存活时拒绝操作，不启动或停止任何服务。
 
 ## 从 Webman 切换
 
@@ -10,7 +10,9 @@
 
 ## 一次性配置
 
-复制 `.deploy.env.example` 到 `.deploy.env`，限制为部署用户可读。它是本机可信 shell 配置，不受 Git 管理。按部署环境填写：
+常见的同机宝塔/PHP-FPM 部署可以直接运行新版升级器：未配置的步骤会自动寻找 `mariadb-dump`/`mysqldump`（含宝塔路径），从应用配置读取数据库连接；只在找到唯一一个与当前 CLI PHP 安装匹配且有权限操作的 PHP-FPM 主进程时平滑重载，并通过应用站点 URL 指向本机 Nginx 检查动态接口。数据库密码只传入备份子进程环境，不写进命令参数。
+
+容器、跨机器数据库、独立进程管理或不明确的环境可复制 `.deploy.env.example` 到 `.deploy.env`，限制为部署用户可读。它是本机可信 shell 配置，不受 Git 管理。显式配置优先于自动识别：
 
 - `V2BOARD_BACKUP_COMMAND`：通过现有数据库客户端或容器环境变量生成完整、一致的 SQL 备份，写入 `$BACKUP_DIR/database.sql.gz`。不要把密码放在命令文本中；备份不成功或 gzip 校验失败会阻止切换。
 - `V2BOARD_RELOAD_COMMAND`：通过现有进程管理器平滑重载本站 PHP-FPM；已启用入口探活等常驻进程也须在此命令中平滑重启。使用真实服务名称，命令失败必须返回非零。
@@ -29,6 +31,22 @@ bash update.sh           # 快进到 origin/master 后升级
 # 已经检出审核通过的目标提交时：
 bash update.sh --no-pull
 ```
+
+### 旧脚本已经开始运行的首次过渡
+
+旧 Bash 脚本可能先把 Git 更新到新版本，然后继续执行内存里原来的 `composer require joanhey/adapterman`、`webman.php stop`。因此同一次输出会混合旧脚本报错和新版数据库命令提示。已经执行的旧命令无法被新文件撤回；不要根据它的提示再次安装 Adapterman。
+
+确认当前文件已是新版（开头含 `set -Eeuo pipefail`），再从站点目录重新执行新版脚本。如果旧脚本已经重新解析并改写了锁文件，可使用显式兼容选项：
+
+```sh
+head -n 8 update.sh
+git status --short
+bash update.sh --no-pull --repair-legacy-lock
+```
+
+该选项先保存当前锁文件，再恢复当前提交内已审核的锁文件。若除 `composer.lock` 之外还有本地代码或 `composer.json` 改动，将停止并保留全部修改。它不清空数据库或覆盖站点配置；其余步骤照常暂存依赖、完整备份、迁移并验证服务。
+
+`Module "mbstring" is already loaded` 表示当前 PHP 的 ini/扩展扫描重复加载了同一扩展，并不表示缺少 Webman。用 `php --ini` 定位实际配置；移除重复项应按该服务器的 PHP 配置处理，升级器不会擅自重写全局 PHP 配置。
 
 有未提交的受跟踪文件或本地分叉提交时会拒绝更新；原样保留修改，先自行审查合并。旧站忽略的本地锁文件会在切换前备份。更新先在独立目录安装锁定依赖、检查平台和目标代码的数据库兼容性，失败时不改动线上代码/vendor。随后备份代码、原 vendor、本地配置及数据库，再快进合并、切换 vendor、执行迁移、刷新配置、通知 Horizon 退出、重载 PHP-FPM。只有动态 HTTP 检查和 Horizon 恢复运行后才报告成功。不会清空 Redis 或统一注销用户。
 

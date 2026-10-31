@@ -23,12 +23,13 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 1' ERR
 main() {
-    local no_pull=0 check=0 target before file
+    local no_pull=0 check=0 repair_lock=0 target before file
     for option in "$@"; do
         case "$option" in
             --no-pull) no_pull=1 ;;
             --check) check=1 ;;
-            --help) printf 'Usage: bash update.sh [--check] [--no-pull]\nSee docs/upgrade.md and .deploy.env.example.\n'; return ;;
+            --repair-legacy-lock) repair_lock=1 ;;
+            --help) printf 'Usage: bash update.sh [--check] [--no-pull] [--repair-legacy-lock]\nSee docs/upgrade.md and .deploy.env.example.\n'; return ;;
             *) fail 'Unknown option; use --help.' ;;
         esac
     done
@@ -37,9 +38,19 @@ main() {
     exec 9>"$root/.upgrade.lock"
     flock -n 9 || fail 'Another upgrade is running.'
     if [[ -f .deploy.env ]]; then source ./.deploy.env; fi
-    : "${V2BOARD_BACKUP_COMMAND:?Configure V2BOARD_BACKUP_COMMAND in .deploy.env}"
-    : "${V2BOARD_RELOAD_COMMAND:?Configure V2BOARD_RELOAD_COMMAND in .deploy.env}"
-    : "${V2BOARD_HEALTHCHECK_COMMAND:?Configure V2BOARD_HEALTHCHECK_COMMAND in .deploy.env}"
+    export V2BOARD_RUNTIME_HELPER="$root/scripts/deploy-runtime.php"
+    if [[ -z ${V2BOARD_BACKUP_COMMAND:-} ]]; then
+        php "$V2BOARD_RUNTIME_HELPER" check-backup
+        V2BOARD_BACKUP_COMMAND='php "$V2BOARD_RUNTIME_HELPER" backup "$BACKUP_DIR/database.sql.gz"'
+    fi
+    if [[ -z ${V2BOARD_RELOAD_COMMAND:-} ]]; then
+        php "$V2BOARD_RUNTIME_HELPER" check-reload
+        V2BOARD_RELOAD_COMMAND='php "$V2BOARD_RUNTIME_HELPER" reload'
+    fi
+    if [[ -z ${V2BOARD_HEALTHCHECK_COMMAND:-} ]]; then
+        php "$V2BOARD_RUNTIME_HELPER" check-health
+        V2BOARD_HEALTHCHECK_COMMAND='php "$V2BOARD_RUNTIME_HELPER" health'
+    fi
     local timeout=${V2BOARD_HEALTH_TIMEOUT:-90}
     [[ "$timeout" =~ ^[1-9][0-9]*$ ]] || fail 'Health timeout must be a positive integer.'
     local -a composer
@@ -53,6 +64,18 @@ main() {
     local composer_version
     composer_version=$("${composer[@]}" --version)
     [[ "$composer_version" == 'Composer version '* ]] || fail 'Composer is a shell wrapper. Set V2BOARD_COMPOSER to its PHP/PHAR file so it uses the same PHP.'
+    if (( repair_lock )); then
+        (( check == 0 )) || fail '--repair-legacy-lock cannot be combined with --check.'
+        git diff --cached --quiet && git diff --quiet -- . ':!composer.lock' || fail 'Legacy lock repair only permits a changed composer.lock; other local changes are preserved.'
+        git cat-file -e HEAD:composer.lock || fail 'Pull the reviewed upgrade files before repairing an old lock.'
+        local legacy_root=${V2BOARD_BACKUP_ROOT:-"$(dirname "$root")/v2board-backups"} legacy_backup
+        mkdir -p -- "$legacy_root"
+        legacy_backup=$(mktemp -d "$legacy_root/legacy-lock-$(date -u +%Y%m%dT%H%M%SZ).XXXXXX")
+        if [[ -f composer.lock ]]; then cp -p -- composer.lock "$legacy_backup/composer.lock.before"; fi
+        git show HEAD:composer.lock >"$legacy_backup/composer.lock.reviewed"
+        cp -- "$legacy_backup/composer.lock.reviewed" composer.lock
+        printf 'Legacy lock backed up and restored from the current commit: %s\n' "$legacy_backup"
+    fi
     git diff --quiet && git diff --cached --quiet || fail 'Tracked local changes must be reviewed and committed before upgrading.'
     if [[ -s workerman.webman.php.pid ]]; then
         local legacy_pid

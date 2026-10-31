@@ -32,6 +32,8 @@ class UpgradeScriptTest(unittest.TestCase):
         (self.root / 'composer.json').write_text('{}')
         (self.root / 'composer.lock').write_text('{}')
         (self.root / 'artisan').write_text('fixture')
+        (self.root / 'scripts').mkdir()
+        (self.root / 'scripts/deploy-runtime.php').write_text('fixture runtime')
         (self.root / 'config').mkdir()
         (self.root / 'config/v2board.php').write_text('fixture configuration')
         self.git('init', '-b', 'master')
@@ -49,6 +51,12 @@ class UpgradeScriptTest(unittest.TestCase):
         (self.bin / 'composer').chmod(0o755)
         (self.bin / 'php').write_text('''#!/usr/bin/env bash
 set -euo pipefail
+if [[ "$1" == */scripts/deploy-runtime.php ]]; then
+ echo "runtime $2" >>"$EVENTS"
+ [[ "${FAIL_AT:-}" != auto_environment ]] || exit 27
+ if [[ "$2" == backup ]]; then printf 'fixture SQL\\n' | gzip > "$3"; fi
+ exit 0
+fi
 if [[ "$1" == */composer ]]; then
  shift
  if [[ "${1:-}" == --version ]]; then echo 'Composer version fixture'; exit 0; fi
@@ -166,10 +174,34 @@ if [[ " $* " == *' v2board:install '* ]]; then [[ "${FAIL_AT:-}" != installation
         self.assertStopped(self.update())
         self.assertLiveUnchanged()
 
-    def test_missing_service_configuration_fails_preflight(self):
+    def test_failed_automatic_detection_fails_before_changing_live_files(self):
         (self.root / '.deploy.env').unlink()
-        self.assertStopped(self.update())
+        self.assertStopped(self.update('auto_environment'))
         self.assertLiveUnchanged()
+
+    def test_same_host_defaults_work_without_a_deploy_env(self):
+        (self.root / '.deploy.env').unlink()
+        result = self.update()
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn('runtime backup', self.events.read_text())
+        self.assertIn('runtime reload', self.events.read_text())
+        self.assertIn('runtime health', self.events.read_text())
+
+    def test_legacy_lock_is_backed_up_before_explicit_repair(self):
+        (self.root / 'composer.lock').write_text('legacy resolver output')
+        result = self.update(args=('--no-pull', '--repair-legacy-lock'))
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertEqual('{}', (self.root / 'composer.lock').read_text())
+        saved = list((self.base / 'backups').glob('legacy-lock-*/composer.lock.before'))
+        self.assertEqual(1, len(saved))
+        self.assertEqual('legacy resolver output', saved[0].read_text())
+
+    def test_legacy_lock_repair_never_discards_other_local_changes(self):
+        (self.root / 'composer.lock').write_text('legacy resolver output')
+        (self.root / 'artisan').write_text('local patch')
+        self.assertStopped(self.update(args=('--no-pull', '--repair-legacy-lock')))
+        self.assertEqual('legacy resolver output', (self.root / 'composer.lock').read_text())
+        self.assertEqual('local patch', (self.root / 'artisan').read_text())
 
     def test_diverged_history_is_not_reset(self):
         upstream = self.base / 'upstream.git'
