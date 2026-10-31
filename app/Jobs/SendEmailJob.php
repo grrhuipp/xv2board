@@ -40,10 +40,15 @@ class SendEmailJob implements ShouldQueue
             Config::set('mail.host', config('v2board.email_host', env('mail.host')));
             Config::set('mail.port', config('v2board.email_port', env('mail.port')));
             Config::set('mail.encryption', config('v2board.email_encryption', env('mail.encryption')));
+            $encryption = config('mail.encryption');
+            Config::set('mail.scheme', $encryption === 'ssl' ? 'smtps' : 'smtp');
+            Config::set('mail.auto_tls', $encryption === 'tls');
+            Config::set('mail.require_tls', $encryption === 'tls');
             Config::set('mail.username', config('v2board.email_username', env('mail.username')));
             Config::set('mail.password', config('v2board.email_password', env('mail.password')));
             Config::set('mail.from.address', config('v2board.email_from_address', env('mail.from.address')));
             Config::set('mail.from.name', config('v2board.app_name', 'V2Board'));
+            Mail::purge();
         }
         $params = $this->params;
         $email = $params['email'];

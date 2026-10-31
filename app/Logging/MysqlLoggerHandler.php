@@ -4,6 +4,7 @@ namespace App\Logging;
 use Illuminate\Support\Facades\Log;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use App\Models\Log as LogModel;
 
 class MysqlLoggerHandler extends AbstractProcessingHandler
@@ -13,10 +14,10 @@ class MysqlLoggerHandler extends AbstractProcessingHandler
         parent::__construct($level, $bubble);
     }
 
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
         try {
-            $context = $record['context'] ?? [];
+            $context = $record->context;
             if (isset($context['exception']) && $context['exception'] instanceof \Throwable) {
                 $exception = $context['exception'];
                 $context['exception'] = [
@@ -26,16 +27,16 @@ class MysqlLoggerHandler extends AbstractProcessingHandler
                 ];
             }
             $log = [
-                'title' => $record['message'],
-                'level' => $record['level_name'],
-                'host' => $record['request_host'] ?? request()->getSchemeAndHttpHost(),
+                'title' => $record->message,
+                'level' => $record->level->getName(),
+                'host' => $record->extra['request_host'] ?? request()->getSchemeAndHttpHost(),
                 'uri' => request()->getPathInfo(), // URLs may contain authentication query parameters
-                'method' => $record['request_method'] ?? request()->getMethod(),
+                'method' => $record->extra['request_method'] ?? request()->getMethod(),
                 'ip' => request()->getClientIp(),
                 'data' => LogPayloadSanitizer::encode(request()->all()),
                 'context' => LogPayloadSanitizer::encode($context),
-                'created_at' => strtotime($record['datetime']),
-                'updated_at' => strtotime($record['datetime']),
+                'created_at' => $record->datetime->getTimestamp(),
+                'updated_at' => $record->datetime->getTimestamp(),
             ];
 
             LogModel::insert($log);

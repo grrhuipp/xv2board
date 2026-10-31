@@ -177,7 +177,7 @@ class TrustedProxySettingsTest extends TestCase
     {
         $middleware = new TrustProxies();
         foreach (['', '*', ['127.0.0.1']] as $value) {
-            Request::setTrustedProxies(['10.0.0.0/24'], Request::HEADER_X_FORWARDED_ALL);
+            Request::setTrustedProxies(['10.0.0.0/24'], Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PROTO | Request::HEADER_X_FORWARDED_PORT);
             config(['v2board.trusted_proxies' => $value]);
             $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '10.0.0.2', 'HTTP_X_FORWARDED_FOR' => '203.0.113.7']);
             $this->assertSame('10.0.0.2', $middleware->handle($request, fn ($request) => $request->getClientIp()));

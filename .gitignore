@@ -25,4 +25,5 @@ public/clients/*
 /.deploy.env
 /.upgrade.lock
 /.upgrade-stage.*/
+/.phpunit.cache/
 /bootstrap/cache/*.upgrade-owner.json

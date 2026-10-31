@@ -61,19 +61,9 @@ class MassEmailMailer
     {
         // A fresh transport per send prevents a persistent queue worker from reusing
         // credentials or a cached connection belonging to another SMTP account.
-        // encryption 留空时传 null，对应 25 / 2525 这类明文端口
-        $encryption = is_scalar($settings['encryption']) ? trim((string) $settings['encryption']) : '';
-        $transport = new \Swift_SmtpTransport($settings['host'], (int) $settings['port'], $encryption !== '' ? $encryption : null);
+        $transport = $this->createSmtpTransport($settings);
         try {
-            // 无账号则完全不认证；有账号无密码时传空串而非 null，
-            // 避免 Swift 在部分服务端上把 null 当作"未设置"而跳过 AUTH。
-            $username = is_scalar($settings['username']) ? trim((string) $settings['username']) : '';
-            if ($username !== '') {
-                $password = is_scalar($settings['password']) ? (string) $settings['password'] : '';
-                $transport->setUsername($username)->setPassword($password);
-            }
-            $swiftMailer = new \Swift_Mailer($transport);
-            $mailerInstance = new \Illuminate\Mail\Mailer('mass-' . $mailer, app('view'), $swiftMailer, app('events'));
+            $mailerInstance = new \Illuminate\Mail\Mailer('mass-' . $mailer, app('view'), $transport, app('events'));
             $mailerInstance->alwaysFrom($settings['from'], config('v2board.app_name', 'V2Board'));
             $mailerInstance->send($template, $viewData, function ($message) use ($recipient, $subject) {
                 $message->to($recipient)->subject($subject);
@@ -81,5 +71,21 @@ class MassEmailMailer
         } finally {
             $transport->stop();
         }
+    }
+
+    protected function createSmtpTransport(array $settings): \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport
+    {
+        $encryption = is_scalar($settings['encryption']) ? trim((string) $settings['encryption']) : '';
+        $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport(
+            $settings['host'], (int) $settings['port'], $encryption === 'ssl'
+        );
+        $transport->setAutoTls($encryption === 'tls');
+        $transport->setRequireTls($encryption === 'tls');
+        $username = is_scalar($settings['username']) ? trim((string) $settings['username']) : '';
+        if ($username !== '') {
+            $password = is_scalar($settings['password']) ? (string) $settings['password'] : '';
+            $transport->setUsername($username)->setPassword($password);
+        }
+        return $transport;
     }
 }

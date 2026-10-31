@@ -68,6 +68,8 @@ Telegram 新增签到、优惠码查询、管理员查邮箱及收入统计命�
 
 ## 部署提示
 
+依赖已升级为 Laravel 12 和 Symfony YAML 7.4，要求 PHP 8.2 或以上。升级仍使用原有 `bash update.sh`，Composer 安全检查保持启用，不需要配置 `.deploy.env`。
+
 ### mise 必备环境（Linux / WSL）
 
 项目根目录的 `mise.toml` 固定 PHP 8.3.35；PHP 后端同时安装 Composer。
@@ -157,7 +159,7 @@ PHP-FPM 和常驻队列进程。若修改路径配置，需刷新 Laravel 配置
 
 # **V2Board**
 
-- PHP 8.0+
+- PHP 8.2+
 - Composer
 - MySQL5.5+
 - Redis

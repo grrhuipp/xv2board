@@ -235,7 +235,7 @@ class SubscriptionAnalysisService
             if ($row->ips_10m >= $limits['ip_10m'] || $row->ips_3d >= $limits['ip_3d']) $row->signals[] = 'multi_ip';
             if ($row->ips_3d >= 2 && ($row->countries_3d >= $limits['countries_3d'] || $row->cities_3d >= $limits['cities_3d'])) $row->signals[] = 'geo';
             if ($row->uas_3d >= $limits['ua_3d']) $row->signals[] = 'multi_ua';
-            $row->average_interval = $row->count_3d > 1 ? (int) round(Carbon::parse($row->last_at)->diffInSeconds(Carbon::parse($row->first_at)) / ($row->count_3d - 1)) : null;
+            $row->average_interval = $row->count_3d > 1 ? (int) round(Carbon::parse($row->last_at)->diffInSeconds(Carbon::parse($row->first_at), true) / ($row->count_3d - 1)) : null;
             $row->latest = $rankings[$row->user_id]['latest'];
             $row->ip_ranking = $rankings[$row->user_id]['ip'];
             $row->ua_ranking = $rankings[$row->user_id]['ua'];

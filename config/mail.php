@@ -72,6 +72,9 @@ return [
     */
 
     'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+    'scheme' => env('MAIL_ENCRYPTION', 'tls') === 'ssl' ? 'smtps' : 'smtp',
+    'auto_tls' => env('MAIL_ENCRYPTION', 'tls') === 'tls',
+    'require_tls' => env('MAIL_ENCRYPTION', 'tls') === 'tls',
 
     /*
     |--------------------------------------------------------------------------

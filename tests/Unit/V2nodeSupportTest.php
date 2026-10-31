@@ -58,6 +58,7 @@ class V2nodeSupportTest extends TestCase
 
     public function test_backend_config_keeps_secrets_and_xff_but_does_not_load_retired_routes(): void
     {
+        Schema::shouldReceive('hasColumn')->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(true);
         $controller = $this->configController();
         $response = $controller->config(Request::create('/'));
         $data = json_decode($response->getContent(), true);
@@ -80,11 +81,12 @@ class V2nodeSupportTest extends TestCase
 
     public function test_valid_node_requests_remember_the_node_ip_and_unknown_nodes_fail(): void
     {
+        Schema::shouldReceive('hasColumn')->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(true);
         Cache::flush();
         config(['v2board.server_token' => 'test-only-server-token']);
         $request = Request::create('/', 'GET', ['token' => 'test-only-server-token', 'node_id' => 42], [], [], ['REMOTE_ADDR' => '8.8.8.8']);
         $service = \Mockery::mock(ServerService::class);
-        $service->shouldReceive('getServer')->once()->with(42, 'v2node')->andReturn(new ServerV2node($this->node('anytls')));
+        $service->shouldReceive('getServer')->once()->with(42, 'v2node')->andReturn((new ServerV2node())->forceFill($this->node('anytls')));
         $controller = new ServerController($request, $service);
         $this->assertSame(200, $controller->config($request)->getStatusCode());
         $this->assertTrue(NodeIpWhitelist::contains('8.8.8.8'));
@@ -176,7 +178,9 @@ class V2nodeSupportTest extends TestCase
         $schema->shouldReceive('hasTable')->once()->with('v2_server_v2node')->andReturn(true);
         $schema->shouldReceive('hasColumn')->once()->with('v2_server_v2node', 'trusted_x_forwarded_for')->andReturn(false);
         $schema->shouldReceive('table')->once()->withArgs(function ($name, $callback) {
-            $blueprint = new Blueprint($name);
+            $connection = new \Illuminate\Database\SQLiteConnection(null);
+            $connection->useDefaultSchemaGrammar();
+            $blueprint = new Blueprint($connection, $name);
             $callback($blueprint);
             $columns = $blueprint->getColumns();
             return $name === 'v2_server_v2node' && count($columns) === 1
@@ -235,7 +239,7 @@ class V2nodeSupportTest extends TestCase
         $controller = $reflection->newInstanceWithoutConstructor();
         $property = $reflection->getProperty('nodeInfo');
         $property->setAccessible(true);
-        $property->setValue($controller, new ServerV2node(array_merge($this->node('anytls'), [
+        $property->setValue($controller, (new ServerV2node())->forceFill(array_merge($this->node('anytls'), [
             'route_id' => [1],
             'trusted_x_forwarded_for' => ['CF-Connecting-IP'],
             'tls_settings' => ['private_key' => 'private-key-for-node'],

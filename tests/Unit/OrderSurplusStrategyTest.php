@@ -84,7 +84,7 @@ class OrderSurplusStrategyTest extends TestCase
 
     private function user(int $remainingSeconds, int $used = 0): User
     {
-        $user = new User(['plan_id' => 1, 'expired_at' => $this->now + $remainingSeconds,
+        $user = (new User())->forceFill(['plan_id' => 1, 'expired_at' => $this->now + $remainingSeconds,
             'transfer_enable' => 100, 'u' => $used, 'd' => 0]);
         $user->id = 1;
         return $user;

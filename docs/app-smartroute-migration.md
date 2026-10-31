@@ -11,7 +11,7 @@ App 客户端与 SmartRoute 已集成在本仓库，包含认证、同步、订�
 
 ## 安装与升级
 
-需要 PHP 8.0+、MySQL/MariaDB、Redis 和 Horizon。在服务器项目根目录沿用原版升级入口：
+需要 PHP 8.2+、MySQL/MariaDB、Redis 和 Horizon。在服务器项目根目录沿用原版升级入口：
 
 ```sh
 bash update.sh

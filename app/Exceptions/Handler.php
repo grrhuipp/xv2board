@@ -6,7 +6,7 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Support\Arr;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
-use Facade\Ignition\Exceptions\ViewException;
+use Illuminate\View\ViewException;
 
 class Handler extends ExceptionHandler
 {

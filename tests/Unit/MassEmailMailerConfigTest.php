@@ -8,6 +8,24 @@ use Tests\TestCase;
 
 class MassEmailMailerConfigTest extends TestCase
 {
+    public function test_smtp_transport_preserves_plain_starttls_and_implicit_tls_modes(): void
+    {
+        $mailer = new class extends MassEmailMailer {
+            public function transport(array $settings) { return $this->createSmtpTransport($settings); }
+        };
+        foreach (['' => [false, false], 'tls' => [true, false], 'ssl' => [false, true]] as $mode => [$startTls, $implicitTls]) {
+            $transport = $mailer->transport(['host' => 'smtp.example.test', 'port' => 2525, 'encryption' => $mode, 'username' => 'user', 'password' => 'secret']);
+            $this->assertSame($startTls, $transport->isAutoTls());
+            $this->assertSame($startTls, $transport->isTlsRequired());
+            $this->assertSame($implicitTls, $transport->getStream()->isTLS());
+            $this->assertSame('user', $transport->getUsername());
+            $this->assertSame('secret', $transport->getPassword());
+        }
+        $relay = $mailer->transport(['host' => 'smtp.example.test', 'port' => 2525, 'encryption' => null, 'username' => null, 'password' => null]);
+        $this->assertSame('', $relay->getUsername());
+        $this->assertFalse($relay->isAutoTls());
+    }
+
     public function test_primary_without_v2board_host_uses_laravels_default_mailer()
     {
         config(['v2board.email_host' => null, 'mail.driver' => 'array']);

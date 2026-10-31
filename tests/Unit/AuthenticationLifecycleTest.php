@@ -46,7 +46,7 @@ class AuthenticationLifecycleTest extends TestCase
         if (!extension_loaded('pdo_sqlite')) $this->markTestSkipped('Requires pdo_sqlite');
         $this->previous = [Container::getInstance(), Facade::getFacadeApplication(), Model::getConnectionResolver(), Model::getEventDispatcher()];
         $this->app = new Application(dirname(__DIR__, 2));
-        $this->app->instance('config', new Config(['app' => ['key' => 'isolated-auth-test-key', 'timezone' => 'UTC'], 'v2board' => ['show_subscribe_method' => 0]]));
+        $this->app->instance('config', new Config(['app' => ['key' => 'isolated-auth-test-key-32-bytes-minimum', 'timezone' => 'UTC'], 'v2board' => ['show_subscribe_method' => 0]]));
         $this->cache = new Repository(new ArrayStore());
         $this->app->instance('cache', $this->cache);
         $this->app->instance(\Illuminate\Contracts\Routing\ResponseFactory::class, new class {

@@ -2,41 +2,20 @@
 
 namespace Tests;
 
-use Illuminate\Contracts\Console\Kernel;
-use PHPUnit\Runner\AfterLastTestHook;
-use PHPUnit\Runner\BeforeFirstTestHook;
+use PHPUnit\Runner\Extension\Extension;
+use PHPUnit\Runner\Extension\Facade;
+use PHPUnit\Runner\Extension\ParameterCollection;
+use PHPUnit\TextUI\Configuration\Configuration;
 
-class Bootstrap implements BeforeFirstTestHook, AfterLastTestHook
+class Bootstrap implements Extension
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Bootstrap The Test Environment
-    |--------------------------------------------------------------------------
-    |
-    | You may specify console commands that execute once before your test is
-    | run. You are free to add your own additional commands or logic into
-    | this file as needed in order to help your test suite run quicker.
-    |
-    */
-
-    use CreatesApplication;
-
-    public function executeBeforeFirstTest(): void
+    public function bootstrap(Configuration $configuration, Facade $facade, ParameterCollection $parameters): void
     {
-        $console = $this->createApplication()->make(Kernel::class);
-
-        $commands = [
-            'config:cache',
-            'event:cache',
-        ];
-
-        foreach ($commands as $command) {
-            $console->call($command);
-        }
-    }
-
-    public function executeAfterLastTest(): void
-    {
-        array_map('unlink', glob('bootstrap/cache/*.phpunit.php'));
+        $facade->registerSubscriber(new class implements \PHPUnit\Event\TestRunner\ExecutionFinishedSubscriber {
+            public function notify(\PHPUnit\Event\TestRunner\ExecutionFinished $event): void
+            {
+                foreach (glob(dirname(__DIR__) . '/bootstrap/cache/*.phpunit.php') as $file) unlink($file);
+            }
+        });
     }
 }
