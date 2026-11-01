@@ -4,7 +4,7 @@ App 客户端与 SmartRoute 已集成在本仓库，包含认证、同步、订�
 
 ## 兼容性边界
 
-- 「系统配置 → APP」里的接口前缀决定 App 路由：默认 `/api/v1/app`，SmartRoute 为 `/api/v1/app/smart-route`。修改前缀后须同步修改客户端请求地址，重启常驻服务并验证路由；需要兼容旧客户端时先在后台填写旧前缀。
+- 「系统配置 → APP」里的接口前缀决定 App 路由：默认 `/api/v1/jiuxiang/`，SmartRoute 为 `/api/v1/jiuxiang/smart-route/`。后台只填写路径段（默认 `jiuxiang`），不填写 `/api/v1/` 或斜杠。未配置时自动保留旧客户端路径；已设置的有效自定义前缀继续生效。修改前缀后须同步修改客户端请求地址，重载 PHP-FPM 和常驻队列服务并验证路由。
 - SmartRoute 设备按客户端上报的 `device_id` 或 `install_id` 精确匹配，不再拼接旧安装 ID 前缀；迁移客户端时应确认设备标识与数据库记录一致。
 - `resources/rules/appclient.clash.yaml` 是 App 使用的默认 Clash 模板；普通订阅与显式自定义模板不受影响。
 - 不从其他环境复制用户、设备、订阅凭证或业务流水；入口池和 Provider 包等业务数据需按目标环境配置。

@@ -6097,11 +6097,11 @@
                     className: ""
                 }, f.a.createElement(m, {
                     title: "App 客户端接口前缀",
-                    description: "单段路径；例如 app 对应 /api/v1/app，SmartRoute 接口位于 /api/v1/app/smart-route。保存后客户端需同步修改地址。"
+                    description: "单段路径，默认 jiuxiang，对应 /api/v1/jiuxiang/；SmartRoute 接口位于 /api/v1/jiuxiang/smart-route/。只填写路径段，修改后客户端需同步修改地址。"
                 }, f.a.createElement("input", {
                     type: "text",
                     className: "form-control",
-                    placeholder: "app",
+                    placeholder: "jiuxiang",
                     defaultValue: w.app_client_path,
                     onBlur: e=>this.set("app", "app_client_path", e.target.value)
                 })), f.a.createElement(m, {
