@@ -151,6 +151,7 @@ class ConfigController extends Controller
                 'app_url' => config('v2board.app_url'),
                 'subscribe_url' => config('v2board.subscribe_url'),
                 'user_rule' => config('v2board.user_rule'),
+                'ua_rule' => config('v2board.ua_rule', ''),
                 'as_rule_mode' => config('v2board.as_rule_mode', 'blacklist'),
                 'as_rule_asns' => config('v2board.as_rule_asns', ''),
                 'as_rule_node_keyword' => config('v2board.as_rule_node_keyword', '*'),

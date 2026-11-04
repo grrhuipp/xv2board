@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use App\Services\TrustedProxySettings;
+use App\Services\UaSubscriptionHostService;
 
 class ConfigSave extends FormRequest
 {
@@ -44,6 +45,7 @@ class ConfigSave extends FormRequest
         'app_url' => 'nullable|url',
         'subscribe_url' => 'nullable',
         'user_rule' => 'nullable',
+        'ua_rule' => ['nullable', 'string', 'max:100000'],
         'as_rule_mode' => 'in:blacklist,whitelist',
         'as_rule_asns' => [
             'nullable',
@@ -174,6 +176,15 @@ class ConfigSave extends FormRequest
     public function rules()
     {
         $rules = self::RULES;
+
+        $rules['ua_rule'][] = function ($attribute, $value, $fail) {
+            if (!is_string($value)) return;
+            try {
+                UaSubscriptionHostService::parseRules($value);
+            } catch (\InvalidArgumentException $e) {
+                $fail($e->getMessage());
+            }
+        };
 
         $rules['trusted_proxies'][] = function ($attribute, $value, $fail) {
             if (!is_string($value)) return;

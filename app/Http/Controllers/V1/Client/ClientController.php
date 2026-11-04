@@ -10,6 +10,7 @@ use App\Protocols\ClashMeta;
 use App\Services\ServerService;
 use App\Services\UserService;
 use App\Services\NodeIpWhitelist;
+use App\Services\UaSubscriptionHostService;
 use App\Services\Geo\Ip2Region;
 use App\Utils\Helper;
 use App\Models\SubscribeLog;
@@ -43,7 +44,7 @@ class ClientController extends Controller
         if ($userService->isAvailable($user)) {
             $serverService = new ServerService();
             $servers = $serverService->getAvailableServers($user);
-            $this->applySubscriptionHostRules($servers, $user, $location['as'] ?? null, $ip);
+            $this->applySubscriptionHostRules($servers, $user, $location['as'] ?? null, $ip, $request->userAgent());
             if($flag) {
                 if (!strpos($flag, 'sing')) {
                     $this->setSubscribeInfoToServers($servers, $user);
@@ -140,11 +141,12 @@ class ClientController extends Controller
         ];
     }
 
-    private function applySubscriptionHostRules(array &$servers, $user, $asNumber, $ip): void
+    private function applySubscriptionHostRules(array &$servers, $user, $asNumber, $ip, ?string $userAgent = null): void
     {
         if (!NodeIpWhitelist::contains($ip)) {
             $this->replaceServerHostByAsRule($servers, $asNumber);
         }
+        (new UaSubscriptionHostService())->apply($servers, $userAgent);
         (new \App\Services\MarkedSubscriptionHostService())->apply($servers, (int) $user->id);
         $this->replaceServerHostByUserRule($servers, $user);
     }

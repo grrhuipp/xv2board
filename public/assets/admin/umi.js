@@ -5176,6 +5176,15 @@
                     value: null == t.user_rule ? "" : t.user_rule,
                     onChange: e => this.set("site", "user_rule", e.target.value)
                 })), f.a.createElement(m, {
+                    title: "UA 匹配规则",
+                    description: "按请求 User-Agent 关键词替换节点地址，忽略大小写。每行一条或用分号分隔；节点关键词填 * 匹配全部节点。多条命中时后面的规则覆盖前面的；AS → UA → 人工标记 → 用户规则依次覆盖。留空关闭。"
+                }, f.a.createElement("textarea", {
+                    rows: "4",
+                    className: "form-control",
+                    placeholder: "格式：UA关键词,节点关键词,新地址（域名或IP，不含协议、端口、路径）\nClash,*,clash.example.com\nShadowrocket,香港,hk.example.com",
+                    value: null == t.ua_rule ? "" : t.ua_rule,
+                    onChange: e => this.set("site", "ua_rule", e.target.value)
+                })), f.a.createElement(m, {
                     title: "AS\u5339\u914d\u6a21\u5f0f",
                     description: "\u9ed1\u540d\u5355\uff1a\u5217\u8868\u5185AS\u66ff\u6362\uff1b\u767d\u540d\u5355\uff1a\u5217\u8868\u5916AS\u66ff\u6362"
                 }, f.a.createElement("select", {
