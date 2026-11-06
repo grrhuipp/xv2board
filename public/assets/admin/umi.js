@@ -12179,7 +12179,6 @@
                     placeholder: "\u8f93\u5165\u540e\u56de\u8f66\u6dfb\u52a0\u6807\u7b7e",
                     onChange: e=>this.formChange("tags", e.length > 0 ? e : null)
                 })), d.a.createElement("div", { className: "form-group" },
-                d.a.createElement("label", null, "允许订阅的 UA 分组"),
                 d.a.createElement(ClientUaGroups, {
                     value: e.client_ua_group_ids,
                     onChange: ids=>this.formChange("client_ua_group_ids", ids.length ? ids : null)
@@ -27872,7 +27871,6 @@
                     placeholder: "\u8f93\u5165\u540e\u56de\u8f66\u6dfb\u52a0\u6807\u7b7e",
                     onChange: e=>this.formChange("tags", e.length > 0 ? e : null)
                 })), h.a.createElement("div", { className: "form-group" },
-                h.a.createElement("label", null, "允许订阅的 UA 分组"),
                 h.a.createElement(ClientUaGroups, {
                     value: e.client_ua_group_ids,
                     onChange: ids=>this.formChange("client_ua_group_ids", ids.length ? ids : null)
@@ -103538,13 +103536,14 @@
                 const button = (label, onClick, type, extra) => h(l.a, { type, disabled: state.busy, onClick, ...extra }, label);
                 const close = ()=>{ if (!state.busy) this.setState({ visible: false }); };
                 const css = `.jx-ua-modal .ant-modal-body{padding:0}.jx-ua-modal .ant-modal-header{padding:20px 24px}.jx-ua-intro{padding:16px 24px;background:#f6f9fe;color:#58677d;line-height:1.7;border-bottom:1px solid #e8edf3}.jx-ua-layout{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:355px}.jx-ua-list{padding:20px;border-right:1px solid #e8edf3;background:#fafbfc}.jx-ua-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-weight:600;color:#25334a}.jx-ua-count{font-size:12px;color:#7c8798;font-weight:400}.jx-ua-items{max-height:300px;overflow:auto;margin-top:12px}.jx-ua-item{padding:12px;margin-bottom:8px;background:white;border:1px solid #e8edf3;border-radius:6px}.jx-ua-item.active{border-color:#91bfff;background:#f0f7ff}.jx-ua-item-name{font-weight:600;overflow-wrap:anywhere}.jx-ua-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.jx-ua-tag{background:#edf2f7;border-radius:4px;padding:2px 7px;font-size:12px;color:#53647c;overflow-wrap:anywhere;max-width:100%}.jx-ua-row-actions{display:flex;gap:12px;margin-top:8px}.jx-ua-row-actions .ant-btn{padding:0;height:auto;font-size:12px}.jx-ua-empty{padding:28px 8px;text-align:center;color:#8792a2;line-height:1.8}.jx-ua-empty strong{display:block;color:#53647c;margin-bottom:6px;font-weight:500}.jx-ua-editor{padding:22px 24px;min-width:0}.jx-ua-editor label{display:block;font-weight:500;margin-bottom:8px;color:#34435a}.jx-ua-field{margin-bottom:20px}.jx-ua-help{font-size:12px;color:#8993a1;line-height:1.7;margin-top:7px}.jx-ua-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;border-top:1px solid #eef0f4;padding-top:18px;margin-top:24px}.jx-ua-feedback{margin:0 24px 16px;padding:10px 12px;border-radius:5px;line-height:1.6}.jx-ua-error{background:#fff2f0;color:#b5302b}.jx-ua-success{background:#f0f9f3;color:#30834e}@media(max-width:600px){.jx-ua-layout{grid-template-columns:1fr}.jx-ua-list{border-right:0;border-bottom:1px solid #e8edf3}.jx-ua-items{max-height:180px}.jx-ua-editor{padding:20px}.jx-ua-intro{padding:14px 20px}.jx-ua-modal{max-width:calc(100vw - 24px);margin:12px auto}.jx-ua-empty{padding:12px 8px}}`;
+                const openManager = ()=>{ this.setState({ visible: true, error: "", notice: "" }); this.load(); };
                 return h(y.a.Fragment, null,
+                    !this.props.managerOnly && h("label", null, "允许订阅的 UA 分组 ", h("a", { href: "#", onClick: event=>{ event.preventDefault(); openManager(); } }, "管理 UA 分组")),
                     !this.props.managerOnly && h(N.a, {
                         mode: "multiple", allowClear: true, style: { width: "100%" }, value: (this.props.value || []).map(Number),
-                        placeholder: "全部客户端（不选择 UA 分组）", onFocus: ()=>this.load(), onChange: this.props.onChange, optionFilterProp: "children"
+                        placeholder: "全部客户端（为空不限制）", onFocus: ()=>this.load(), onChange: this.props.onChange, optionFilterProp: "children"
                     }, state.groups.map(group=>h(N.a.Option, { key: group.id, value: group.id }, group.name))),
-                    button("管理 UA 分组", ()=>{ this.setState({ visible: true, error: "", notice: "" }); this.load(); }, undefined, { style: { marginTop: this.props.managerOnly ? 0 : 8, marginRight: 8 } }),
-                    !this.props.managerOnly && h("small", { className: "text-muted" }, "不选则允许全部客户端；选择后，命中任一分组即可订阅。"),
+                    this.props.managerOnly && button("管理 UA 分组", openManager),
                     h(clientUaModal, { className: "jx-ua-modal", title: "客户端 UA 分组", width: 800, centered: true, visible: state.visible, footer: null, maskClosable: false, closable: !state.busy, keyboard: !state.busy, onCancel: close },
                         h("style", null, css),
                         h("div", { className: "jx-ua-intro" }, "先创建分组，再在节点中选择。", h("br"), h("span", { style: { fontSize: 12 } }, "UA 包含任一关键字即匹配，忽略大小写，不支持正则表达式。")),
@@ -103719,7 +103718,6 @@
                     placeholder: "\u8f93\u5165\u540e\u56de\u8f66\u6dfb\u52a0\u6807\u7b7e",
                     onChange: e=>this.formChange("tags", e.length > 0 ? e : null)
                 })), y.a.createElement("div", { className: "form-group" },
-                y.a.createElement("label", null, "允许订阅的 UA 分组"),
                 y.a.createElement(ClientUaGroups, {
                     value: e.client_ua_group_ids,
                     onChange: ids=>this.formChange("client_ua_group_ids", ids.length ? ids : null)
@@ -104424,7 +104422,6 @@
                     placeholder: "\u8f93\u5165\u540e\u56de\u8f66\u6dfb\u52a0\u6807\u7b7e",
                     onChange: e=>this.formChange("tags", e.length > 0 ? e : null)
                 })), y.a.createElement("div", { className: "form-group" },
-                y.a.createElement("label", null, "允许订阅的 UA 分组"),
                 y.a.createElement(ClientUaGroups, {
                     value: e.client_ua_group_ids,
                     onChange: ids=>this.formChange("client_ua_group_ids", ids.length ? ids : null)
@@ -104702,7 +104699,6 @@
                     placeholder: "\u8f93\u5165\u540e\u56de\u8f66\u6dfb\u52a0\u6807\u7b7e",
                     onChange: e=>this.formChange("tags", e.length > 0 ? e: null)
                 })), y.a.createElement("div", { className: "form-group" },
-                y.a.createElement("label", null, "允许订阅的 UA 分组"),
                 y.a.createElement(ClientUaGroups, {
                     value: e.client_ua_group_ids,
                     onChange: ids=>this.formChange("client_ua_group_ids", ids.length ? ids : null)
@@ -105056,7 +105052,6 @@
                     placeholder: "\u8f93\u5165\u540e\u56de\u8f66\u6dfb\u52a0\u6807\u7b7e",
                     onChange: e=>this.formChange("tags", e.length > 0 ? e: null)
                 })), y.a.createElement("div", { className: "form-group" },
-                y.a.createElement("label", null, "允许订阅的 UA 分组"),
                 y.a.createElement(ClientUaGroups, {
                     value: e.client_ua_group_ids,
                     onChange: ids=>this.formChange("client_ua_group_ids", ids.length ? ids : null)
@@ -111861,7 +111856,6 @@
                     placeholder: "\u8f93\u5165\u540e\u56de\u8f66\u6dfb\u52a0\u6807\u7b7e",
                     onChange: e=>this.formChange("tags", e.length > 0 ? e : null)
                 })), f.a.createElement("div", { className: "form-group" },
-                f.a.createElement("label", null, "允许订阅的 UA 分组"),
                 f.a.createElement(ClientUaGroups, {
                     value: e.client_ua_group_ids,
                     onChange: ids=>this.formChange("client_ua_group_ids", ids.length ? ids : null)
