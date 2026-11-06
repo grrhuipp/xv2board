@@ -78,3 +78,25 @@ test('all seven native node editors render UA groups and clear to an explicit nu
   assert(!bundle.includes('server/v2node/'));
   assert(!bundle.includes('serverV2node'));
 });
+
+test('saving captures pending keywords and normalizes duplicates', async () => {
+  const { load, requests } = harness();
+  const selector = new (load('clientUaGroups').a)({ managerOnly: true });
+  selector.state.pending = ' Mihomo ';
+  await selector.mutate('save', { name: ' Desktop ', keywords: ['Clash', ' clash ', ''] });
+  assert.equal(requests[0].data.name, 'Desktop');
+  assert.equal(JSON.stringify(requests[0].data.keywords), JSON.stringify(['Clash', 'Mihomo']));
+  assert.equal(selector.state.notice, '分组已保存');
+  assert.equal(selector.state.busy, false);
+});
+
+test('empty groups are rejected before sending and busy actions do not duplicate', async () => {
+  const { load, requests } = harness();
+  const selector = new (load('clientUaGroups').a)({ managerOnly: true });
+  await selector.mutate('save', { name: ' ', keywords: ['Clash'] });
+  assert.equal(requests.length, 0);
+  assert(selector.state.error);
+  selector.state.busy = true;
+  await selector.mutate('save', { name: 'Clash', keywords: ['Clash'] });
+  assert.equal(requests.length, 0);
+});

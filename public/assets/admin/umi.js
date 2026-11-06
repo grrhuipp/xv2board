@@ -103499,61 +103499,70 @@
         class ClientUaGroups extends y.a.Component {
             constructor(props) {
                 super(props);
-                this.state = { groups: [], visible: false, draft: { name: "", keywords: [] }, busy: false, error: "" };
+                this.state = { groups: [], visible: false, draft: { name: "", keywords: [] }, busy: false, loading: false, error: "", notice: "", search: "", pending: "" };
             }
             componentDidMount() { this.load(); }
             async load() {
+                this.setState({ loading: true });
                 try {
                     const result = await clientUaApi.a("/" + window.settings.secure_path + "/server/client-ua-group/fetch");
-                    if (result.code === 200) this.setState({ groups: result.data || [] });
-                    else this.setState({ error: result.msg || "读取 UA 分组失败" });
+                    if (result.code === 200) { this.setState({ groups: result.data || [] }); return true; }
+                    this.setState({ error: result.msg || "读取 UA 分组失败，请重试" });
                 } catch (error) { this.setState({ error: "读取 UA 分组失败，请重试" }); }
+                finally { this.setState({ loading: false }); }
+                return false;
             }
+            newDraft() { this.setState({ draft: { name: "", keywords: [] }, pending: "", error: "", notice: "" }); }
             async mutate(action, params) {
-                this.setState({ busy: true, error: "" });
+                if (this.state.busy) return;
+                if (action === "save") {
+                    const keywords = [...(params.keywords || []), this.state.pending].map(value=>value.trim()).filter(Boolean);
+                    params = { ...params, name: params.name.trim(), keywords: keywords.filter((value, index)=>keywords.findIndex(item=>item.toLowerCase() === value.toLowerCase()) === index) };
+                    if (!params.name || !params.keywords.length) { this.setState({ error: "请填写分组名称，并添加至少一个 UA 关键字。" }); return; }
+                }
+                this.setState({ busy: true, error: "", notice: "" });
                 try {
                     const result = await clientUaApi.b("/" + window.settings.secure_path + "/server/client-ua-group/" + action, params, true);
                     if (result.code === 200) {
-                        this.setState({ draft: { name: "", keywords: [] } });
-                        await this.load();
-                    } else this.setState({ error: result.msg || "保存失败" });
+                        if (action === "save" || this.state.draft.id === params.id) this.setState({ draft: { name: "", keywords: [] }, pending: "" });
+                        const refreshed = await this.load();
+                        this.setState({ notice: (action === "save" ? "分组已保存" : "分组已删除") + (refreshed ? "" : "，请重试刷新列表") });
+                    } else this.setState({ error: result.msg || "操作失败，请重试" });
                 } catch (error) { this.setState({ error: "操作失败，请重试" }); }
                 finally { this.setState({ busy: false }); }
             }
             render() {
-                const state = this.state, draft = state.draft;
-                const button = (label, onClick, type) => y.a.createElement(l["a"], { type, style: { marginRight: 8 }, disabled: state.busy, onClick }, label);
-                return y.a.createElement(y.a.Fragment, null,
-                    !this.props.managerOnly && y.a.createElement(N["a"], {
-                        mode: "multiple", allowClear: true, style: { width: "100%" },
-                        value: (this.props.value || []).map(Number), placeholder: "全部客户端（不选择 UA 分组）",
-                        onFocus: ()=>this.load(), onChange: this.props.onChange, optionFilterProp: "children"
-                    }, state.groups.map(group=>y.a.createElement(N["a"].Option, { key: group.id, value: group.id }, group.name))),
-                    button("管理 UA 分组", ()=>{ this.setState({ visible: true, error: "" }); this.load(); }),
-                    !this.props.managerOnly && y.a.createElement("small", { className: "text-muted" }, "默认全部；选中分组后，UA 命中任一分组的任一关键字即可订阅，忽略大小写。"),
-                    y.a.createElement(R["a"], { title: "客户端 UA 分组", width: "80%", visible: state.visible, onClose: ()=>this.setState({ visible: false }) },
-                        y.a.createElement("p", { className: "text-muted" }, "先创建 UA 分组，再在节点中选择。关键字按 User-Agent 包含匹配，不支持正则表达式。"),
-                        state.error && y.a.createElement("p", { role: "alert", className: "text-danger" }, state.error),
-                        y.a.createElement(o["a"], {
-                            className: "v2board-table", dataSource: state.groups, rowKey: "id",
-                            renderItem: group=>y.a.createElement(o["a"].Item, {
-                                actions: [
-                                    button("编辑", ()=>this.setState({ draft: { ...group }, error: "" })),
-                                    button("删除", ()=>clientUaModal.confirm({ title: "确认删除此 UA 分组？", content: "已被节点使用的分组无法删除。", onOk: ()=>this.mutate("drop", { id: group.id }) }))
-                                ]
-                            }, y.a.createElement(o["a"].Item.Meta, { title: group.name, description: (group.keywords || []).join(", ") }))
-                        }),
-                        y.a.createElement("h4", { className: "mt-3" }, draft.id ? "编辑 UA 分组" : "添加 UA 分组"),
-                        y.a.createElement("div", { className: "form-group" },
-                            y.a.createElement("label", null, "分组名称"),
-                            y.a.createElement(s["a"], { value: draft.name, maxLength: 100, placeholder: "例如：Clash 客户端", onChange: event=>this.setState({ draft: { ...draft, name: event.target.value } }) })),
-                        y.a.createElement("div", { className: "form-group" },
-                            y.a.createElement("label", null, "UA 关键字"),
-                            y.a.createElement(N["a"], { mode: "tags", style: { width: "100%" }, value: draft.keywords, placeholder: "例如 Clash、Mihomo，输入后回车添加", onChange: keywords=>this.setState({ draft: { ...draft, keywords } }) })),
-                        y.a.createElement("div", { className: "v2board-drawer-action" },
-                            button("关闭", ()=>this.setState({ visible: false })),
-                            button("新建分组", ()=>this.setState({ draft: { name: "", keywords: [] }, error: "" })),
-                            y.a.createElement(l["a"], { type: "primary", loading: state.busy, onClick: ()=>this.mutate("save", draft) }, "保存分组"))));
+                const h = y.a.createElement, state = this.state, draft = state.draft;
+                const query = state.search.trim().toLowerCase();
+                const groups = state.groups.filter(group=>(group.name + " " + (group.keywords || []).join(" ")).toLowerCase().includes(query));
+                const button = (label, onClick, type, extra) => h(l.a, { type, disabled: state.busy, onClick, ...extra }, label);
+                const close = ()=>{ if (!state.busy) this.setState({ visible: false }); };
+                const css = `.jx-ua-modal .ant-modal-body{padding:0}.jx-ua-modal .ant-modal-header{padding:20px 24px}.jx-ua-intro{padding:16px 24px;background:#f6f9fe;color:#58677d;line-height:1.7;border-bottom:1px solid #e8edf3}.jx-ua-layout{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:355px}.jx-ua-list{padding:20px;border-right:1px solid #e8edf3;background:#fafbfc}.jx-ua-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-weight:600;color:#25334a}.jx-ua-count{font-size:12px;color:#7c8798;font-weight:400}.jx-ua-items{max-height:300px;overflow:auto;margin-top:12px}.jx-ua-item{padding:12px;margin-bottom:8px;background:white;border:1px solid #e8edf3;border-radius:6px}.jx-ua-item.active{border-color:#91bfff;background:#f0f7ff}.jx-ua-item-name{font-weight:600;overflow-wrap:anywhere}.jx-ua-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.jx-ua-tag{background:#edf2f7;border-radius:4px;padding:2px 7px;font-size:12px;color:#53647c;overflow-wrap:anywhere;max-width:100%}.jx-ua-row-actions{display:flex;gap:12px;margin-top:8px}.jx-ua-row-actions .ant-btn{padding:0;height:auto;font-size:12px}.jx-ua-empty{padding:28px 8px;text-align:center;color:#8792a2;line-height:1.8}.jx-ua-empty strong{display:block;color:#53647c;margin-bottom:6px;font-weight:500}.jx-ua-editor{padding:22px 24px;min-width:0}.jx-ua-editor label{display:block;font-weight:500;margin-bottom:8px;color:#34435a}.jx-ua-field{margin-bottom:20px}.jx-ua-help{font-size:12px;color:#8993a1;line-height:1.7;margin-top:7px}.jx-ua-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;border-top:1px solid #eef0f4;padding-top:18px;margin-top:24px}.jx-ua-feedback{margin:0 24px 16px;padding:10px 12px;border-radius:5px;line-height:1.6}.jx-ua-error{background:#fff2f0;color:#b5302b}.jx-ua-success{background:#f0f9f3;color:#30834e}@media(max-width:600px){.jx-ua-layout{grid-template-columns:1fr}.jx-ua-list{border-right:0;border-bottom:1px solid #e8edf3}.jx-ua-items{max-height:180px}.jx-ua-editor{padding:20px}.jx-ua-intro{padding:14px 20px}.jx-ua-modal{max-width:calc(100vw - 24px);margin:12px auto}.jx-ua-empty{padding:12px 8px}}`;
+                return h(y.a.Fragment, null,
+                    !this.props.managerOnly && h(N.a, {
+                        mode: "multiple", allowClear: true, style: { width: "100%" }, value: (this.props.value || []).map(Number),
+                        placeholder: "全部客户端（不选择 UA 分组）", onFocus: ()=>this.load(), onChange: this.props.onChange, optionFilterProp: "children"
+                    }, state.groups.map(group=>h(N.a.Option, { key: group.id, value: group.id }, group.name))),
+                    button("管理 UA 分组", ()=>{ this.setState({ visible: true, error: "", notice: "" }); this.load(); }, undefined, { style: { marginTop: this.props.managerOnly ? 0 : 8, marginRight: 8 } }),
+                    !this.props.managerOnly && h("small", { className: "text-muted" }, "不选则允许全部客户端；选择后，命中任一分组即可订阅。"),
+                    h(clientUaModal, { className: "jx-ua-modal", title: "客户端 UA 分组", width: 800, centered: true, visible: state.visible, footer: null, maskClosable: false, closable: !state.busy, keyboard: !state.busy, onCancel: close },
+                        h("style", null, css),
+                        h("div", { className: "jx-ua-intro" }, "先创建分组，再在节点中选择。", h("br"), h("span", { style: { fontSize: 12 } }, "UA 包含任一关键字即匹配，忽略大小写，不支持正则表达式。")),
+                        h("div", { className: "jx-ua-layout" },
+                            h("section", { className: "jx-ua-list", "aria-label": "已有 UA 分组" },
+                                h("div", { className: "jx-ua-heading" }, h("span", null, "已有分组 ", h("span", { className: "jx-ua-count" }, state.groups.length)), button("＋ 新建", ()=>this.newDraft(), "link", { size: "small" })),
+                                h(s.a, { placeholder: "搜索名称或关键字", allowClear: true, value: state.search, onChange: event=>this.setState({ search: event.target.value }), "aria-label": "搜索 UA 分组" }),
+                                h("div", { className: "jx-ua-items", "aria-busy": state.loading }, state.loading ? h("div", { className: "jx-ua-empty" }, "正在加载分组…") : groups.length ? groups.map(group=>h("div", { key: group.id, className: "jx-ua-item" + (draft.id === group.id ? " active" : "") },
+                                    h("div", { className: "jx-ua-item-name" }, group.name), h("div", { className: "jx-ua-tags" }, (group.keywords || []).map((keyword,index)=>h("span", { key: index, className: "jx-ua-tag" }, keyword))),
+                                    h("div", { className: "jx-ua-row-actions" }, button("编辑", ()=>this.setState({ draft: { ...group, keywords: [...(group.keywords || [])] }, pending: "", error: "", notice: "" }), "link"), button("删除", ()=>clientUaModal.confirm({ title: "删除“" + group.name + "”？", content: "已被节点使用的分组无法删除。", okText: "删除", cancelText: "取消", okType: "danger", onOk: ()=>this.mutate("drop", { id: group.id }) }), "link", { style: { color: "#c65b58" } })))) : h("div", { className: "jx-ua-empty" }, h("strong", null, query ? "没有匹配的分组" : "还没有 UA 分组"), query ? "试试其他名称或关键字" : "填写表单，创建第一个分组")),
+                                state.error && button("刷新列表", ()=>this.load(), "link", { size: "small" })),
+                            h("section", { className: "jx-ua-editor", "aria-label": draft.id ? "编辑 UA 分组" : "新建 UA 分组" },
+                                h("div", { className: "jx-ua-heading" }, draft.id ? "编辑分组" : "新建分组"),
+                                h("div", { className: "jx-ua-field" }, h("label", null, "分组名称"), h(s.a, { disabled: state.busy, value: draft.name, maxLength: 100, placeholder: "例如：Clash 客户端", "aria-label": "分组名称", onChange: event=>this.setState({ draft: { ...draft, name: event.target.value }, notice: "" }) })),
+                                h("div", { className: "jx-ua-field" }, h("label", null, "UA 关键字"), h(N.a, { disabled: state.busy, mode: "tags", style: { width: "100%" }, value: draft.keywords, tokenSeparators: [",", "，"], placeholder: "输入关键字，按回车添加", "aria-label": "UA 关键字", onSearch: pending=>this.setState({ pending }), onChange: keywords=>this.setState({ draft: { ...draft, keywords }, pending: "", notice: "" }) }), h("div", { className: "jx-ua-help" }, "例如 Clash、Mihomo。支持用逗号分隔多个关键字。")),
+                                h("div", { className: "jx-ua-actions" }, button("关闭", close), h(l.a, { type: "primary", onMouseDown: event=>event.preventDefault(), loading: state.busy, disabled: !draft.name.trim() || !(draft.keywords.length || state.pending.trim()), onClick: ()=>this.mutate("save", draft) }, draft.id ? "保存修改" : "创建分组")))),
+                        state.error && h("div", { className: "jx-ua-feedback jx-ua-error", role: "alert" }, state.error),
+                        state.notice && h("div", { className: "jx-ua-feedback jx-ua-success", role: "status" }, state.notice)));
             }
         }
     },
