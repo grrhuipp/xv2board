@@ -41,6 +41,8 @@ class V2nodeController extends Controller
             'obfs_password' => 'nullable',
             'padding_scheme' => 'nullable',
             'tags' => 'nullable|array',
+            'client_ua_group_ids' => 'nullable|array|max:50',
+            'client_ua_group_ids.*' => 'required|integer|distinct|exists:v2_server_client_ua_group,id',
             'rate' => 'required',
             'show' => 'nullable|in:0,1',
             'sort' => 'nullable'
@@ -180,6 +182,7 @@ class V2nodeController extends Controller
             } catch (\Exception $e) {
                 abort(500, '保存失败');
             }
+            (new \App\Services\SmartRoute\SmartRouteMetricsService())->bumpManifestGeneration();
             return response([
                 'data' => true
             ]);
@@ -188,6 +191,7 @@ class V2nodeController extends Controller
         if (!ServerV2node::create($params)) {
             abort(500, '创建失败');
         }
+        (new \App\Services\SmartRoute\SmartRouteMetricsService())->bumpManifestGeneration();
         return response([
             'data' => true
         ]);

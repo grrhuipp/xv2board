@@ -897,3 +897,13 @@ ALTER TABLE `v2_user_connect_log` ADD INDEX `connect_user_updated_idx` (`user_id
 
 ALTER TABLE `v2_user` ADD COLUMN `app_legacy_token_disabled` tinyint unsigned NOT NULL DEFAULT '0';
 ALTER TABLE `v2_user` ALTER COLUMN `app_legacy_token_disabled` SET DEFAULT '1';
+/* Client UA groups. Duplicate columns are ignored by v2board:update. */
+CREATE TABLE IF NOT EXISTS `v2_server_client_ua_group` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `keywords` text NOT NULL,
+  `created_at` int DEFAULT NULL,
+  `updated_at` int DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE `v2_server_v2node` ADD COLUMN `client_ua_group_ids` text DEFAULT NULL;

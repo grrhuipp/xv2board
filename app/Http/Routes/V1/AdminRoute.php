@@ -25,6 +25,9 @@ class AdminRoute
             $router->post('/plan/update', 'V1\\Admin\\PlanController@update');
             $router->post('/plan/sort', 'V1\\Admin\\PlanController@sort');
             // Server
+            $router->get('/server/client-ua-group/fetch', 'V1\\Admin\\Server\\ClientUaGroupController@fetch');
+            $router->post('/server/client-ua-group/save', 'V1\\Admin\\Server\\ClientUaGroupController@save');
+            $router->post('/server/client-ua-group/drop', 'V1\\Admin\\Server\\ClientUaGroupController@drop');
             $router->get ('/server/group/fetch', 'V1\\Admin\\Server\\GroupController@fetch');
             $router->post('/server/group/save', 'V1\\Admin\\Server\\GroupController@save');
             $router->post('/server/group/drop', 'V1\\Admin\\Server\\GroupController@drop');

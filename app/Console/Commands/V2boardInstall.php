@@ -111,6 +111,9 @@ class V2boardInstall extends Command
             if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_17_000001_backfill_v2node_ingress_names.php', '--force' => true]) !== 0) {
                 throw new \RuntimeException(\Artisan::output());
             }
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_06_000001_add_node_client_ua_keywords.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
             $email = '';
             while (!$email) {
                 $email = $this->ask('请输入管理员邮箱?');

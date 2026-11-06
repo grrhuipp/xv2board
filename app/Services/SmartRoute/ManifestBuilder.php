@@ -39,7 +39,8 @@ final class ManifestBuilder
         $generation = $metrics->manifestGeneration();
         $cacheKey = implode(':', [
             'sr', 'manifest', $generation, $user->id, $device->device_id,
-            $networkType, $isFirstOpen ? 1 : 0, $device->policyRevision()
+            $networkType, $isFirstOpen ? 1 : 0, $device->policyRevision(),
+            hash('sha256', (string) request()->userAgent())
         ]);
 
         $static = Cache::get($cacheKey);

@@ -15,6 +15,7 @@ class ServerV2node extends Model
         'group_id' => 'array',
         'route_id' => 'array',
         'tags' => 'array',
+        'client_ua_group_ids' => 'array',
         'tls_settings' => 'array',
         'network_settings' => 'array',
         'trusted_x_forwarded_for' => 'array',

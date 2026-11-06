@@ -406,6 +406,7 @@ CREATE TABLE `v2_server_anytls` (
 CREATE TABLE IF NOT EXISTS `v2_server_v2node` (
                                     `id` int(11) NOT NULL AUTO_INCREMENT,
                                     `group_id` varchar(255) NOT NULL,
+                                    `client_ua_group_ids` text DEFAULT NULL,
                                     `route_id` varchar(255) DEFAULT NULL,
                                     `name` varchar(255) NOT NULL,
                                     `parent_id` int(11) DEFAULT NULL,
@@ -625,4 +626,14 @@ CREATE TABLE `v2_user_connect_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- 2025-09-12 10:05:00
+/* 2025-09-12 10:05:00 */
+
+/* Client UA groups. Duplicate columns are ignored by v2board:update. */
+CREATE TABLE IF NOT EXISTS `v2_server_client_ua_group` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `keywords` text NOT NULL,
+  `created_at` int DEFAULT NULL,
+  `updated_at` int DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

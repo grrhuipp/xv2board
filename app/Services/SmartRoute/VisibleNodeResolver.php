@@ -59,10 +59,17 @@ final class VisibleNodeResolver
         // 第一遍：按用户分组过滤出可见节点，同时收集 server key，
         // 用于一次性批量加载入口映射，避免逐节点查询 v2_sr_ingress_map（N+1）。
         $visibleServers = [];
+        $uaGroups = null;
         $serverKeys = [];
         foreach (self::SERVER_MODELS as $type => $modelClass) {
             $servers = $modelClass::where('show', 1)->orderBy('sort', 'asc')->get();
             foreach ($servers as $server) {
+                if (!empty($server->client_ua_group_ids) && $uaGroups === null) {
+                    $uaGroups = \App\Services\NodeClientUa::groups();
+                }
+                if (!\App\Services\NodeClientUa::allowsGroups($server->client_ua_group_ids, $uaGroups ?? [], request()->userAgent())) {
+                    continue;
+                }
                 $serverGroups = $server->group_id ?? [];
                 // Match subscription authorization: an empty group is not public access.
                 if (empty($serverGroups) || empty($userGroupIds)

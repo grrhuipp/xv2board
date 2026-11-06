@@ -105702,6 +105702,68 @@
                 serverManage: r
             }
         })(wAnyTLS);
+
+        const clientUaApi = n("t3Un"), clientUaModal = (n("2qtc"), n("kLXV")).a;
+        class ClientUaGroups extends y.a.Component {
+            constructor(props) {
+                super(props);
+                this.state = { groups: [], visible: false, draft: { name: "", keywords: [] }, busy: false, error: "" };
+            }
+            componentDidMount() { this.load(); }
+            async load() {
+                try {
+                    const result = await clientUaApi.a("/" + window.settings.secure_path + "/server/client-ua-group/fetch");
+                    if (result.code === 200) this.setState({ groups: result.data || [] });
+                    else this.setState({ error: result.msg || "读取 UA 分组失败" });
+                } catch (error) { this.setState({ error: "读取 UA 分组失败，请重试" }); }
+            }
+            async mutate(action, params) {
+                this.setState({ busy: true, error: "" });
+                try {
+                    const result = await clientUaApi.b("/" + window.settings.secure_path + "/server/client-ua-group/" + action, params, true);
+                    if (result.code === 200) {
+                        this.setState({ draft: { name: "", keywords: [] } });
+                        await this.load();
+                    } else this.setState({ error: result.msg || "保存失败" });
+                } catch (error) { this.setState({ error: "操作失败，请重试" }); }
+                finally { this.setState({ busy: false }); }
+            }
+            render() {
+                const state = this.state, draft = state.draft;
+                const button = (label, onClick, type) => y.a.createElement(l["a"], { type, style: { marginRight: 8 }, disabled: state.busy, onClick }, label);
+                return y.a.createElement(y.a.Fragment, null,
+                    !this.props.managerOnly && y.a.createElement(N["a"], {
+                        mode: "multiple", allowClear: true, style: { width: "100%" },
+                        value: (this.props.value || []).map(Number), placeholder: "全部客户端（不选择 UA 分组）",
+                        onFocus: ()=>this.load(), onChange: this.props.onChange, optionFilterProp: "children"
+                    }, state.groups.map(group=>y.a.createElement(N["a"].Option, { key: group.id, value: group.id }, group.name))),
+                    button("管理 UA 分组", ()=>{ this.setState({ visible: true, error: "" }); this.load(); }),
+                    !this.props.managerOnly && y.a.createElement("small", { className: "text-muted" }, "默认全部；选中分组后，UA 命中任一分组的任一关键字即可订阅，忽略大小写。"),
+                    y.a.createElement(R["a"], { title: "客户端 UA 分组", width: "80%", visible: state.visible, onClose: ()=>this.setState({ visible: false }) },
+                        y.a.createElement("p", { className: "text-muted" }, "先创建 UA 分组，再在节点中选择。关键字按 User-Agent 包含匹配，不支持正则表达式。"),
+                        state.error && y.a.createElement("p", { role: "alert", className: "text-danger" }, state.error),
+                        y.a.createElement(o["a"], {
+                            className: "v2board-table", dataSource: state.groups, rowKey: "id",
+                            renderItem: group=>y.a.createElement(o["a"].Item, {
+                                actions: [
+                                    button("编辑", ()=>this.setState({ draft: { ...group }, error: "" })),
+                                    button("删除", ()=>clientUaModal.confirm({ title: "确认删除此 UA 分组？", content: "已被节点使用的分组无法删除。", onOk: ()=>this.mutate("drop", { id: group.id }) }))
+                                ]
+                            }, y.a.createElement(o["a"].Item.Meta, { title: group.name, description: (group.keywords || []).join(", ") }))
+                        }),
+                        y.a.createElement("h4", { className: "mt-3" }, draft.id ? "编辑 UA 分组" : "添加 UA 分组"),
+                        y.a.createElement("div", { className: "form-group" },
+                            y.a.createElement("label", null, "分组名称"),
+                            y.a.createElement(s["a"], { value: draft.name, maxLength: 100, placeholder: "例如：Clash 客户端", onChange: event=>this.setState({ draft: { ...draft, name: event.target.value } }) })),
+                        y.a.createElement("div", { className: "form-group" },
+                            y.a.createElement("label", null, "UA 关键字"),
+                            y.a.createElement(N["a"], { mode: "tags", style: { width: "100%" }, value: draft.keywords, placeholder: "例如 Clash、Mihomo，输入后回车添加", onChange: keywords=>this.setState({ draft: { ...draft, keywords } }) })),
+                        y.a.createElement("div", { className: "v2board-drawer-action" },
+                            button("关闭", ()=>this.setState({ visible: false })),
+                            button("新建分组", ()=>this.setState({ draft: { name: "", keywords: [] }, error: "" })),
+                            y.a.createElement(l["a"], { type: "primary", loading: state.busy, onClick: ()=>this.mutate("save", draft) }, "保存分组"))));
+            }
+        }
         class wV2node extends y.a.Component {
             constructor(e) {
                 super(e),
@@ -105950,7 +106012,10 @@
                     },
                     placeholder: "\u8f93\u5165\u540e\u56de\u8f66\u6dfb\u52a0\u6807\u7b7e",
                     onChange: e=>this.formChange("tags", e.length > 0 ? e: null)
-                })), y.a.createElement("div", {
+                })), y.a.createElement("div", { className: "form-group" },
+                y.a.createElement("label", null, "允许订阅的 UA 分组"),
+                y.a.createElement(ClientUaGroups, { value: e.client_ua_group_ids, onChange: ids=>this.formChange("client_ua_group_ids", ids.length ? ids : null) })
+                ), y.a.createElement("div", {
                     className: "form-group"
                 },
                 y.a.createElement("label", null, "\u6743\u9650\u7ec4 ", y.a.createElement(B["a"], null, y.a.createElement("a", {
@@ -106675,7 +106740,7 @@
                     }, y.a.createElement("a", null, this.getTypeTag("anytls", "AnyTLS")))))
                 }, y.a.createElement(l["a"], null, y.a.createElement(m["a"], {
                     type: "plus"
-                }))), y.a.createElement(s["a"], {
+                }))), y.a.createElement(ClientUaGroups, { managerOnly: true }), y.a.createElement(s["a"], {
                     placeholder: "\u8f93\u5165\u4efb\u610f\u5173\u952e\u5b57\u641c\u7d22",
                     style: {
                         width: 200
