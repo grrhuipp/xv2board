@@ -1657,7 +1657,6 @@ class SmartRouteController extends Controller
             'hysteria' => \App\Models\ServerHysteria::class,
             'tuic' => \App\Models\ServerTuic::class,
             'anytls' => \App\Models\ServerAnytls::class,
-            'v2node' => \App\Models\ServerV2node::class,
         ];
 
         $servers = [];
@@ -1684,7 +1683,7 @@ class SmartRouteController extends Controller
      */
     public function ingressList(Request $request)
     {
-        $query = SrIngressMap::query();
+        $query = SrIngressMap::whereIn('server_type', array_keys(\App\Services\NodeClientUa::SERVER_MODELS));
 
         if ($type = $request->input('server_type')) {
             $query->where('server_type', $type);
@@ -1718,7 +1717,7 @@ class SmartRouteController extends Controller
     public function ingressSave(Request $request)
     {
         $request->validate([
-            'server_type' => 'required|in:vmess,trojan,shadowsocks,vless,hysteria,tuic,anytls,v2node',
+            'server_type' => 'required|in:vmess,trojan,shadowsocks,vless,hysteria,tuic,anytls',
             'server_id' => 'required|integer',
             'exposure_tier' => 'required|in:intl_only,public_intl,domestic_limited,domestic_sensitive',
             'ingress_host' => 'nullable|string|max:255',
@@ -1762,7 +1761,7 @@ class SmartRouteController extends Controller
     public function ingressBatchSave(Request $request)
     {
         $request->validate([
-            'server_type' => 'required|in:vmess,trojan,shadowsocks,vless,hysteria,tuic,anytls,v2node',
+            'server_type' => 'required|in:vmess,trojan,shadowsocks,vless,hysteria,tuic,anytls',
             'server_id' => 'required|integer',
             'mappings' => 'required|array',
             'mappings.*.exposure_tier' => 'required|in:intl_only,public_intl,domestic_limited,domestic_sensitive',

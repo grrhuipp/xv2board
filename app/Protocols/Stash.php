@@ -37,7 +37,6 @@ class Stash
         $proxies = [];
 
         foreach ($servers as $item) {
-            $item = Helper::unwrapV2node($item);
             if ($item['type'] === 'shadowsocks') {
                 array_push($proxy, self::buildShadowsocks($user['uuid'], $item));
                 array_push($proxies, $item['name']);

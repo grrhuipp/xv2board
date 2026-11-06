@@ -1799,7 +1799,6 @@ function smartRoute() {
                 hysteria: 'Hysteria',
                 tuic: 'TUIC',
                 anytls: 'AnyTLS',
-                v2node: 'v2node'
             })[type] || type || '-';
         },
 

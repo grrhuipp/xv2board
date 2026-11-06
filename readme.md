@@ -4,15 +4,14 @@
 
 ## 本分支支持的后端
  - [修改版V2bX](https://github.com/wyx2685/V2bX)
- - [v2node](https://github.com/wyx2685/v2node)
 
-## v2node 对接
+## 节点与客户端 UA 分组
 
-后台节点管理支持创建、编辑、复制和排序 v2node 节点；订阅按节点实际协议生成。节点通过 `/api/v2/server/config` 拉取配置，用户、流量和在线设备继续使用 `/api/v1/server/UniProxy/` 接口，`node_type` 填 `v2node`，使用系统配置中的通讯密钥。
+节点管理支持 Shadowsocks、VMess、Trojan、VLESS、Hysteria、TUIC 和 AnyTLS。后端继续通过对应节点类型接入 UniProxy。
 
-「系统配置 → 服务端」中的节点对接 API 地址用于生成一键安装指令；留空时使用站点 URL。支持 `trusted_x_forwarded_for` 配置，以及 AnyTLS 的 Reality 和传输配置。旧节点路由组功能保持停用。
+在现有节点管理页面点击「管理 UA 分组」维护名称与关键字，再在节点编辑中选择分组。留空允许全部客户端，多个分组任意关键字命中即可订阅，匹配忽略大小写。
 
-已有 App/SmartRoute 部署请按[定向升级步骤](docs/app-smartroute-migration.md)补齐 v2node 表和入口映射名称，然后刷新配置并重启常驻进程。v2node 支持按设备信任层选择入口，后台入口映射的节点类型选择 `v2node`。迁移保留已有节点；如果之前的移除更新已经删除节点表和统计，只能从备份恢复原数据或重新创建节点。本次恢复不会从空表重建旧记录。
+升级仍使用 `bash update.sh`。升级会补齐七种节点的 UA 分组字段，删除 v2node 专属表及其入口映射、节点统计，并刷新 manifest 缓存；其他节点和用户数据保留。部署细节见[升级说明](docs/app-smartroute-migration.md)。
 
 ## 开发约定
 

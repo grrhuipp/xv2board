@@ -105,13 +105,16 @@ class V2boardInstall extends Command
             if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_09_000001_add_server_name_to_sr_ingress_map.php', '--force' => true]) !== 0) {
                 throw new \RuntimeException(\Artisan::output());
             }
-            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_13_000001_restore_v2node.php', '--force' => true]) !== 0) {
-                throw new \RuntimeException(\Artisan::output());
-            }
-            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_17_000001_backfill_v2node_ingress_names.php', '--force' => true]) !== 0) {
-                throw new \RuntimeException(\Artisan::output());
-            }
+
             if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_06_000001_add_node_client_ua_keywords.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_06_000002_add_native_node_client_ua_groups.php', '--force' => true]) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+
+            if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_06_000003_retire_unified_node_backend.php', '--force' => true]) !== 0) {
                 throw new \RuntimeException(\Artisan::output());
             }
             $email = '';

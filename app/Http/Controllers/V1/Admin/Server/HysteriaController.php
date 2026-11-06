@@ -21,6 +21,8 @@ class HysteriaController extends Controller
             'port' => 'required',
             'server_port' => 'required',
             'tags' => 'nullable|array',
+            'client_ua_group_ids' => 'nullable|array|max:50',
+            'client_ua_group_ids.*' => 'required|integer|distinct|exists:v2_server_client_ua_group,id',
             'rate' => 'required|numeric',
             'up_mbps' => 'nullable|numeric',
             'down_mbps' => 'nullable|numeric',

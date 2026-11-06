@@ -39,6 +39,12 @@ class V2boardUpdate extends Command
     public function handle()
     {
         \Artisan::call('config:cache');
+        // Removed controllers and node selectors must not survive in compiled caches.
+        foreach (['route:clear', 'view:clear'] as $command) {
+            if (\Artisan::call($command) !== 0) {
+                throw new \RuntimeException(\Artisan::output());
+            }
+        }
         DB::connection()->getPdo();
         $file = \File::get(base_path() . '/database/update.sql');
         if (!$file) {
@@ -75,13 +81,16 @@ class V2boardUpdate extends Command
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_09_000001_add_server_name_to_sr_ingress_map.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
-        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_13_000001_restore_v2node.php', '--force' => true]) !== 0) {
-            throw new \RuntimeException(\Artisan::output());
-        }
-        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_10_17_000001_backfill_v2node_ingress_names.php', '--force' => true]) !== 0) {
-            throw new \RuntimeException(\Artisan::output());
-        }
+
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_06_000001_add_node_client_ua_keywords.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
+
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_06_000002_add_native_node_client_ua_groups.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
+
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_06_000003_retire_unified_node_backend.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
         \Artisan::call('horizon:terminate');

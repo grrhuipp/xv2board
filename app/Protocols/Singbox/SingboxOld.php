@@ -47,9 +47,6 @@ class SingboxOld
         $proxies = [];
     
         foreach ($this->servers as $item) {
-            if ($item['type'] === 'v2node') {
-                $item['type'] = $item['protocol'];
-            }
             if ($item['type'] === 'shadowsocks') {
                 $ssConfig = $this->buildShadowsocks($this->user['uuid'], $item);
                 $proxies[] = $ssConfig;

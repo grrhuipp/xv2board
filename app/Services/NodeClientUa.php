@@ -4,6 +4,16 @@ namespace App\Services;
 
 final class NodeClientUa
 {
+    public const SERVER_MODELS = [
+        'shadowsocks' => \App\Models\ServerShadowsocks::class,
+        'vmess' => \App\Models\ServerVmess::class,
+        'trojan' => \App\Models\ServerTrojan::class,
+        'vless' => \App\Models\ServerVless::class,
+        'hysteria' => \App\Models\ServerHysteria::class,
+        'tuic' => \App\Models\ServerTuic::class,
+        'anytls' => \App\Models\ServerAnytls::class,
+    ];
+
     public static function allows($keywords, ?string $userAgent): bool
     {
         if ($keywords === null || $keywords === []) return true;

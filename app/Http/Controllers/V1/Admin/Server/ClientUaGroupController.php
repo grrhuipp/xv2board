@@ -4,7 +4,7 @@ namespace App\Http\Controllers\V1\Admin\Server;
 
 use App\Http\Controllers\Controller;
 use App\Models\ServerClientUaGroup;
-use App\Models\ServerV2node;
+use App\Services\NodeClientUa;
 use App\Services\SmartRoute\SmartRouteMetricsService;
 use Illuminate\Http\Request;
 
@@ -35,9 +35,11 @@ class ClientUaGroupController extends Controller
     public function drop(Request $request)
     {
         $params = $request->validate(['id' => 'required|integer|exists:v2_server_client_ua_group,id']);
-        foreach (ServerV2node::get(['client_ua_group_ids']) as $node) {
-            if (in_array($params['id'], $node->client_ua_group_ids ?? [])) {
-                abort(422, '该 UA 分组已被节点使用，请先修改节点选择');
+        foreach (NodeClientUa::SERVER_MODELS as $model) {
+            foreach ($model::get(['client_ua_group_ids']) as $node) {
+                if (in_array($params['id'], $node->client_ua_group_ids ?? [])) {
+                    abort(422, '该 UA 分组已被节点使用，请先修改节点选择');
+                }
             }
         }
         ServerClientUaGroup::findOrFail($params['id'])->delete();

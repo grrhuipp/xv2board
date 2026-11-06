@@ -28,7 +28,6 @@ class Surge
         $proxyGroup = '';
 
         foreach ($servers as $item) {
-            $item = Helper::unwrapV2node($item);
             if ($item['type'] === 'shadowsocks') {
                 // [Proxy]
                 $proxies .= self::buildShadowsocks($user['uuid'], $item);

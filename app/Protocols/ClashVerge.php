@@ -36,10 +36,6 @@ class ClashVerge
         $proxies = [];
 
         foreach ($servers as $item) {
-            // Singbox-style inline adaptation: unwrap v2node
-            if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
-                $item['type'] = $item['protocol'];
-            }
             switch ($item['type']) {
                 case 'shadowsocks':
                     $proxy[] = self::buildShadowsocks($user['uuid'], $item);

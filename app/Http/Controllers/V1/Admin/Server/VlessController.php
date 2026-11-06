@@ -27,6 +27,8 @@ class VlessController extends Controller
             'encryption' => 'nullable',
             'encryption_settings' => 'nullable|array',
             'tags' => 'nullable|array',
+            'client_ua_group_ids' => 'nullable|array|max:50',
+            'client_ua_group_ids.*' => 'required|integer|distinct|exists:v2_server_client_ua_group,id',
             'rate' => 'required',
             'show' => 'nullable|in:0,1',
             'sort' => 'nullable'

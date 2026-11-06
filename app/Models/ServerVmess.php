@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ServerVmess extends Model
 {
+    use \App\Models\Concerns\HasClientUaGroups;
     protected $table = 'v2_server_vmess';
     protected $dateFormat = 'U';
     protected $guarded = ['id'];
@@ -13,6 +14,7 @@ class ServerVmess extends Model
         'created_at' => 'timestamp',
         'updated_at' => 'timestamp',
         'group_id' => 'array',
+        'client_ua_group_ids' => 'array',
         'tlsSettings' => 'array',
         'networkSettings' => 'array',
         'dnsSettings' => 'array',

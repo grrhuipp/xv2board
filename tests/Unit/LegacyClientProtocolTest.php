@@ -4,12 +4,12 @@ namespace Tests\Unit;
 
 use App\Utils\Helper;
 use Symfony\Component\Yaml\Yaml;
-use Tests\TestCase;
+use Tests\NodeClientUaTestCase;
 
-class LegacyClientV2nodeTest extends TestCase
+class LegacyClientProtocolTest extends NodeClientUaTestCase
 {
-    /** @dataProvider vmessClients */
-    public function test_vmess_accepts_v2node_and_legacy_settings(string $client, string $network): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('vmessClients')]
+    public function test_vmess_accepts_both_supported_settings_formats(string $client, string $network): void
     {
         $class = 'App\\Protocols\\' . $client;
         $node = $this->node('vmess');
@@ -36,7 +36,7 @@ class LegacyClientV2nodeTest extends TestCase
             $this->assertStringContainsString('grpc-test', $rendered);
         }
 
-        // Canonical v2node values win if both field formats are supplied.
+        // Canonical values win if both field formats are supplied.
         $node['tlsSettings'] = ['serverName' => 'wrong.example.test', 'allowInsecure' => 0];
         $node['networkSettings'] = ['path' => '/wrong'];
         $this->assertSame($actual, $class::buildVmess('test-uuid', $node));
@@ -52,7 +52,7 @@ class LegacyClientV2nodeTest extends TestCase
         return $cases;
     }
 
-    /** @dataProvider clients */
+    #[\PHPUnit\Framework\Attributes\DataProvider('clients')]
     public function test_missing_optional_vmess_settings_do_not_break_subscription(string $client): void
     {
         $class = 'App\\Protocols\\' . $client;
@@ -61,13 +61,13 @@ class LegacyClientV2nodeTest extends TestCase
         $this->assertNotEmpty($class::buildVmess('test-uuid', $node));
     }
 
-    /**
-     * @dataProvider clients
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
-    public function test_complete_subscription_contains_each_supported_v2node_protocol(string $client): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('clients')]
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
+    public function test_complete_subscription_contains_each_supported_native_protocol(string $client): void
     {
+        if (!class_exists('File')) class_alias(\Illuminate\Support\Facades\File::class, 'File');
+        $this->app->instance('files', new \Illuminate\Filesystem\Filesystem());
         config(['v2board.show_subscribe_method' => 0, 'v2board.subscribe_url' => 'https://panel.example.test']);
         $oldHost = $_SERVER['HTTP_HOST'] ?? null;
         $_SERVER['HTTP_HOST'] = 'panel.example.test';
@@ -104,22 +104,10 @@ class LegacyClientV2nodeTest extends TestCase
         return array_map(fn($client) => [$client], ['Stash', 'Surge', 'Surfboard', 'Loon']);
     }
 
-    public function test_unwrapping_preserves_legacy_server_values(): void
-    {
-        $legacy = ['type' => 'trojan', 'server_name' => 'legacy.example.test', 'allow_insecure' => 0];
-        $this->assertSame($legacy, Helper::unwrapV2node($legacy));
-        $node = $this->node('hysteria2');
-        $unwrapped = Helper::unwrapV2node($node);
-        $this->assertSame('hysteria2', $unwrapped['type']);
-        $this->assertSame(2, $unwrapped['version']);
-        $this->assertSame('tls.example.test', $unwrapped['server_name']);
-        $this->assertSame(1, $unwrapped['insecure']);
-    }
-
     private function node(string $protocol): array
     {
-        // Use only fields present on v2_server_v2node; no legacy TLS aliases.
-        return ['type' => 'v2node', 'protocol' => $protocol, 'name' => 'test-' . $protocol,
+        return ['type' => $protocol === 'hysteria2' ? 'hysteria' : $protocol, 'version' => 2,
+            'server_name' => 'tls.example.test', 'insecure' => 1, 'allow_insecure' => 1, 'name' => 'test-' . $protocol,
             'host' => 'node.example.test', 'port' => 443, 'tls' => 1,
             'tls_settings' => ['server_name' => 'tls.example.test', 'allow_insecure' => 1],
             'network' => 'tcp', 'network_settings' => [], 'flow' => '', 'encryption' => 'none',

@@ -27,8 +27,7 @@ class ManageController extends Controller
             'trojan',
             'tuic',
             'hysteria',
-            'anytls',
-            'v2node'
+            'anytls'
         ) ?? [];
         if (empty($params)) {
             $params = [
@@ -39,7 +38,6 @@ class ManageController extends Controller
                 'tuic'        => $_POST['tuic'] ?? null,
                 'hysteria'    => $_POST['hysteria'] ?? null,
                 'anytls'      => $_POST['anytls'] ?? null,
-                'v2node'      => $_POST['v2node'] ?? null,
             ];
         }
         DB::beginTransaction();

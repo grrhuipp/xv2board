@@ -11,7 +11,6 @@ use App\Models\ServerVless;
 use App\Models\ServerHysteria;
 use App\Models\ServerTuic;
 use App\Models\ServerAnytls;
-use App\Models\ServerV2node;
 use App\Models\User;
 
 /**
@@ -37,7 +36,6 @@ final class VisibleNodeResolver
         'hysteria' => ServerHysteria::class,
         'tuic' => ServerTuic::class,
         'anytls' => ServerAnytls::class,
-        'v2node' => ServerV2node::class,
     ];
 
     private SmartRouteIngressResolver $ingressResolver;

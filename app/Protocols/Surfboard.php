@@ -28,7 +28,6 @@ class Surfboard
         $proxyGroup = '';
 
         foreach ($servers as $item) {
-            $item = Helper::unwrapV2node($item);
             if ($item['type'] === 'shadowsocks'
                 && in_array($item['cipher'], [
                     'aes-128-gcm',

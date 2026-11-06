@@ -186,7 +186,7 @@ class UaRuleHostReplacementTest extends TestCase
     public function test_subscription_uses_request_header_not_format_flag_and_does_not_change_stored_node(): void
     {
         $schema = $this->database->getConnection()->getSchemaBuilder();
-        foreach (['shadowsocks', 'vmess', 'trojan', 'tuic', 'hysteria', 'vless', 'anytls', 'v2node'] as $type) {
+        foreach (['shadowsocks', 'vmess', 'trojan', 'tuic', 'hysteria', 'vless', 'anytls'] as $type) {
             $schema->create('v2_server_' . $type, function ($table) {
                 $table->increments('id');
                 $table->integer('sort')->default(0);

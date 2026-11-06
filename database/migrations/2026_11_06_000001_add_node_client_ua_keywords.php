@@ -17,18 +17,10 @@ class AddNodeClientUaKeywords extends Migration
                 $table->integer('updated_at')->nullable();
             });
         }
-        if (!Schema::hasColumn('v2_server_v2node', 'client_ua_group_ids')) {
-            Schema::table('v2_server_v2node', function (Blueprint $table) {
-                $table->text('client_ua_group_ids')->nullable();
-            });
-        }
     }
 
     public function down()
     {
-        Schema::table('v2_server_v2node', function (Blueprint $table) {
-            $table->dropColumn('client_ua_group_ids');
-        });
         Schema::dropIfExists('v2_server_client_ua_group');
     }
 }

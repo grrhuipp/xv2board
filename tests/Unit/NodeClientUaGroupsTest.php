@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\ServerClientUaGroup;
-use App\Models\ServerV2node;
+use App\Models\ServerTrojan;
 use App\Services\NodeClientUa;
 use Tests\NodeClientUaTestCase;
 
@@ -11,20 +11,14 @@ class NodeClientUaGroupsTest extends NodeClientUaTestCase
 {
     public function test_migration_group_edits_and_node_copy_preserve_restrictions(): void
     {
-        $schema = $this->database->getConnection()->getSchemaBuilder();
-        $this->app->instance('db.schema', $schema);
-        $schema->create('v2_server_v2node', function ($table) {
-            $table->increments('id');
-            $table->integer('created_at')->nullable();
-            $table->integer('updated_at')->nullable();
-        });
-        require_once __DIR__ . '/../../database/migrations/2026_11_06_000001_add_node_client_ua_keywords.php';
-        $migration = new \AddNodeClientUaKeywords();
+        $this->createNodeTables();
+        require_once __DIR__ . '/../../database/migrations/2026_11_06_000002_add_native_node_client_ua_groups.php';
+        $migration = new \AddNativeNodeClientUaGroups();
         $migration->up();
         $migration->up();
         $group = ServerClientUaGroup::create(['name' => 'Clash', 'keywords' => ['Clash', 'Mihomo']]);
-        $node = ServerV2node::create(['client_ua_group_ids' => [$group->id]]);
-        $public = ServerV2node::create([]);
+        $node = ServerTrojan::create(['client_ua_group_ids' => [$group->id]]);
+        $public = ServerTrojan::create([]);
         // Upgrade after SQL import or a previous migration must preserve saved data.
         $migration->up();
         $this->assertSame([$group->id], $node->fresh()->client_ua_group_ids);

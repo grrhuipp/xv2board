@@ -37,9 +37,6 @@ class Clash
         $proxies = [];
 
         foreach ($servers as $item) {
-            if ($item['type'] === 'v2node') {
-                $item['type'] = $item['protocol'];
-            }
             if ($item['type'] === 'shadowsocks'
                 && in_array($item['cipher'], [
                     'aes-128-gcm',

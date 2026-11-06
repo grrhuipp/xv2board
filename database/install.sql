@@ -236,7 +236,8 @@ CREATE TABLE `v2_server_group` (
 DROP TABLE IF EXISTS `v2_server_tuic`;
 CREATE TABLE `v2_server_tuic` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
-                                      `group_id` varchar(255) NOT NULL,
+                                      `client_ua_group_ids` text DEFAULT NULL,
+  `group_id` varchar(255) NOT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,
@@ -262,7 +263,8 @@ DROP TABLE IF EXISTS `v2_server_hysteria`;
 CREATE TABLE `v2_server_hysteria` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
                                       `version` int(11) NOT NULL,
-                                      `group_id` varchar(255) NOT NULL,
+                                      `client_ua_group_ids` text DEFAULT NULL,
+  `group_id` varchar(255) NOT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,
@@ -289,7 +291,8 @@ CREATE TABLE `v2_server_hysteria` (
 DROP TABLE IF EXISTS `v2_server_shadowsocks`;
 CREATE TABLE `v2_server_shadowsocks` (
                                          `id` int(11) NOT NULL AUTO_INCREMENT,
-                                         `group_id` varchar(255) NOT NULL,
+                                         `client_ua_group_ids` text DEFAULT NULL,
+  `group_id` varchar(255) NOT NULL,
                                          `parent_id` int(11) DEFAULT NULL,
                                          `tags` varchar(255) DEFAULT NULL,
                                          `name` varchar(255) NOT NULL,
@@ -311,7 +314,8 @@ CREATE TABLE `v2_server_shadowsocks` (
 DROP TABLE IF EXISTS `v2_server_trojan`;
 CREATE TABLE `v2_server_trojan` (
                                     `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '节点ID',
-                                    `group_id` varchar(255) NOT NULL COMMENT '节点组',
+                                    `client_ua_group_ids` text DEFAULT NULL,
+  `group_id` varchar(255) NOT NULL COMMENT '节点组',
                                     `parent_id` int(11) DEFAULT NULL COMMENT '父节点',
                                     `tags` varchar(255) DEFAULT NULL COMMENT '节点标签',
                                     `name` varchar(255) NOT NULL COMMENT '节点名称',
@@ -334,7 +338,8 @@ CREATE TABLE `v2_server_trojan` (
 DROP TABLE IF EXISTS `v2_server_vless`;
 CREATE TABLE `v2_server_vless` (
                                    `id` int(11) NOT NULL AUTO_INCREMENT,
-                                   `group_id` text NOT NULL,
+                                   `client_ua_group_ids` text DEFAULT NULL,
+  `group_id` text NOT NULL,
                                    `name` varchar(255) NOT NULL,
                                    `parent_id` int(11) DEFAULT NULL,
                                    `host` varchar(255) NOT NULL,
@@ -360,7 +365,8 @@ CREATE TABLE `v2_server_vless` (
 DROP TABLE IF EXISTS `v2_server_vmess`;
 CREATE TABLE `v2_server_vmess` (
                                    `id` int(11) NOT NULL AUTO_INCREMENT,
-                                   `group_id` varchar(255) NOT NULL,
+                                   `client_ua_group_ids` text DEFAULT NULL,
+  `group_id` varchar(255) NOT NULL,
                                    `name` varchar(255) NOT NULL,
                                    `parent_id` int(11) DEFAULT NULL,
                                    `host` varchar(255) NOT NULL,
@@ -385,7 +391,8 @@ CREATE TABLE `v2_server_vmess` (
 DROP TABLE IF EXISTS `v2_server_anytls`;
 CREATE TABLE `v2_server_anytls` (
                                       `id` int(11) NOT NULL AUTO_INCREMENT,
-                                      `group_id` varchar(255) NOT NULL,
+                                      `client_ua_group_ids` text DEFAULT NULL,
+  `group_id` varchar(255) NOT NULL,
                                       `name` varchar(255) NOT NULL,
                                       `parent_id` int(11) DEFAULT NULL,
                                       `host` varchar(255) NOT NULL,
@@ -403,44 +410,6 @@ CREATE TABLE `v2_server_anytls` (
                                       PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS `v2_server_v2node` (
-                                    `id` int(11) NOT NULL AUTO_INCREMENT,
-                                    `group_id` varchar(255) NOT NULL,
-                                    `client_ua_group_ids` text DEFAULT NULL,
-                                    `route_id` varchar(255) DEFAULT NULL,
-                                    `name` varchar(255) NOT NULL,
-                                    `parent_id` int(11) DEFAULT NULL,
-                                    `host` varchar(255) NOT NULL,
-                                    `listen_ip` varchar(255) NOT NULL DEFAULT '0.0.0.0',
-                                    `port` varchar(11) NOT NULL,
-                                    `server_port` int(11) NOT NULL,
-                                    `tags` varchar(255) DEFAULT NULL,
-                                    `rate` varchar(11) NOT NULL,
-                                    `show` tinyint(1) NOT NULL DEFAULT '0',
-                                    `sort` int(11) DEFAULT NULL,
-                                    `protocol` varchar(24) NOT NULL COMMENT '协议类型',
-                                    `tls` tinyint(1) NOT NULL COMMENT 'tls类型',
-                                    `tls_settings` text COMMENT 'tls配置',
-                                    `flow` varchar(64) DEFAULT NULL COMMENT 'vless流控',
-                                    `network` varchar(11) NOT NULL COMMENT '传输类型',
-                                    `network_settings` text COMMENT '传输配置',
-                                    `trusted_x_forwarded_for` varchar(255) DEFAULT NULL,
-                                    `encryption` varchar(64) DEFAULT NULL COMMENT 'vless加密',
-                                    `encryption_settings` text COMMENT 'vless加密配置',
-                                    `disable_sni` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'tuic禁用sni',
-                                    `udp_relay_mode` varchar(64) DEFAULT NULL COMMENT 'tuic udp中继模式',
-                                    `zero_rtt_handshake` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'tuic 0rtt握手',
-                                    `congestion_control` varchar(64) DEFAULT NULL COMMENT 'tuic拥塞控制',
-                                    `cipher` varchar(64) DEFAULT NULL COMMENT 'shadowsocks加密方式',
-                                    `up_mbps` int(11) NOT NULL COMMENT 'hysteria上行带宽',
-                                    `down_mbps` int(11) NOT NULL COMMENT 'hysteria下行带宽',
-                                    `obfs` varchar(64) DEFAULT NULL COMMENT 'hysteria1混淆密码/hysteria2混淆类型',
-                                    `obfs_password` varchar(255) DEFAULT NULL COMMENT 'hysteria2混淆密码',
-                                    `padding_scheme` text COMMENT 'anytls填充配置',
-                                    `created_at` int(11) NOT NULL,
-                                    `updated_at` int(11) NOT NULL,
-                                    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `v2_stat`;
 CREATE TABLE `v2_stat` (

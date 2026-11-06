@@ -25,6 +25,8 @@ class ServerShadowsocksSave extends FormRequest
             'obfs' => 'nullable|in:http',
             'obfs_settings' => 'nullable|array',
             'tags' => 'nullable|array',
+            'client_ua_group_ids' => 'nullable|array|max:50',
+            'client_ua_group_ids.*' => 'required|integer|distinct|exists:v2_server_client_ua_group,id',
             'rate' => 'required|numeric'
         ];
     }
