@@ -21,6 +21,12 @@
 
 克隆后可执行 `git config core.hooksPath .githooks` 启用本地推送保护；钩子会阻止误推到原版仓库及直接推送 `master` / `main`。GitHub 网页创建 PR 时也应核对目标仓库。
 
+## 用户 token 查询索引
+
+`v2board:update` 会运行 `2026_11_09_000001_add_user_token_lookup_index`，为缺少 token 查询索引的旧数据库补齐非唯一索引。执行升级前请备份 `v2_user`。新安装已有的唯一索引、手工创建的索引及以 token 开头的组合索引都会保留，不重复建索引，也不改变旧库的重复 token 数据。
+
+MySQL/MariaDB 使用 `ALGORITHM=INPLACE, LOCK=NONE`，不支持在线建索引时直接报错，不自动退回阻塞式建表。也可定向执行 `php artisan migrate --path=database/migrations/2026_11_09_000001_add_user_token_lookup_index.php --force`；回滚应用代码时保留该性能索引。
+
 ## 订阅抵扣策略
 
 「系统配置 → 订阅 → 抵扣策略」支持自动保存。配置项 `surplus_strategy` 只控制零元赠送权益是否参与抵扣，不切换残值公式。

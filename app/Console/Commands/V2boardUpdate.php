@@ -93,6 +93,9 @@ class V2boardUpdate extends Command
         if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_06_000003_retire_unified_node_backend.php', '--force' => true]) !== 0) {
             throw new \RuntimeException(\Artisan::output());
         }
+        if (\Artisan::call('migrate', ['--path' => 'database/migrations/2026_11_09_000001_add_user_token_lookup_index.php', '--force' => true]) !== 0) {
+            throw new \RuntimeException(\Artisan::output());
+        }
         \Artisan::call('horizon:terminate');
         $this->info('更新完毕，已通知 Horizon 退出，请确认进程守护已重新拉起队列服务。');
     }
