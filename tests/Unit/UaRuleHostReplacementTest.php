@@ -219,6 +219,7 @@ class UaRuleHostReplacementTest extends TestCase
         foreach (['TestClient/1.0' => 'ua.example.com', 'OtherClient' => 'old.example.com'] as $ua => $host) {
             $request = Request::create('/', 'GET', ['flag' => 'general', 'user' => $user], [], [],
                 ['REMOTE_ADDR' => '192.0.2.1', 'HTTP_USER_AGENT' => $ua]);
+            app()->instance('request', $request);
             $subscription = base64_decode((new ClientController())->subscribe($request), true);
             $this->assertStringContainsString('@' . $host . ':443/', $subscription);
             $this->assertStringContainsString('sni=tls.example.com', $subscription);
