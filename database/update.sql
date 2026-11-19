@@ -881,3 +881,18 @@ DELETE FROM `v2_sr_ingress_map` WHERE `server_type` = 'v2node';
 DELETE FROM `v2_stat_server` WHERE `server_type` = 'v2node';
 DELETE FROM `v2_server_stat` WHERE `server_type` = 'v2node';
 DROP TABLE IF EXISTS `v2_server_v2node`;
+
+/* Reuse a full email lookup index on installations that already have one. */
+SET @v2_user_email_index_sql = IF(
+  EXISTS (
+    SELECT 1 FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'v2_user'
+      AND COLUMN_NAME = 'email' AND SEQ_IN_INDEX = 1 AND SUB_PART IS NULL
+      AND INDEX_TYPE = 'BTREE'
+  ),
+  'SELECT 1',
+  'ALTER TABLE `v2_user` ADD INDEX `idx_v2_user_email` (`email`), ALGORITHM=INPLACE, LOCK=NONE'
+);
+PREPARE v2_user_email_index FROM @v2_user_email_index_sql;
+EXECUTE v2_user_email_index;
+DEALLOCATE PREPARE v2_user_email_index;
