@@ -890,7 +890,7 @@ SET @v2_user_email_index_sql = IF(
       AND COLUMN_NAME = 'email' AND SEQ_IN_INDEX = 1 AND SUB_PART IS NULL
       AND INDEX_TYPE = 'BTREE'
   ),
-  'SELECT 1',
+  'DO 0',
   'ALTER TABLE `v2_user` ADD INDEX `idx_v2_user_email` (`email`), ALGORITHM=INPLACE, LOCK=NONE'
 );
 PREPARE v2_user_email_index FROM @v2_user_email_index_sql;
